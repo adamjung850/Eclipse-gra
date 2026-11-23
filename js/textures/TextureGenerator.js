@@ -21,6 +21,8 @@ export class TextureGenerator {
         this.createUtilityTextures(scene, T);
         // 6. Generate Enemies & Combat Textures
         this.createCombatTextures(scene);
+        // 7. Generate Celestial Textures (Sun & Moon)
+        this.createCelestialTextures(scene);
     }
     static decodePixelData(ctx, width, height, base64Data, dx = 0, dy = 0) {
         const binary = atob(base64Data);
@@ -1636,6 +1638,112 @@ export class TextureGenerator {
                 const ctx = canvas.context;
                 ctx.fillStyle = '#fef08a';
                 ctx.fillRect(0, 0, 4, 4);
+                canvas.refresh();
+            }
+        }
+    }
+    static createCelestialTextures(scene) {
+        // 1. Radiant Pixel Art Sun - 48x48
+        if (!scene.textures.exists('celestial_sun')) {
+            const canvas = scene.textures.createCanvas('celestial_sun', 48, 48);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Outer warm glow rings
+                for (let r = 22; r >= 13; r--) {
+                    const alpha = 0.04 + (0.28 * (1.0 - (r - 13) / 9.0));
+                    ctx.fillStyle = `rgba(255, 170, 0, ${alpha.toFixed(3)})`;
+                    ctx.beginPath();
+                    ctx.arc(24, 24, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // Solar rays (8 cardinal & diagonal beams)
+                const rays = [
+                    [24, 2, 24, 8],
+                    [24, 40, 24, 46],
+                    [2, 24, 8, 24],
+                    [40, 24, 46, 24],
+                    [8, 8, 13, 13],
+                    [35, 8, 40, 13],
+                    [8, 35, 13, 40],
+                    [35, 35, 40, 40]
+                ];
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2;
+                for (const [x1, y1, x2, y2] of rays) {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+                // Sun body
+                ctx.fillStyle = '#ea580c'; // Fiery outer rim
+                ctx.beginPath();
+                ctx.arc(24, 24, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#f59e0b'; // Amber rim
+                ctx.beginPath();
+                ctx.arc(24, 24, 11, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#facc15'; // Golden yellow body
+                ctx.beginPath();
+                ctx.arc(24, 24, 9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fef08a'; // Bright core
+                ctx.beginPath();
+                ctx.arc(24, 24, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff'; // White center flare
+                ctx.beginPath();
+                ctx.arc(23, 23, 3, 0, Math.PI * 2);
+                ctx.fill();
+                canvas.refresh();
+            }
+        }
+        // 2. Mystic Pixel Art Moon - 40x40
+        if (!scene.textures.exists('celestial_moon')) {
+            const canvas = scene.textures.createCanvas('celestial_moon', 40, 40);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Soft lunar aura
+                for (let r = 18; r >= 11; r--) {
+                    const alpha = 0.03 + (0.22 * (1.0 - (r - 11) / 7.0));
+                    ctx.fillStyle = `rgba(160, 210, 255, ${alpha.toFixed(3)})`;
+                    ctx.beginPath();
+                    ctx.arc(20, 20, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // Moon body
+                ctx.fillStyle = '#94a3b8'; // Slate rim
+                ctx.beginPath();
+                ctx.arc(20, 20, 11, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#cbd5e1'; // Silver base
+                ctx.beginPath();
+                ctx.arc(20, 20, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#f1f5f9'; // Pale moon face
+                ctx.beginPath();
+                ctx.arc(19, 19, 9, 0, Math.PI * 2);
+                ctx.fill();
+                // Craters
+                const craters = [
+                    [15, 16, 2],
+                    [23, 15, 2.5],
+                    [17, 24, 2.5],
+                    [25, 23, 1.8]
+                ];
+                for (const [cx, cy, cr] of craters) {
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#64748b';
+                    ctx.beginPath();
+                    ctx.arc(cx + 0.5, cy + 0.5, cr * 0.6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
                 canvas.refresh();
             }
         }

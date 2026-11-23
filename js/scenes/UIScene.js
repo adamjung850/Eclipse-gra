@@ -1015,6 +1015,7 @@ export class UIScene extends Phaser.Scene {
         else
             zone = 'Otchłań Pustki';
         const depthMeters = (tileY - GAME_CONSTANTS.SURFACE_HEIGHT) * 2;
-        this.depthText.setText(`[Głębokość: ${depthMeters}m] ${zone} | Poziom ${this.player.level}`);
+        const timeStr = this.gameScene.dayNightSystem ? ` | ${this.gameScene.dayNightSystem.getTimeString()}` : '';
+        this.depthText.setText(`[Głębokość: ${depthMeters}m] ${zone} | Poziom ${this.player.level}${timeStr}`);
     }
 }

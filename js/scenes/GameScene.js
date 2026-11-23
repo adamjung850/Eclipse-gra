@@ -9,6 +9,7 @@ import { SoundSynthesizer } from '../systems/SoundSynthesizer.js';
 import { CombatSystem } from '../systems/CombatSystem.js';
 import { EnemySpawner } from '../systems/EnemySpawner.js';
 import { CursorManager } from '../systems/CursorManager.js';
+import { DayNightSystem } from '../systems/DayNightSystem.js';
 import { BLOCK_DEFINITIONS } from '../world/BlockTypes.js';
 import { ITEM_REGISTRY } from '../world/ItemTypes.js';
 export class GameScene extends Phaser.Scene {
@@ -23,9 +24,7 @@ export class GameScene extends Phaser.Scene {
     inputManager;
     sounds;
     cursorManager;
-    // Sky & Day-Night
-    skyGraphic;
-    gameTime = 240; // Starts in midday (0 - 1440)
+    dayNightSystem;
     constructor() {
         super('GameScene');
     }
@@ -37,10 +36,8 @@ export class GameScene extends Phaser.Scene {
         this.physics.world.setBounds(0, 0, worldWidthPx, worldHeightPx);
         // 2. Audio Synthesizer
         this.sounds = new SoundSynthesizer();
-        // 3. Sky & Atmosphere Background
-        this.skyGraphic = this.add.graphics();
-        this.skyGraphic.setScrollFactor(0);
-        this.skyGraphic.setDepth(-10);
+        // 3. Sky, Atmosphere & Celestial System (Sun, Moon, Stars, Day/Night)
+        this.dayNightSystem = new DayNightSystem(this);
         // 4. Generate Procedural World
         const worldData = WorldGenerator.generate();
         this.worldManager = new WorldManager(this, worldData);
@@ -68,7 +65,7 @@ export class GameScene extends Phaser.Scene {
             this.sounds.play(type);
         };
         this.combatSystem = new CombatSystem(this, this.player, this.enemies, this.projectiles, this.droppedItems, this.worldManager, this.sounds);
-        this.enemySpawner = new EnemySpawner(this, this.player, this.enemies, this.worldManager);
+        this.enemySpawner = new EnemySpawner(this, this.player, this.enemies, this.worldManager, this.dayNightSystem);
         this.inputManager = new InputManager(this, this.player);
         this.inputManager.onDropItem = () => {
             this.handlePlayerDropItem();
@@ -113,8 +110,8 @@ export class GameScene extends Phaser.Scene {
         }
     }
     update(time, delta) {
-        // 1. Update Sky Gradient
-        this.updateAtmosphere(delta);
+        // 1. Update Continuous Day/Night, Celestial Bodies (Sun, Moon, Stars) & Sky
+        this.dayNightSystem.update(delta);
         // 2. Input & Player update
         this.inputManager.update(delta);
         // 3. Spawner & Combat updates
@@ -252,33 +249,5 @@ export class GameScene extends Phaser.Scene {
                 floatText.destroy();
             }
         });
-    }
-    updateAtmosphere(delta) {
-        // Advance day-night cycle (1 game day = 12 real minutes)
-        this.gameTime = (this.gameTime + delta * 0.02) % 1440;
-        const width = this.scale.width;
-        const height = this.scale.height;
-        this.skyGraphic.clear();
-        // Calculate sky color based on cycle:
-        // 0 = midnight, 360 = dawn, 720 = noon, 1080 = dusk
-        let skyTop = 0x5b93d3;
-        let skyBottom = 0xbce3fa;
-        if (this.gameTime > 1000 || this.gameTime < 400) {
-            // Night / Eclipse
-            skyTop = 0x090b14;
-            skyBottom = 0x181e2e;
-        }
-        else if (this.gameTime >= 400 && this.gameTime < 550) {
-            // Sunrise
-            skyTop = 0x824970;
-            skyBottom = 0xf5a267;
-        }
-        else if (this.gameTime >= 900 && this.gameTime <= 1000) {
-            // Sunset
-            skyTop = 0x7a3052;
-            skyBottom = 0xde7043;
-        }
-        this.skyGraphic.fillGradientStyle(skyTop, skyTop, skyBottom, skyBottom, 1);
-        this.skyGraphic.fillRect(0, 0, width, height);
     }
 }

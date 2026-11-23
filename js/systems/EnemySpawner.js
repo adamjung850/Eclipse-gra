@@ -5,33 +5,41 @@ export class EnemySpawner {
     player;
     enemies;
     worldManager;
-    spawnCooldownTimer = 2500;
-    maxAliveEnemies = 7; // Balanced, non-overwhelming density
-    constructor(scene, player, enemies, worldManager) {
+    dayNightSystem;
+    spawnCooldownTimer = 1000;
+    constructor(scene, player, enemies, worldManager, dayNightSystem) {
         this.scene = scene;
         this.player = player;
         this.enemies = enemies;
         this.worldManager = worldManager;
-        // Initial starter spawns far off-screen
+        this.dayNightSystem = dayNightSystem;
+        // Populate the world with initial enemies off-screen
         this.initialWorldSpawn();
+    }
+    setDayNightSystem(dayNightSystem) {
+        this.dayNightSystem = dayNightSystem;
+    }
+    getMaxAliveEnemies() {
+        const isNight = this.dayNightSystem?.isNight() ?? false;
+        return isNight ? 20 : 14;
     }
     initialWorldSpawn() {
         const playerTile = this.worldManager.worldToTile(this.player.x, this.player.y);
-        // Spawn 2 initial foes far away on both sides (34 tiles off-screen)
-        const farOffsets = [-34, 34];
-        for (const offset of farOffsets) {
-            const targetX = Math.max(5, Math.min(this.worldManager.width - 6, playerTile.x + offset));
+        // Spawn 8 initial enemies distributed in safe off-screen distances (18 to 40 tiles away)
+        const offsets = [-36, -28, -22, -18, 18, 22, 28, 36];
+        for (const offset of offsets) {
+            const targetX = Math.max(6, Math.min(this.worldManager.width - 7, playerTile.x + offset));
             this.spawnGroundEnemyNear(targetX, playerTile.y, 'slime');
         }
     }
     update(delta) {
-        // 1. Despawn distant enemies (> 1100px away from player)
+        // 1. Despawn distant enemies (> 1300px away from player)
         const enemyList = this.enemies.getChildren();
         for (let i = enemyList.length - 1; i >= 0; i--) {
             const e = enemyList[i];
             if (e && e.active) {
                 const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
-                if (dist > 1150) {
+                if (dist > 1300) {
                     e.die();
                 }
             }
@@ -39,9 +47,21 @@ export class EnemySpawner {
         // 2. Periodic Spawn Check
         this.spawnCooldownTimer -= delta;
         if (this.spawnCooldownTimer <= 0) {
-            this.spawnCooldownTimer = 4500 + Math.random() * 2500;
-            if (this.enemies.countActive(true) < this.maxAliveEnemies) {
-                this.attemptProceduralSpawn();
+            const isNight = this.dayNightSystem?.isNight() ?? false;
+            const maxEnemies = this.getMaxAliveEnemies();
+            const activeCount = this.enemies.countActive(true);
+            // Fast, dynamic spawn intervals:
+            // Day: 1.5s - 2.5s
+            // Night: 0.9s - 1.8s (higher danger at night)
+            const baseCooldown = isNight ? 1000 : 1600;
+            const varCooldown = isNight ? 800 : 900;
+            this.spawnCooldownTimer = baseCooldown + Math.random() * varCooldown;
+            if (activeCount < maxEnemies) {
+                // If density is low, spawn 1 or 2 mobs
+                const countToSpawn = (maxEnemies - activeCount > 6) ? 2 : 1;
+                for (let i = 0; i < countToSpawn; i++) {
+                    this.attemptProceduralSpawn();
+                }
             }
         }
     }
@@ -63,19 +83,36 @@ export class EnemySpawner {
         const playerTile = this.worldManager.worldToTile(this.player.x, this.player.y);
         // Choose spawn side: left or right outside the current camera view
         const side = Math.random() > 0.5 ? 1 : -1;
-        // Spawns 90px to 220px past the camera viewport boundary
-        const extraMarginPx = 90 + Math.random() * 130;
+        // Spawns 80px to 220px past the camera viewport boundary
+        const extraMarginPx = 80 + Math.random() * 140;
         const targetWorldX = side > 0 ? (view.right + extraMarginPx) : (view.left - extraMarginPx);
-        const targetTileX = Math.max(5, Math.min(this.worldManager.width - 6, Math.floor(targetWorldX / T)));
-        // Determine enemy type by player depth
-        let typeKey = 'slime';
+        const targetTileX = Math.max(6, Math.min(this.worldManager.width - 7, Math.floor(targetWorldX / T)));
         const depth = playerTile.y;
+        const isNight = this.dayNightSystem?.isNight() ?? false;
+        let typeKey = 'slime';
         if (depth < GAME_CONSTANTS.SURFACE_HEIGHT + 4) {
-            // Surface level: Emerald Slimes
-            typeKey = 'slime';
+            // -----------------------------------------------------------------
+            // Surface Level
+            // -----------------------------------------------------------------
+            if (isNight) {
+                // Night: Skeletons (45%), Slimes (35%), Bats (20%)
+                const roll = Math.random();
+                if (roll < 0.45)
+                    typeKey = 'skeleton';
+                else if (roll < 0.80)
+                    typeKey = 'slime';
+                else
+                    typeKey = 'bat';
+            }
+            else {
+                // Day: Slimes (Green, Blue, occasionally Red)
+                typeKey = 'slime';
+            }
         }
         else if (depth < GAME_CONSTANTS.CAVERN_DEPTH) {
-            // Shallow Caverns: Slimes, Crawlers, Bats
+            // -----------------------------------------------------------------
+            // Shallow Caverns: Crawlers (45%), Slimes (30%), Bats (25%)
+            // -----------------------------------------------------------------
             const roll = Math.random();
             if (roll < 0.45)
                 typeKey = 'crawler';
@@ -85,11 +122,13 @@ export class EnemySpawner {
                 typeKey = 'bat';
         }
         else {
-            // Deep Caverns: Skeletons, Crawlers, Bats
+            // -----------------------------------------------------------------
+            // Deep Caverns: Skeletons (50%), Crawlers (30%), Bats (20%)
+            // -----------------------------------------------------------------
             const roll = Math.random();
-            if (roll < 0.45)
+            if (roll < 0.50)
                 typeKey = 'skeleton';
-            else if (roll < 0.75)
+            else if (roll < 0.80)
                 typeKey = 'crawler';
             else
                 typeKey = 'bat';
@@ -102,35 +141,44 @@ export class EnemySpawner {
         }
     }
     spawnGroundEnemyNear(targetX, refY, typeKey) {
-        // Scan downwards for solid ground (GRASS, DIRT, STONE) with 2 blocks of air above
-        const minY = Math.max(3, refY - 14);
-        const maxY = Math.min(this.worldManager.height - 4, refY + 16);
-        for (let ty = minY; ty <= maxY; ty++) {
-            const floorBlock = this.worldManager.getBlock(targetX, ty + 1);
-            const isFloorSolid = floorBlock === BlockId.GRASS ||
-                floorBlock === BlockId.DIRT ||
-                floorBlock === BlockId.STONE ||
-                floorBlock === BlockId.BRICK ||
-                floorBlock === BlockId.PLANK;
-            const isAir1 = this.worldManager.getBlock(targetX, ty) === BlockId.AIR;
-            const isAir2 = this.worldManager.getBlock(targetX, ty - 1) === BlockId.AIR;
-            if (isFloorSolid && isAir1 && isAir2) {
-                // Double check candidate is completely off camera viewport
-                if (!this.isTileVisibleOnScreen(targetX, ty, 50)) {
-                    this.instantiateEnemy(targetX, ty, typeKey);
-                    return;
+        // Robust Multi-column Search: check target column and +/- 1-2 adjacent columns
+        // to ensure spawns never fail when landing on a small obstruction or tree leaf
+        const columnOffsets = [0, 1, -1, 2, -2];
+        for (const xOff of columnOffsets) {
+            const colX = Math.max(5, Math.min(this.worldManager.width - 6, targetX + xOff));
+            const minY = Math.max(3, refY - 14);
+            const maxY = Math.min(this.worldManager.height - 4, refY + 16);
+            for (let ty = minY; ty <= maxY; ty++) {
+                const floorBlock = this.worldManager.getBlock(colX, ty + 1);
+                const isFloorSolid = floorBlock === BlockId.GRASS ||
+                    floorBlock === BlockId.DIRT ||
+                    floorBlock === BlockId.STONE ||
+                    floorBlock === BlockId.BRICK ||
+                    floorBlock === BlockId.PLANK;
+                const isAir1 = this.worldManager.getBlock(colX, ty) === BlockId.AIR;
+                const isAir2 = this.worldManager.getBlock(colX, ty - 1) === BlockId.AIR;
+                if (isFloorSolid && isAir1 && isAir2) {
+                    // Double check candidate is completely off camera viewport
+                    if (!this.isTileVisibleOnScreen(colX, ty, 45)) {
+                        this.instantiateEnemy(colX, ty, typeKey);
+                        return;
+                    }
                 }
             }
         }
     }
     spawnAirEnemyNear(targetX, refY) {
-        const minY = Math.max(4, refY - 8);
-        const maxY = Math.min(this.worldManager.height - 5, refY + 8);
-        for (let ty = minY; ty <= maxY; ty++) {
-            if (this.worldManager.getBlock(targetX, ty) === BlockId.AIR) {
-                if (!this.isTileVisibleOnScreen(targetX, ty, 50)) {
-                    this.instantiateEnemy(targetX, ty, 'bat');
-                    return;
+        const columnOffsets = [0, 1, -1];
+        for (const xOff of columnOffsets) {
+            const colX = Math.max(5, Math.min(this.worldManager.width - 6, targetX + xOff));
+            const minY = Math.max(4, refY - 8);
+            const maxY = Math.min(this.worldManager.height - 5, refY + 8);
+            for (let ty = minY; ty <= maxY; ty++) {
+                if (this.worldManager.getBlock(colX, ty) === BlockId.AIR) {
+                    if (!this.isTileVisibleOnScreen(colX, ty, 45)) {
+                        this.instantiateEnemy(colX, ty, 'bat');
+                        return;
+                    }
                 }
             }
         }
@@ -142,6 +190,7 @@ export class EnemySpawner {
         if (typeKey === 'slime') {
             const isDeep = tileY > GAME_CONSTANTS.CAVERN_DEPTH;
             const isShallowCavern = tileY > GAME_CONSTANTS.SURFACE_HEIGHT;
+            const isNight = this.dayNightSystem?.isNight() ?? false;
             let color = 'green';
             const cRoll = Math.random();
             if (isDeep) {
@@ -152,25 +201,25 @@ export class EnemySpawner {
                 else
                     color = 'green';
             }
-            else if (isShallowCavern) {
+            else if (isShallowCavern || isNight) {
                 if (cRoll < 0.45)
                     color = 'blue';
                 else if (cRoll < 0.75)
-                    color = 'green';
-                else
                     color = 'red';
+                else
+                    color = 'green';
             }
             else {
-                if (cRoll < 0.65)
+                if (cRoll < 0.70)
                     color = 'green';
-                else if (cRoll < 0.85)
+                else if (cRoll < 0.90)
                     color = 'blue';
                 else
                     color = 'red';
             }
             const sRoll = Math.random();
             let size = 'medium';
-            if (sRoll < 0.3)
+            if (sRoll < 0.35)
                 size = 'small';
             else if (sRoll < 0.75)
                 size = 'medium';
@@ -179,7 +228,6 @@ export class EnemySpawner {
             variant = { color, size };
         }
         const worldX = tileX * T + T / 2;
-        // Align enemy's feet exactly resting 1px above the solid floor
         const floorY = (tileY + 1) * T;
         const scale = variant ? (variant.size === 'small' ? 0.72 : variant.size === 'large' ? 1.45 : 1.0) : 1.0;
         const worldY = floorY - Math.floor((config.height * scale) / 2) - 1;
