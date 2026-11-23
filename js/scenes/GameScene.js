@@ -1,4 +1,4 @@
-import { GAME_CONSTANTS } from '../types/index.js';
+import { GAME_CONSTANTS, ItemCategory } from '../types/index.js';
 import { WorldGenerator } from '../world/WorldGenerator.js';
 import { WorldManager } from '../world/WorldManager.js';
 import { Player } from '../entities/Player.js';
@@ -6,13 +6,19 @@ import { DroppedItem } from '../entities/DroppedItem.js';
 import { MiningSystem } from '../systems/MiningSystem.js';
 import { InputManager } from '../systems/InputManager.js';
 import { SoundSynthesizer } from '../systems/SoundSynthesizer.js';
+import { CombatSystem } from '../systems/CombatSystem.js';
+import { EnemySpawner } from '../systems/EnemySpawner.js';
 import { BLOCK_DEFINITIONS } from '../world/BlockTypes.js';
 import { ITEM_REGISTRY } from '../world/ItemTypes.js';
 export class GameScene extends Phaser.Scene {
     worldManager;
     player;
     droppedItems;
+    enemies;
+    projectiles;
     miningSystem;
+    combatSystem;
+    enemySpawner;
     inputManager;
     sounds;
     // Sky & Day-Night
@@ -38,20 +44,29 @@ export class GameScene extends Phaser.Scene {
         this.worldManager = new WorldManager(this, worldData);
         // 5. Spawn Player
         this.player = new Player(this, worldData.spawnX, worldData.spawnY);
-        // 6. Dropped Items Physics Group
+        // 6. Dropped Items, Enemies & Projectiles Physics Groups
         this.droppedItems = this.physics.add.group();
+        this.enemies = this.physics.add.group();
+        this.projectiles = this.physics.add.group();
+        // Prevent Phaser PhysicsGroup defaults from wiping custom gravity, drag, and bounds on children
+        this.droppedItems.defaults = {};
+        this.enemies.defaults = {};
+        this.projectiles.defaults = {};
         // 7. Setup Physics Collisions
         this.physics.add.collider(this.player, this.worldManager.foregroundLayer);
         this.physics.add.collider(this.droppedItems, this.worldManager.foregroundLayer);
+        this.physics.add.collider(this.enemies, this.worldManager.foregroundLayer);
         // 8. Block Broken Hook -> Spawn Drops
         this.worldManager.onBlockBroken = (tileX, tileY, blockId) => {
             this.handleBlockDrop(tileX, tileY, blockId);
         };
-        // 9. Systems
+        // 9. Systems (Mining, Combat, Spawning & Input)
         this.miningSystem = new MiningSystem(this, this.player, this.worldManager);
         this.miningSystem.onPlaySound = (type) => {
             this.sounds.play(type);
         };
+        this.combatSystem = new CombatSystem(this, this.player, this.enemies, this.projectiles, this.droppedItems, this.worldManager, this.sounds);
+        this.enemySpawner = new EnemySpawner(this, this.player, this.enemies, this.worldManager);
         this.inputManager = new InputManager(this, this.player);
         this.inputManager.onDropItem = () => {
             this.handlePlayerDropItem();
@@ -65,7 +80,7 @@ export class GameScene extends Phaser.Scene {
         camera.setZoom(1.55);
         // Initial greeting floating text
         this.time.delayedCall(400, () => {
-            this.showWorldFloatingText(this.player.x, this.player.y - 30, 'Welcome to ECLIPSE: THE LOST WORLD', '#6ee7b7');
+            this.showWorldFloatingText(this.player.x, this.player.y - 30, 'Witaj w ECLIPSE: THE LOST WORLD', '#6ee7b7');
         });
     }
     handleBlockDrop(tileX, tileY, blockId) {
@@ -98,9 +113,30 @@ export class GameScene extends Phaser.Scene {
         this.updateAtmosphere(delta);
         // 2. Input & Player update
         this.inputManager.update(delta);
-        // 3. Mining & Building update
-        this.miningSystem.update(time, delta, this.input.activePointer);
-        // 4. Update Dropped Items (magnetic pull & collection)
+        // 3. Spawner & Combat updates
+        this.enemySpawner.update(delta);
+        this.combatSystem.update(time, delta, this.input.activePointer);
+        // 4. Mining, Building & Attack handling
+        if (this.input.activePointer.isDown) {
+            const selectedItem = this.player.getSelectedItem();
+            const isWeapon = selectedItem?.category === ItemCategory.WEAPON;
+            if (isWeapon) {
+                // Weapon attack takes top priority when wielding a weapon
+                this.combatSystem.handlePlayerAttack(time, this.input.activePointer);
+            }
+            else {
+                // Otherwise attempt mining/placement
+                const didMine = this.miningSystem.update(time, delta, this.input.activePointer);
+                // If not targeting a mineable block, allow swinging tool for defensive hit
+                if (!didMine && selectedItem?.category === ItemCategory.TOOL) {
+                    this.combatSystem.handlePlayerAttack(time, this.input.activePointer);
+                }
+            }
+        }
+        else {
+            this.miningSystem.update(time, delta, this.input.activePointer);
+        }
+        // 5. Update Dropped Items (magnetic pull & collection)
         const items = this.droppedItems.getChildren();
         for (let i = items.length - 1; i >= 0; i--) {
             const item = items[i];

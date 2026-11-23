@@ -26,28 +26,29 @@ export enum BlockId {
   TORCH = 19,
   WORKBENCH = 20,
   FURNACE = 21,
-  ANVIL = 22
+  ANVIL = 22,
+  DIAMOND_ORE = 23
 }
 
 export enum ItemRarity {
-  COMMON = 'Common',
-  UNCOMMON = 'Uncommon',
-  RARE = 'Rare',
-  EPIC = 'Epic',
-  LEGENDARY = 'Legendary',
-  MYTHICAL = 'Mythical',
-  DIVINE = 'Divine'
+  COMMON = 'Zwykły',
+  UNCOMMON = 'Niezwykły',
+  RARE = 'Rzadki',
+  EPIC = 'Epicki',
+  LEGENDARY = 'Legendarny',
+  MYTHICAL = 'Mityczny',
+  DIVINE = 'Boski'
 }
 
 export enum ItemCategory {
-  WEAPON = 'Weapon',
-  ARMOR = 'Armor',
-  ACCESSORY = 'Accessory',
-  TOOL = 'Tool',
-  BLOCK = 'Block',
-  WALL = 'Wall',
-  CONSUMABLE = 'Consumable',
-  MATERIAL = 'Material'
+  WEAPON = 'Broń',
+  ARMOR = 'Pancerz',
+  ACCESSORY = 'Akcesorium',
+  TOOL = 'Narzędzie',
+  BLOCK = 'Blok',
+  WALL = 'Ściana',
+  CONSUMABLE = 'Użytkowy',
+  MATERIAL = 'Materiał'
 }
 
 export enum EquipSlotType {
@@ -140,11 +141,11 @@ export interface WorldSettings {
 
 export const GAME_CONSTANTS = {
   TILE_SIZE: 24,
-  WORLD_WIDTH: 200,
-  WORLD_HEIGHT: 120,
-  SURFACE_HEIGHT: 38,
-  CAVERN_DEPTH: 65,
-  BEDROCK_DEPTH: 116,
+  WORLD_WIDTH: 500,
+  WORLD_HEIGHT: 240,
+  SURFACE_HEIGHT: 55,
+  CAVERN_DEPTH: 110,
+  BEDROCK_DEPTH: 232,
   GRAVITY: 980,
   PLAYER_SPEED: 210,
   PLAYER_JUMP_VELOCITY: -370,

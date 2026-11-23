@@ -40,6 +40,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private jumpBufferTimer: number = 0;
   public isFacingLeft: boolean = false;
 
+  // Combat State
+  public invulnerabilityTimer: number = 0;
+  public spawnX: number = 0;
+  public spawnY: number = 0;
+
   // Arm & Tool Visual
   public toolSprite!: Phaser.GameObjects.Sprite;
   public isSwinging: boolean = false;
@@ -47,6 +52,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'player_idle');
+    this.spawnX = x;
+    this.spawnY = y;
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -377,7 +384,71 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setTexture('player_idle');
     }
 
+    // Invulnerability visual flashing
+    if (this.invulnerabilityTimer > 0) {
+      this.invulnerabilityTimer -= delta;
+      const flicker = Math.floor(this.invulnerabilityTimer / 70) % 2 === 0;
+      this.setAlpha(flicker ? 0.35 : 0.85);
+      this.setTint(0xff6666);
+    } else {
+      this.setAlpha(1);
+      this.clearTint();
+    }
+
     this.updateToolVisual(delta);
+  }
+
+  public takeDamage(
+    amount: number,
+    knockbackX: number = 0,
+    knockbackY: number = -180
+  ): { tookDamage: boolean; damageDealt: number; isDead: boolean } {
+    if (this.invulnerabilityTimer > 0) {
+      return { tookDamage: false, damageDealt: 0, isDead: false };
+    }
+
+    const defenseReduction = Math.floor(this.defense * 0.5);
+    const finalDamage = Math.max(1, amount - defenseReduction);
+
+    this.hp = Math.max(0, this.hp - finalDamage);
+    this.invulnerabilityTimer = 650; // 650ms invulnerability frames
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.setVelocityX(knockbackX);
+      body.setVelocityY(knockbackY);
+    }
+
+    const isDead = this.hp <= 0;
+    return { tookDamage: true, damageDealt: finalDamage, isDead };
+  }
+
+  public respawn(): void {
+    this.hp = this.maxHp;
+    this.mana = this.maxMana;
+    this.setPosition(this.spawnX, this.spawnY);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.setVelocity(0, 0);
+    }
+    this.invulnerabilityTimer = 1600; // grace period after respawn
+  }
+
+  public gainXp(amount: number): boolean {
+    this.xp += amount;
+    let leveledUp = false;
+    while (this.xp >= this.maxXp) {
+      this.xp -= this.maxXp;
+      this.level += 1;
+      this.maxXp = Math.floor(this.maxXp * 1.4);
+      this.baseHp += 15;
+      this.baseMana += 10;
+      this.hp = this.maxHp;
+      this.mana = this.maxMana;
+      this.recalculateStats();
+      leveledUp = true;
+    }
+    return leveledUp;
   }
 
   private updateToolVisual(delta: number): void {

@@ -181,6 +181,38 @@ export const CRAFTING_RECIPES = [
         ingredients: [{ itemId: 'gold_bar', count: 10 }, { itemId: 'wood', count: 3 }]
     },
     {
+        id: 'diamond_pickaxe',
+        resultItemId: 'diamond_pickaxe',
+        resultCount: 1,
+        station: CraftingStation.ANVIL,
+        category: 'tools',
+        ingredients: [{ itemId: 'diamond', count: 3 }, { itemId: 'wood', count: 2 }]
+    },
+    {
+        id: 'diamond_sword',
+        resultItemId: 'diamond_sword',
+        resultCount: 1,
+        station: CraftingStation.ANVIL,
+        category: 'weapons',
+        ingredients: [{ itemId: 'diamond', count: 2 }, { itemId: 'wood', count: 1 }]
+    },
+    {
+        id: 'diamond_chestplate',
+        resultItemId: 'diamond_chestplate',
+        resultCount: 1,
+        station: CraftingStation.ANVIL,
+        category: 'armor',
+        ingredients: [{ itemId: 'diamond', count: 8 }]
+    },
+    {
+        id: 'diamond_ring',
+        resultItemId: 'diamond_ring',
+        resultCount: 1,
+        station: CraftingStation.ANVIL,
+        category: 'armor',
+        ingredients: [{ itemId: 'diamond', count: 4 }, { itemId: 'gold_bar', count: 2 }]
+    },
+    {
         id: 'copper_helmet',
         resultItemId: 'copper_helmet',
         resultCount: 1,

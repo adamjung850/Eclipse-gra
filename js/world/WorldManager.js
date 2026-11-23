@@ -68,7 +68,9 @@ export class WorldManager {
         }
     }
     updateCollisions() {
-        // Find all block IDs that are marked solid in BLOCK_DEFINITIONS
+        // 1. Reset all tile collisions across the entire layer
+        this.foregroundLayer.setCollisionByExclusion([], false);
+        // 2. Identify all solid block IDs from BLOCK_DEFINITIONS
         const solidBlockIds = [];
         for (let id = 1; id < 32; id++) {
             const def = BLOCK_DEFINITIONS[id];
@@ -77,6 +79,22 @@ export class WorldManager {
             }
         }
         this.foregroundLayer.setCollision(solidBlockIds, true);
+        // 3. Explicitly disable collision on wood, leaves, torches and walls
+        const nonSolidIds = [
+            BlockId.WOOD,
+            BlockId.LEAVES,
+            BlockId.TORCH,
+            BlockId.DIRT_WALL,
+            BlockId.STONE_WALL,
+            BlockId.WOOD_WALL
+        ];
+        this.foregroundLayer.setCollision(nonSolidIds, false);
+        // 4. Force individual tile collision properties to match BLOCK_DEFINITIONS strictly
+        this.foregroundLayer.forEachTile((tile) => {
+            const def = BLOCK_DEFINITIONS[tile.index];
+            const isSolid = def ? def.isSolid : false;
+            tile.setCollision(isSolid, isSolid, isSolid, isSolid);
+        });
     }
     getBlock(tileX, tileY) {
         if (tileX < 0 || tileX >= this.width || tileY < 0 || tileY >= this.height) {

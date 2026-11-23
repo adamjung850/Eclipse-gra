@@ -62,6 +62,50 @@ export class SoundSynthesizer {
           this.playTone(t, 0.08, 587, 880, 'sine', 0.12);
           this.playTone(t + 0.06, 0.12, 880, 1174, 'sine', 0.14);
           break;
+
+        case 'sword_swing':
+          this.playNoise(t, 0.09, 900, 200, 'bandpass');
+          this.playTone(t, 0.08, 320, 120, 'sine', 0.1);
+          break;
+
+        case 'hit_enemy':
+          this.playNoise(t, 0.08, 350, 60, 'lowpass');
+          this.playTone(t, 0.1, 180, 50, 'triangle', 0.22);
+          break;
+
+        case 'hit_crit':
+          // High piercing impact + chime
+          this.playTone(t, 0.12, 750, 950, 'sawtooth', 0.18);
+          this.playTone(t + 0.03, 0.15, 1200, 1500, 'sine', 0.2);
+          this.playNoise(t, 0.1, 500, 80, 'lowpass');
+          break;
+
+        case 'player_hurt':
+          this.playTone(t, 0.18, 140, 45, 'sawtooth', 0.25);
+          this.playNoise(t, 0.12, 280, 50, 'lowpass');
+          break;
+
+        case 'enemy_die':
+          this.playNoise(t, 0.22, 450, 40, 'lowpass');
+          this.playTone(t, 0.2, 220, 40, 'triangle', 0.18);
+          break;
+
+        case 'bow_shoot':
+          this.playTone(t, 0.08, 380, 140, 'triangle', 0.15);
+          this.playNoise(t, 0.05, 1200, 600, 'bandpass');
+          break;
+
+        case 'magic_cast':
+          this.playTone(t, 0.14, 440, 880, 'sine', 0.15);
+          this.playTone(t + 0.05, 0.18, 660, 1320, 'sine', 0.12);
+          break;
+
+        case 'level_up':
+          // Victorious arpeggio
+          this.playTone(t, 0.1, 440, 554, 'triangle', 0.18);
+          this.playTone(t + 0.09, 0.1, 554, 659, 'triangle', 0.18);
+          this.playTone(t + 0.18, 0.22, 659, 880, 'sine', 0.22);
+          break;
       }
     } catch (e) {
       // Audio autoplay policy fallback

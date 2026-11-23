@@ -26,6 +26,11 @@ export class DroppedItem extends Phaser.Physics.Arcade.Sprite {
         if (this.isCollected)
             return;
         this.lifeTime += delta;
+        const body = this.body;
+        if (body && body.gravity.y !== 650) {
+            body.setAllowGravity(true);
+            body.setGravityY(650);
+        }
         // Don't pick up during first 300ms to allow arc toss
         if (this.lifeTime < 300)
             return;

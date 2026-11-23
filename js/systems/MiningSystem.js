@@ -60,6 +60,7 @@ export class MiningSystem {
             this.reticle.setTint(0xff4444);
             this.reticle.setAlpha(0.4);
         }
+        let handled = false;
         // Handle Active Click (LMB)
         if (pointer.isDown && inReach) {
             const blockId = this.worldManager.getBlock(tileX, tileY);
@@ -67,10 +68,12 @@ export class MiningSystem {
             if (blockId !== BlockId.AIR && blockId !== BlockId.BEDROCK) {
                 // Mining Mode
                 this.handleMining(time, tileX, tileY, blockId, selectedItem);
+                handled = true;
             }
             else if (blockId === BlockId.AIR && selectedItem && selectedItem.isPlaceable && selectedItem.placeBlockId) {
                 // Building Mode
                 this.handlePlacement(time, tileX, tileY, selectedItem);
+                handled = true;
             }
         }
         else {
@@ -80,6 +83,7 @@ export class MiningSystem {
                 this.currentMiningTile = null;
             }
         }
+        return handled;
     }
     handleMining(time, tileX, tileY, blockId, selectedItem) {
         const MINE_INTERVAL = 140; // ms per strike

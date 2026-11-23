@@ -19,6 +19,8 @@ export class TextureGenerator {
         this.createItemIcons(scene);
         // 5. Generate Reticle & Particles
         this.createUtilityTextures(scene, T);
+        // 6. Generate Enemies & Combat Textures
+        this.createCombatTextures(scene);
     }
     static decodePixelData(ctx, width, height, base64Data, dx = 0, dy = 0) {
         const binary = atob(base64Data);
@@ -411,6 +413,32 @@ export class TextureGenerator {
             ctx.fillStyle = '#474d5e';
             ctx.fillRect(0, 7, 2, 3);
         });
+        // 23. DIAMOND ORE
+        drawTile(`tile_${BlockId.DIAMOND_ORE}`, (ctx) => {
+            ctx.fillStyle = '#2c313a';
+            ctx.fillRect(0, 0, T, T);
+            ctx.fillStyle = '#3f4552';
+            ctx.fillRect(1, 1, T - 2, T - 2);
+            ctx.fillStyle = '#252932';
+            ctx.fillRect(3, 3, 5, 4);
+            ctx.fillRect(14, 15, 6, 5);
+            // Sparkling diamond crystals
+            const diamonds = [[5, 4, 5, 6], [14, 5, 6, 7], [6, 13, 6, 6], [15, 13, 5, 6]];
+            diamonds.forEach(([x, y, w, h]) => {
+                // Deep cyan shadow
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+                // Vibrant diamond cyan
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(x, y, w, h);
+                // Bright reflection facets
+                ctx.fillStyle = '#bae6fd';
+                ctx.fillRect(x + 1, y + 1, Math.max(1, w - 2), 2);
+                // White twinkle glint
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(x + 1, y + 1, 1, 1);
+            });
+        });
     }
     static createTilesetTexture(scene, T) {
         const TOTAL_TILES = 32;
@@ -749,6 +777,44 @@ export class TextureGenerator {
             ctx.fillStyle = '#654896';
             ctx.fillRect(8, 7, 5, 5);
         });
+        drawIcon('icon_diamond_ore', (ctx) => {
+            ctx.fillStyle = '#2c313a';
+            ctx.fillRect(4, 4, 16, 16);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(7, 6, 9, 9);
+            ctx.fillStyle = '#bae6fd';
+            ctx.fillRect(9, 7, 4, 3);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(9, 7, 2, 2);
+        });
+        drawIcon('icon_diamond', (ctx) => {
+            ctx.fillStyle = '#0284c7';
+            ctx.beginPath();
+            ctx.moveTo(12, 3);
+            ctx.lineTo(20, 9);
+            ctx.lineTo(12, 21);
+            ctx.lineTo(4, 9);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.moveTo(12, 5);
+            ctx.lineTo(18, 9);
+            ctx.lineTo(12, 19);
+            ctx.lineTo(6, 9);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#bae6fd';
+            ctx.beginPath();
+            ctx.moveTo(12, 5);
+            ctx.lineTo(16, 9);
+            ctx.lineTo(12, 12);
+            ctx.lineTo(8, 9);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(11, 6, 2, 2);
+        });
         drawIcon('icon_sapling', (ctx) => {
             ctx.fillStyle = '#6b4929';
             ctx.fillRect(11, 12, 2, 9);
@@ -870,6 +936,28 @@ export class TextureGenerator {
             ctx.fillStyle = '#e294ff';
             ctx.fillRect(17, 6, 3, 2);
         });
+        drawIcon('icon_diamond_pickaxe', (ctx) => {
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(4, 20);
+            ctx.lineTo(17, 7);
+            ctx.stroke();
+            ctx.fillStyle = '#0284c7';
+            ctx.beginPath();
+            ctx.moveTo(11, 3);
+            ctx.lineTo(21, 5);
+            ctx.lineTo(20, 15);
+            ctx.lineTo(16, 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(14, 5, 5, 5);
+            ctx.fillStyle = '#bae6fd';
+            ctx.fillRect(17, 6, 3, 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(18, 6, 1, 1);
+        });
         // Weapons
         drawIcon('icon_stone_sword', (ctx) => {
             ctx.fillStyle = '#54361c';
@@ -971,6 +1059,26 @@ export class TextureGenerator {
             ctx.fillStyle = '#e294ff';
             ctx.fillRect(14, 6, 3, 2);
         });
+        drawIcon('icon_diamond_sword', (ctx) => {
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(3, 20, 4, 4);
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(5, 17, 3, 4);
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(4, 15, 8, 3);
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.moveTo(7, 15);
+            ctx.lineTo(19, 3);
+            ctx.lineTo(21, 4);
+            ctx.lineTo(9, 16);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#bae6fd';
+            ctx.fillRect(14, 6, 4, 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(16, 5, 2, 2);
+        });
         // Armor Sets
         drawIcon('icon_copper_helmet', (ctx) => {
             ctx.fillStyle = '#d97441';
@@ -1036,6 +1144,19 @@ export class TextureGenerator {
             ctx.fillRect(4, 10, 6, 3);
             ctx.fillRect(14, 10, 6, 3);
         });
+        drawIcon('icon_diamond_chestplate', (ctx) => {
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(5, 5, 14, 14);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(6, 6, 12, 12);
+            ctx.fillStyle = '#bae6fd';
+            ctx.fillRect(8, 6, 8, 4);
+            ctx.fillStyle = '#0369a1';
+            ctx.fillRect(5, 10, 2, 8);
+            ctx.fillRect(17, 10, 2, 8);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(9, 7, 2, 2);
+        });
         // Accessories
         drawIcon('icon_ring', (ctx) => {
             ctx.strokeStyle = '#f5c838';
@@ -1045,6 +1166,17 @@ export class TextureGenerator {
             ctx.stroke();
             ctx.fillStyle = '#22c55e';
             ctx.fillRect(10, 5, 4, 4);
+        });
+        drawIcon('icon_diamond_ring', (ctx) => {
+            ctx.strokeStyle = '#f5c838';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(12, 13, 6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(10, 4, 4, 4);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(11, 4, 2, 2);
         });
         drawIcon('icon_amulet', (ctx) => {
             ctx.strokeStyle = '#f5c838';
@@ -1147,6 +1279,257 @@ export class TextureGenerator {
             if (canvas) {
                 const ctx = canvas.context;
                 ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 4, 4);
+                canvas.refresh();
+            }
+        }
+    }
+    static createCombatTextures(scene) {
+        // 1. SLIMES (Green, Blue, Red Cyclops Slimes) - 24x20 with big central eye socket
+        const slimePalettes = [
+            { key: 'enemy_slime', outer: '#14532d', inner: '#22c55e', core: '#166534', shine: '#bbf7d0' },
+            { key: 'enemy_slime_green', outer: '#14532d', inner: '#22c55e', core: '#166534', shine: '#bbf7d0' },
+            { key: 'enemy_slime_blue', outer: '#1e3a8a', inner: '#38bdf8', core: '#0284c7', shine: '#bae6fd' },
+            { key: 'enemy_slime_red', outer: '#7f1d1d', inner: '#ef4444', core: '#b91c1c', shine: '#fecaca' }
+        ];
+        for (const pal of slimePalettes) {
+            if (!scene.textures.exists(pal.key)) {
+                const canvas = scene.textures.createCanvas(pal.key, 24, 20);
+                if (canvas) {
+                    const ctx = canvas.context;
+                    ctx.imageSmoothingEnabled = false;
+                    // Outer gelatinous dome
+                    ctx.fillStyle = pal.outer;
+                    ctx.beginPath();
+                    ctx.roundRect(1, 3, 22, 16, [10, 10, 3, 3]);
+                    ctx.fill();
+                    // Inner translucent slime body
+                    ctx.fillStyle = pal.inner;
+                    ctx.beginPath();
+                    ctx.roundRect(2, 4, 20, 14, [9, 9, 2, 2]);
+                    ctx.fill();
+                    // Core shadow
+                    ctx.fillStyle = pal.core;
+                    ctx.beginPath();
+                    ctx.arc(12, 13, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Glossy surface shine (top left)
+                    ctx.fillStyle = pal.shine;
+                    ctx.fillRect(4, 5, 4, 2);
+                    ctx.fillRect(8, 5, 2, 1);
+                    ctx.fillRect(4, 7, 2, 2);
+                    // --- ONE BIG EYE SCLERA (Center at 12, 10) ---
+                    // Eye dark rim
+                    ctx.fillStyle = '#0f172a';
+                    ctx.beginPath();
+                    ctx.arc(12, 10, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Eye bright white eyeball
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(12, 10, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    canvas.refresh();
+                }
+            }
+        }
+        // 2. CRAWLER (Cavern Rock Crawler) - 26x16
+        if (!scene.textures.exists('enemy_crawler')) {
+            const canvas = scene.textures.createCanvas('enemy_crawler', 26, 16);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Spidery/Chitin legs
+                ctx.fillStyle = '#1f2937';
+                // Left legs
+                ctx.fillRect(2, 12, 3, 4);
+                ctx.fillRect(1, 14, 2, 2);
+                ctx.fillRect(6, 12, 3, 4);
+                ctx.fillRect(5, 14, 2, 2);
+                // Right legs
+                ctx.fillRect(17, 12, 3, 4);
+                ctx.fillRect(19, 14, 2, 2);
+                ctx.fillRect(21, 12, 3, 4);
+                ctx.fillRect(23, 14, 2, 2);
+                // Main chitin body
+                ctx.fillStyle = '#374151';
+                ctx.beginPath();
+                ctx.roundRect(4, 4, 18, 10, 4);
+                ctx.fill();
+                // Shell ridges & ore specks
+                ctx.fillStyle = '#4b5563';
+                ctx.fillRect(6, 5, 14, 3);
+                ctx.fillRect(7, 9, 12, 2);
+                ctx.fillStyle = '#d97706'; // copper sheen
+                ctx.fillRect(9, 6, 3, 2);
+                ctx.fillRect(15, 6, 2, 2);
+                // Mandibles / Pincers
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(22, 6, 4, 2);
+                ctx.fillRect(22, 10, 4, 2);
+                // Glowing red predator eyes
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(20, 6, 2, 2);
+                ctx.fillRect(20, 10, 2, 2);
+                canvas.refresh();
+            }
+        }
+        // 3. SKELETON (Lost Miner Skeleton) - 20x36
+        if (!scene.textures.exists('enemy_skeleton')) {
+            const canvas = scene.textures.createCanvas('enemy_skeleton', 20, 36);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Skull
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(6, 3, 10, 9);
+                ctx.fillRect(7, 12, 8, 3); // jaw
+                // Eye sockets (haunted glowing amber)
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(8, 6, 3, 3);
+                ctx.fillRect(13, 6, 3, 3);
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillRect(9, 7, 1, 1);
+                ctx.fillRect(14, 7, 1, 1);
+                // Spine & Ribs
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillRect(10, 15, 2, 12);
+                ctx.fillRect(6, 17, 10, 2);
+                ctx.fillRect(7, 20, 8, 2);
+                ctx.fillRect(8, 23, 6, 2);
+                // Pelvis
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillRect(7, 26, 8, 3);
+                // Legs & Boots
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(7, 29, 3, 5);
+                ctx.fillRect(12, 29, 3, 5);
+                ctx.fillStyle = '#334155'; // rusty miner boots
+                ctx.fillRect(6, 33, 4, 3);
+                ctx.fillRect(12, 33, 4, 3);
+                // Arm & Rusty miner blade
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(3, 16, 2, 8);
+                ctx.fillStyle = '#78350f'; // rust hilt
+                ctx.fillRect(2, 24, 4, 2);
+                ctx.fillStyle = '#94a3b8'; // iron blade
+                ctx.fillRect(1, 26, 3, 7);
+                canvas.refresh();
+            }
+        }
+        // 4. BAT (Shadow Bat) - 24x16
+        if (!scene.textures.exists('enemy_bat')) {
+            const canvas = scene.textures.createCanvas('enemy_bat', 24, 16);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Outstretched leathery wings
+                ctx.fillStyle = '#4c1d95';
+                ctx.beginPath();
+                // Left wing
+                ctx.moveTo(10, 6);
+                ctx.lineTo(1, 2);
+                ctx.lineTo(3, 12);
+                ctx.lineTo(7, 10);
+                ctx.lineTo(10, 8);
+                // Right wing
+                ctx.moveTo(14, 6);
+                ctx.lineTo(23, 2);
+                ctx.lineTo(21, 12);
+                ctx.lineTo(17, 10);
+                ctx.lineTo(14, 8);
+                ctx.fill();
+                // Wing bone struts
+                ctx.fillStyle = '#2e1065';
+                ctx.fillRect(1, 2, 9, 2);
+                ctx.fillRect(14, 2, 9, 2);
+                // Bat body & ears
+                ctx.fillStyle = '#2e1065';
+                ctx.fillRect(9, 4, 6, 9);
+                // Ears
+                ctx.fillStyle = '#581c87';
+                ctx.fillRect(9, 1, 2, 3);
+                ctx.fillRect(13, 1, 2, 3);
+                // Glowing red eyes & fangs
+                ctx.fillStyle = '#f43f5e';
+                ctx.fillRect(10, 6, 2, 2);
+                ctx.fillRect(13, 6, 2, 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(11, 10, 1, 2);
+                ctx.fillRect(13, 10, 1, 2);
+                canvas.refresh();
+            }
+        }
+        // 5. PROJECTILE: Arrow - 18x6
+        if (!scene.textures.exists('proj_arrow')) {
+            const canvas = scene.textures.createCanvas('proj_arrow', 18, 6);
+            if (canvas) {
+                const ctx = canvas.context;
+                // Shaft
+                ctx.fillStyle = '#78350f';
+                ctx.fillRect(4, 2, 10, 2);
+                // Steel Tip
+                ctx.fillStyle = '#94a3b8';
+                ctx.beginPath();
+                ctx.moveTo(14, 1);
+                ctx.lineTo(18, 3);
+                ctx.lineTo(14, 5);
+                ctx.closePath();
+                ctx.fill();
+                // Fletching Feathers
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(0, 1, 4, 1);
+                ctx.fillRect(0, 4, 4, 1);
+                canvas.refresh();
+            }
+        }
+        // 6. PROJECTILE: Magic Bolt - 14x14
+        if (!scene.textures.exists('proj_magic')) {
+            const canvas = scene.textures.createCanvas('proj_magic', 14, 14);
+            if (canvas) {
+                const ctx = canvas.context;
+                // Astral magic corona
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+                ctx.beginPath();
+                ctx.arc(7, 7, 6, 0, Math.PI * 2);
+                ctx.fill();
+                // Core flame
+                ctx.fillStyle = '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(7, 7, 4, 0, Math.PI * 2);
+                ctx.fill();
+                // White-hot center
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(7, 7, 2, 0, Math.PI * 2);
+                ctx.fill();
+                canvas.refresh();
+            }
+        }
+        // 7. EFFECT: Melee Slash Arc - 32x32
+        if (!scene.textures.exists('effect_slash')) {
+            const canvas = scene.textures.createCanvas('effect_slash', 32, 32);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(8, 24, 22, -Math.PI * 0.45, Math.PI * 0.05);
+                ctx.stroke();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(8, 24, 21, -Math.PI * 0.4, Math.PI * 0.0);
+                ctx.stroke();
+                canvas.refresh();
+            }
+        }
+        // 8. PARTICLE: Spark - 4x4
+        if (!scene.textures.exists('particle_spark')) {
+            const canvas = scene.textures.createCanvas('particle_spark', 4, 4);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.fillStyle = '#fef08a';
                 ctx.fillRect(0, 0, 4, 4);
                 canvas.refresh();
             }

@@ -2,7 +2,7 @@ import { BlockId, CraftingStation } from '../types/index.js';
 export const BLOCK_DEFINITIONS = {
     [BlockId.AIR]: {
         id: BlockId.AIR,
-        name: 'Air',
+        name: 'Powietrze',
         hardness: 0,
         isSolid: false,
         isTransparent: true,
@@ -15,7 +15,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.GRASS]: {
         id: BlockId.GRASS,
-        name: 'Grass Block',
+        name: 'Blok Trawy',
         hardness: 28,
         isSolid: true,
         isTransparent: false,
@@ -28,7 +28,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.DIRT]: {
         id: BlockId.DIRT,
-        name: 'Dirt Block',
+        name: 'Blok Ziemi',
         hardness: 25,
         isSolid: true,
         isTransparent: false,
@@ -41,7 +41,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.STONE]: {
         id: BlockId.STONE,
-        name: 'Stone Block',
+        name: 'Blok Kamienia',
         hardness: 65,
         isSolid: true,
         isTransparent: false,
@@ -54,10 +54,10 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.WOOD]: {
         id: BlockId.WOOD,
-        name: 'Ancient Wood',
+        name: 'Starożytne Drewno',
         hardness: 40,
-        isSolid: true,
-        isTransparent: false,
+        isSolid: false, // Można swobodnie przechodzić przez pnie drzew
+        isTransparent: true,
         dropItemId: 'wood',
         dropMin: 1,
         dropMax: 1,
@@ -67,9 +67,9 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.LEAVES]: {
         id: BlockId.LEAVES,
-        name: 'Foliage',
+        name: 'Korona Liści',
         hardness: 12,
-        isSolid: true,
+        isSolid: false, // Można swobodnie przechodzić przez liście
         isTransparent: true,
         dropItemId: 'sapling',
         dropMin: 0,
@@ -80,7 +80,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.COPPER_ORE]: {
         id: BlockId.COPPER_ORE,
-        name: 'Copper Ore',
+        name: 'Ruda Miedzi',
         hardness: 80,
         isSolid: true,
         isTransparent: false,
@@ -93,7 +93,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.IRON_ORE]: {
         id: BlockId.IRON_ORE,
-        name: 'Iron Ore',
+        name: 'Ruda Żelaza',
         hardness: 100,
         isSolid: true,
         isTransparent: false,
@@ -106,7 +106,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.COAL_ORE]: {
         id: BlockId.COAL_ORE,
-        name: 'Coal Ore',
+        name: 'Ruda Węgla',
         hardness: 70,
         isSolid: true,
         isTransparent: false,
@@ -119,7 +119,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.GOLD_ORE]: {
         id: BlockId.GOLD_ORE,
-        name: 'Gold Ore',
+        name: 'Ruda Złota',
         hardness: 120,
         isSolid: true,
         isTransparent: false,
@@ -132,7 +132,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.CRYSTAL_ORE]: {
         id: BlockId.CRYSTAL_ORE,
-        name: 'Astral Crystal',
+        name: 'Kryształ Astralny',
         hardness: 160,
         isSolid: true,
         isTransparent: false,
@@ -144,9 +144,23 @@ export const BLOCK_DEFINITIONS = {
         particleColor: 0xc46eff,
         soundType: 'glass'
     },
+    [BlockId.DIAMOND_ORE]: {
+        id: BlockId.DIAMOND_ORE,
+        name: 'Ruda Diamentu',
+        hardness: 180,
+        isSolid: true,
+        isTransparent: false,
+        lightLevel: 6,
+        dropItemId: 'diamond',
+        dropMin: 1,
+        dropMax: 2,
+        color: 0x38bdf8,
+        particleColor: 0x7dd3fc,
+        soundType: 'stone'
+    },
     [BlockId.BRICK]: {
         id: BlockId.BRICK,
-        name: 'Stone Brick',
+        name: 'Kamienna Cegła',
         hardness: 75,
         isSolid: true,
         isTransparent: false,
@@ -159,7 +173,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.PLANK]: {
         id: BlockId.PLANK,
-        name: 'Wood Plank',
+        name: 'Drewniane Deski',
         hardness: 35,
         isSolid: true,
         isTransparent: false,
@@ -172,7 +186,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.GLASS]: {
         id: BlockId.GLASS,
-        name: 'Refined Glass',
+        name: 'Czyste Szkło',
         hardness: 15,
         isSolid: true,
         isTransparent: true,
@@ -185,7 +199,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.OBSIDIAN]: {
         id: BlockId.OBSIDIAN,
-        name: 'Void Obsidian',
+        name: 'Otchłanny Obsydian',
         hardness: 300,
         isSolid: true,
         isTransparent: false,
@@ -198,7 +212,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.BEDROCK]: {
         id: BlockId.BEDROCK,
-        name: 'Indestructible Bedrock',
+        name: 'Niezniszczalna Skała Macierzysta',
         hardness: Infinity,
         isSolid: true,
         isTransparent: false,
@@ -211,7 +225,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.DIRT_WALL]: {
         id: BlockId.DIRT_WALL,
-        name: 'Dirt Wall',
+        name: 'Ściana z Ziemi',
         hardness: 20,
         isSolid: false,
         isTransparent: true,
@@ -225,7 +239,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.STONE_WALL]: {
         id: BlockId.STONE_WALL,
-        name: 'Stone Wall',
+        name: 'Kamienna Ściana',
         hardness: 40,
         isSolid: false,
         isTransparent: true,
@@ -239,7 +253,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.WOOD_WALL]: {
         id: BlockId.WOOD_WALL,
-        name: 'Wood Wall',
+        name: 'Drewniana Ściana',
         hardness: 25,
         isSolid: false,
         isTransparent: true,
@@ -253,7 +267,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.TORCH]: {
         id: BlockId.TORCH,
-        name: 'Solar Torch',
+        name: 'Słoneczna Pochodnia',
         hardness: 10,
         isSolid: false,
         isTransparent: true,
@@ -267,7 +281,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.WORKBENCH]: {
         id: BlockId.WORKBENCH,
-        name: 'Artisan Workbench',
+        name: 'Stół Rzemieślniczy',
         hardness: 35,
         isSolid: true,
         isTransparent: true,
@@ -281,7 +295,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.FURNACE]: {
         id: BlockId.FURNACE,
-        name: 'Smelting Furnace',
+        name: 'Piec Hutniczy',
         hardness: 65,
         isSolid: true,
         isTransparent: false,
@@ -296,7 +310,7 @@ export const BLOCK_DEFINITIONS = {
     },
     [BlockId.ANVIL]: {
         id: BlockId.ANVIL,
-        name: 'Forgemaster Anvil',
+        name: 'Kowadło Kowalskie',
         hardness: 90,
         isSolid: true,
         isTransparent: true,

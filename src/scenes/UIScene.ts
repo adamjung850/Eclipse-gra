@@ -25,6 +25,8 @@ export class UIScene extends Phaser.Scene {
   private hpText!: Phaser.GameObjects.Text;
   private manaBar!: Phaser.GameObjects.Graphics;
   private manaText!: Phaser.GameObjects.Text;
+  private xpBar!: Phaser.GameObjects.Graphics;
+  private levelText!: Phaser.GameObjects.Text;
   private depthText!: Phaser.GameObjects.Text;
   private itemTooltipText!: Phaser.GameObjects.Text;
 
@@ -151,11 +153,11 @@ export class UIScene extends Phaser.Scene {
     const bg = this.add.graphics();
     bg.fillStyle(0x0e1117, 0.88);
     bg.lineStyle(2, 0x2e384d, 1);
-    bg.fillRoundedRect(16, 16, 210, 56, 6);
-    bg.strokeRoundedRect(16, 16, 210, 56, 6);
+    bg.fillRoundedRect(16, 14, 210, 72, 6);
+    bg.strokeRoundedRect(16, 14, 210, 72, 6);
 
     this.hpBar = this.add.graphics();
-    this.hpText = this.add.text(26, 20, '100 / 100 HP', {
+    this.hpText = this.add.text(26, 18, '100 / 100 HP', {
       fontFamily: 'monospace',
       fontSize: '11px',
       color: '#ffc4c4',
@@ -163,10 +165,18 @@ export class UIScene extends Phaser.Scene {
     });
 
     this.manaBar = this.add.graphics();
-    this.manaText = this.add.text(26, 43, '50 / 50 MP', {
+    this.manaText = this.add.text(26, 39, '50 / 50 MP', {
       fontFamily: 'monospace',
       fontSize: '11px',
       color: '#b8e2ff',
+      fontStyle: 'bold'
+    });
+
+    this.xpBar = this.add.graphics();
+    this.levelText = this.add.text(26, 60, 'Lv. 1 [0 / 100 XP]', {
+      fontFamily: 'monospace',
+      fontSize: '10px',
+      color: '#facc15',
       fontStyle: 'bold'
     });
   }
@@ -239,7 +249,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   private createDepthInfo(): void {
-    this.depthText = this.add.text(16, 80, 'Altitude: Surface', {
+    this.depthText = this.add.text(16, 80, 'Wysokość: Powierzchnia', {
       fontFamily: 'monospace',
       fontSize: '12px',
       color: '#e0e6ed',
@@ -1042,19 +1052,27 @@ export class UIScene extends Phaser.Scene {
   private updateStatsBars(): void {
     this.hpBar.clear();
     this.hpBar.fillStyle(0x3a141a, 0.9);
-    this.hpBar.fillRoundedRect(24, 31, 194, 8, 3);
+    this.hpBar.fillRoundedRect(24, 29, 194, 7, 3);
     const hpRatio = Phaser.Math.Clamp(this.player.hp / this.player.maxHp, 0, 1);
     this.hpBar.fillStyle(0xe63946, 1);
-    this.hpBar.fillRoundedRect(24, 31, 194 * hpRatio, 8, 3);
+    this.hpBar.fillRoundedRect(24, 29, 194 * hpRatio, 7, 3);
     this.hpText.setText(`${Math.ceil(this.player.hp)} / ${this.player.maxHp} HP`);
 
     this.manaBar.clear();
     this.manaBar.fillStyle(0x132a40, 0.9);
-    this.manaBar.fillRoundedRect(24, 54, 194, 8, 3);
+    this.manaBar.fillRoundedRect(24, 50, 194, 7, 3);
     const manaRatio = Phaser.Math.Clamp(this.player.mana / this.player.maxMana, 0, 1);
     this.manaBar.fillStyle(0x38bdf8, 1);
-    this.manaBar.fillRoundedRect(24, 54, 194 * manaRatio, 8, 3);
+    this.manaBar.fillRoundedRect(24, 50, 194 * manaRatio, 7, 3);
     this.manaText.setText(`${Math.ceil(this.player.mana)} / ${this.player.maxMana} MP`);
+
+    this.xpBar.clear();
+    this.xpBar.fillStyle(0x382c10, 0.9);
+    this.xpBar.fillRoundedRect(24, 73, 194, 5, 2);
+    const xpRatio = Phaser.Math.Clamp(this.player.xp / this.player.maxXp, 0, 1);
+    this.xpBar.fillStyle(0xfacc15, 1);
+    this.xpBar.fillRoundedRect(24, 73, 194 * xpRatio, 5, 2);
+    this.levelText.setText(`Lv. ${this.player.level} [${this.player.xp} / ${this.player.maxXp} XP]`);
   }
 
   private updateHotbarVisuals(): void {
@@ -1108,13 +1126,13 @@ export class UIScene extends Phaser.Scene {
   private updateDepthDisplay(): void {
     const T = GAME_CONSTANTS.TILE_SIZE;
     const tileY = Math.floor(this.player.y / T);
-    let zone = 'Surface Hills';
-    if (tileY < GAME_CONSTANTS.SURFACE_HEIGHT) zone = 'Surface Canopy';
-    else if (tileY < GAME_CONSTANTS.CAVERN_DEPTH) zone = 'Upper Caverns';
-    else if (tileY < GAME_CONSTANTS.BEDROCK_DEPTH) zone = 'Deep Abyss';
-    else zone = 'Bedrock Mantle';
+    let zone = 'Wzgórza Powierzchni';
+    if (tileY < GAME_CONSTANTS.SURFACE_HEIGHT) zone = 'Korony Drzew';
+    else if (tileY < GAME_CONSTANTS.CAVERN_DEPTH) zone = 'Płytkie Jaskinie';
+    else if (tileY < GAME_CONSTANTS.BEDROCK_DEPTH) zone = 'Głębokie Pieczary';
+    else zone = 'Otchłań Pustki';
 
     const depthMeters = (tileY - GAME_CONSTANTS.SURFACE_HEIGHT) * 2;
-    this.depthText.setText(`[Depth: ${depthMeters}m] ${zone} | Level ${this.player.level}`);
+    this.depthText.setText(`[Głębokość: ${depthMeters}m] ${zone} | Poziom ${this.player.level}`);
   }
 }

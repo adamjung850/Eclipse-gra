@@ -1,13 +1,13 @@
 import { BlockId, EquipSlotType, ItemCategory, ItemData, ItemRarity } from '../types/index.js';
 
 export const ITEM_REGISTRY: Record<string, ItemData> = {
-  // --- TOOLS ---
+  // --- NARZĘDZIA (TOOLS) ---
   copper_pickaxe: {
     id: 'copper_pickaxe',
-    name: 'Reforged Copper Pickaxe',
+    name: 'Miedziany Kilof',
     category: ItemCategory.TOOL,
     rarity: ItemRarity.COMMON,
-    description: 'A sturdy hand-forged mining tool. Capable of excavating earth and basic ores.',
+    description: 'Solidny kilof wykuty z miedzi. Skutecznie kruszy ziemię i podstawowe rudy.',
     iconTexture: 'icon_pickaxe',
     maxStack: 1,
     toolPower: 25,
@@ -17,10 +17,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   stone_pickaxe: {
     id: 'stone_pickaxe',
-    name: 'Crude Stone Pickaxe',
+    name: 'Kamienny Kilof',
     category: ItemCategory.TOOL,
     rarity: ItemRarity.COMMON,
-    description: 'Rough stone fastened to timber. Basic mining capability.',
+    description: 'Prymitywny kilof ze zaostrzonego kamienia powiązanego z drewnem.',
     iconTexture: 'icon_pickaxe',
     maxStack: 1,
     toolPower: 16,
@@ -30,10 +30,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   iron_pickaxe: {
     id: 'iron_pickaxe',
-    name: 'Tempered Iron Pickaxe',
+    name: 'Żelazny Kilof',
     category: ItemCategory.TOOL,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Forged from dense iron bars. Excavates stubborn rock with high efficiency.',
+    description: 'Wykuty z hartowanego żelaza. Sprawnie rozbija twarde podziemne skały.',
     iconTexture: 'icon_iron_pickaxe',
     maxStack: 1,
     toolPower: 45,
@@ -43,10 +43,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   golden_pickaxe: {
     id: 'golden_pickaxe',
-    name: 'Gilded Pickaxe',
+    name: 'Złoty Kilof',
     category: ItemCategory.TOOL,
     rarity: ItemRarity.RARE,
-    description: 'Lavishly styled pickaxe. High strike rate and mining penetration.',
+    description: 'Luksusowy kilof o błyszczącym ostrzu. Zapewnia wysoką prędkość kopania.',
     iconTexture: 'icon_gold_pickaxe',
     maxStack: 1,
     toolPower: 65,
@@ -54,12 +54,25 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     value: 280,
     obtainInfo: 'Wytworzono: Kowadło'
   },
+  diamond_pickaxe: {
+    id: 'diamond_pickaxe',
+    name: 'Diamentowy Kilof',
+    category: ItemCategory.TOOL,
+    rarity: ItemRarity.RARE,
+    description: 'Mistrzowskie narzędzie z ostrzem z czystego diamentu. Rozbija najtwardszy obsydian w mgnieniu oka.',
+    iconTexture: 'icon_diamond_pickaxe',
+    maxStack: 1,
+    toolPower: 80,
+    damage: 16,
+    value: 550,
+    obtainInfo: 'Wytworzono: Kowadło (3 Diamenty, 2 Drewno)'
+  },
   astral_pickaxe: {
     id: 'astral_pickaxe',
-    name: 'Astral Resonance Pickaxe',
+    name: 'Astralny Kilof Rezonansowy',
     category: ItemCategory.TOOL,
     rarity: ItemRarity.EPIC,
-    description: 'Vibrates with cosmic kinetic frequencies. Slices through deep obsidian.',
+    description: 'Pulsuje rezonansem kosmicznym. Z łatwością kruszy głęboki obsydian.',
     iconTexture: 'icon_astral_pickaxe',
     maxStack: 1,
     toolPower: 95,
@@ -68,13 +81,13 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     obtainInfo: 'Wytworzono: Kowadło mistrzowskie'
   },
 
-  // --- WEAPONS ---
+  // --- BRONIE (WEAPONS) ---
   copper_sword: {
     id: 'copper_sword',
-    name: 'Ancient Copper Blade',
+    name: 'Miedziany Miecz',
     category: ItemCategory.WEAPON,
     rarity: ItemRarity.COMMON,
-    description: 'A trusty blade from the old surface expeditions. Decent swing arc.',
+    description: 'Niezawodne ostrze z miedzi. Dobry promień i zasięg cięcia.',
     iconTexture: 'icon_sword',
     maxStack: 1,
     toolPower: 5,
@@ -85,10 +98,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   stone_sword: {
     id: 'stone_sword',
-    name: 'Chiseled Flint Sword',
+    name: 'Krzemienny Miecz',
     category: ItemCategory.WEAPON,
     rarity: ItemRarity.COMMON,
-    description: 'Primitive sharpened rock edge bound to treated wood.',
+    description: 'Proste kamienne ostrze zamocowane na drewnianym trzonie.',
     iconTexture: 'icon_stone_sword',
     maxStack: 1,
     damage: 9,
@@ -97,10 +110,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   iron_sword: {
     id: 'iron_sword',
-    name: 'Forged Iron Broadsword',
+    name: 'Żelazny Pałasz',
     category: ItemCategory.WEAPON,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Heavy double-edged blade capable of cleaving aggressive subterranean fauna.',
+    description: 'Ciężki obosieczny miecz do walki z agresywnymi bestiami z podziemi.',
     iconTexture: 'icon_iron_sword',
     maxStack: 1,
     damage: 24,
@@ -110,10 +123,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   iron_dagger: {
     id: 'iron_dagger',
-    name: 'Shadow Iron Stiletto',
+    name: 'Żelazny Sztylet Cienia',
     category: ItemCategory.WEAPON,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Lightweight concealable dagger featuring deadly critical precision.',
+    description: 'Lekki sztylet o zabójczej precyzji i wysokiej szansie na trafienie krytyczne.',
     iconTexture: 'icon_dagger',
     maxStack: 1,
     damage: 17,
@@ -123,10 +136,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   ancient_spear: {
     id: 'ancient_spear',
-    name: 'Guan-Dao War Spear',
+    name: 'Wojenna Włócznia',
     category: ItemCategory.WEAPON,
     rarity: ItemRarity.RARE,
-    description: 'Long-shafted polearm allowing safe spacing against lunging foes.',
+    description: 'Długa broń drzewcowa pozwalająca zachować bezpieczny dystans do wrogów.',
     iconTexture: 'icon_spear',
     maxStack: 1,
     damage: 28,
@@ -136,10 +149,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   hunting_bow: {
     id: 'hunting_bow',
-    name: 'Composite Longbow',
+    name: 'Łuk Myśliwski',
     category: ItemCategory.WEAPON,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Flexible yew timber drawn with sinew. Fires lethal kinetic projectiles.',
+    description: 'Elastyczny łuk z drewna i ścięgien. Wystrzeliwuje śmiercionośne strzały.',
     iconTexture: 'icon_bow',
     maxStack: 1,
     damage: 22,
@@ -149,10 +162,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   apprentice_staff: {
     id: 'apprentice_staff',
-    name: 'Astral Channeling Staff',
+    name: 'Kostur Adepta Magii',
     category: ItemCategory.WEAPON,
     rarity: ItemRarity.RARE,
-    description: 'Conduit staff projecting pulsed solar flares at the cost of mana.',
+    description: 'Magiczny kostur skupiający energię w niszczycielskie pociski kosztem many.',
     iconTexture: 'icon_staff',
     maxStack: 1,
     damage: 34,
@@ -160,12 +173,25 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     value: 320,
     obtainInfo: 'Wytworzono: Stół rzemieślniczy'
   },
+  diamond_sword: {
+    id: 'diamond_sword',
+    name: 'Diamentowy Miecz',
+    category: ItemCategory.WEAPON,
+    rarity: ItemRarity.RARE,
+    description: 'Zabójczo ostre diamentowe ostrze o potężnych obrażeniach i wysokiej szansie na krytyk.',
+    iconTexture: 'icon_diamond_sword',
+    maxStack: 1,
+    damage: 38,
+    critChance: 0.14,
+    value: 600,
+    obtainInfo: 'Wytworzono: Kowadło (2 Diamenty, 1 Drewno)'
+  },
   astral_blade: {
     id: 'astral_blade',
-    name: 'Eclipse Greatsword',
+    name: 'Wielki Miecz Zaćmienia',
     category: ItemCategory.WEAPON,
     rarity: ItemRarity.EPIC,
-    description: 'Infused with dark eclipse starlight. Strikes erupt with void energy.',
+    description: 'Nasycony gwiezdnym blaskiem pustki. Uderzenia uwalniają niszczycielską falę energii.',
     iconTexture: 'icon_astral_blade',
     maxStack: 1,
     damage: 48,
@@ -174,13 +200,13 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     obtainInfo: 'Wytworzono: Kowadło mistrzowskie'
   },
 
-  // --- ARMOR ---
+  // --- PANCERZE (ARMOR) ---
   copper_helmet: {
     id: 'copper_helmet',
-    name: 'Copper Explorer Cap',
+    name: 'Miedziany Hełm Odkrywcy',
     category: ItemCategory.ARMOR,
     rarity: ItemRarity.COMMON,
-    description: 'Reinforced headgear offering basic protection against falling rocks.',
+    description: 'Podstawowe nakrycie głowy chroniące przed odłamkami skalnymi.',
     iconTexture: 'icon_copper_helmet',
     maxStack: 1,
     equipSlot: EquipSlotType.HELMET,
@@ -190,10 +216,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   copper_chestplate: {
     id: 'copper_chestplate',
-    name: 'Copper Plated Hauberk',
+    name: 'Miedziany Napierśnik',
     category: ItemCategory.ARMOR,
     rarity: ItemRarity.COMMON,
-    description: 'Interlocking copper rings guarding the torso from blunt trauma.',
+    description: 'Miedziana zbroja płytowa chroniąca korpus przed uderzeniami.',
     iconTexture: 'icon_copper_chestplate',
     maxStack: 1,
     equipSlot: EquipSlotType.CHEST,
@@ -203,10 +229,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   copper_leggings: {
     id: 'copper_leggings',
-    name: 'Copper Greaves',
+    name: 'Miedziane Nogawice',
     category: ItemCategory.ARMOR,
     rarity: ItemRarity.COMMON,
-    description: 'Solid shin and thigh plates for subterranean spelunking.',
+    description: 'Płytowe nagolenniki ułatwiające bezpieczną eksplorację podziemi.',
     iconTexture: 'icon_copper_leggings',
     maxStack: 1,
     equipSlot: EquipSlotType.LEGS,
@@ -216,10 +242,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   copper_boots: {
     id: 'copper_boots',
-    name: 'Treated Copper Sabatons',
+    name: 'Miedziane Buty',
     category: ItemCategory.ARMOR,
     rarity: ItemRarity.COMMON,
-    description: 'Heavy-tread boots providing sure footing on slick cavern rock.',
+    description: 'Ciężkie obuwie zapewniające stabilne oparcie na śliskich skałach.',
     iconTexture: 'icon_copper_boots',
     maxStack: 1,
     equipSlot: EquipSlotType.BOOTS,
@@ -230,10 +256,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
 
   iron_helmet: {
     id: 'iron_helmet',
-    name: 'Forged Iron Armet',
+    name: 'Żelazna Przyłbica',
     category: ItemCategory.ARMOR,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Full-face steel helm deflecting lethal blows with ease.',
+    description: 'Pełny stalowy hełm skutecznie parujący śmiertelne uderzenia.',
     iconTexture: 'icon_iron_helmet',
     maxStack: 1,
     equipSlot: EquipSlotType.HELMET,
@@ -243,10 +269,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   iron_chestplate: {
     id: 'iron_chestplate',
-    name: 'Iron Bastion Cuirass',
+    name: 'Żelazny Napierśnik Bastionu',
     category: ItemCategory.ARMOR,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Heavy riveted breastplate stopping beast talons and arrows cold.',
+    description: 'Ciężka nitowana płyta zatrzymująca ciosy i kły podziemnych stworów.',
     iconTexture: 'icon_iron_chestplate',
     maxStack: 1,
     equipSlot: EquipSlotType.CHEST,
@@ -257,10 +283,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   iron_leggings: {
     id: 'iron_leggings',
-    name: 'Iron Bastion Greaves',
+    name: 'Żelazne Nogawice Bastionu',
     category: ItemCategory.ARMOR,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Thick plate leggings granting impenetrable lower-body guard.',
+    description: 'Masywne żelazne osłony nóg zapewniające znakomitą protekcję.',
     iconTexture: 'icon_iron_leggings',
     maxStack: 1,
     equipSlot: EquipSlotType.LEGS,
@@ -270,10 +296,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   iron_boots: {
     id: 'iron_boots',
-    name: 'Reinforced Iron Treads',
+    name: 'Wzmocnione Żelazne Buty',
     category: ItemCategory.ARMOR,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Steadfast armored boots improving traction and platform stability.',
+    description: 'Okute buty bojowe poprawiające stabilność i prędkość kroku.',
     iconTexture: 'icon_iron_boots',
     maxStack: 1,
     equipSlot: EquipSlotType.BOOTS,
@@ -282,14 +308,28 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     value: 90,
     obtainInfo: 'Wytworzono: Kowadło'
   },
+  diamond_chestplate: {
+    id: 'diamond_chestplate',
+    name: 'Diamentowy Napierśnik',
+    category: ItemCategory.ARMOR,
+    rarity: ItemRarity.EPIC,
+    description: 'Masywny pancerz ze szlifowanych diamentowych płyt. Oferuje legendarną obronę.',
+    iconTexture: 'icon_diamond_chestplate',
+    maxStack: 1,
+    equipSlot: EquipSlotType.CHEST,
+    defense: 18,
+    hpBonus: 40,
+    value: 850,
+    obtainInfo: 'Wytworzono: Kowadło (8 Diamentów)'
+  },
 
-  // --- ACCESSORIES ---
+  // --- AKCESORIA (ACCESSORIES) ---
   band_of_regeneration: {
     id: 'band_of_regeneration',
-    name: 'Vitality Ring of Life',
+    name: 'Pierścień Witalności Życia',
     category: ItemCategory.ACCESSORY,
     rarity: ItemRarity.RARE,
-    description: 'A polished emerald ring pulsating with living earthly essence.',
+    description: 'Wypolerowany szmaragdowy pierścień pulsujący uzdrawiającą esencją ziemi.',
     iconTexture: 'icon_ring',
     maxStack: 1,
     equipSlot: EquipSlotType.RING_1,
@@ -300,10 +340,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   mana_pendant: {
     id: 'mana_pendant',
-    name: 'Amulet of Lunar Flow',
+    name: 'Amulet Księżycowego Przepływu',
     category: ItemCategory.ACCESSORY,
     rarity: ItemRarity.RARE,
-    description: 'Crystal talisman tuning mind waves to astral frequency.',
+    description: 'Kryształowy talizman dostrajający umysł do fal mistycznej energii many.',
     iconTexture: 'icon_amulet',
     maxStack: 1,
     equipSlot: EquipSlotType.AMULET,
@@ -313,10 +353,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   hermes_boots: {
     id: 'hermes_boots',
-    name: 'Zephyr Winged Greaves',
+    name: 'Skrzydlate Buty Zefira',
     category: ItemCategory.ACCESSORY,
     rarity: ItemRarity.EPIC,
-    description: 'Enchanted talaria boots granting blistering ground acceleration.',
+    description: 'Zaklęte trzewiki gwarantujące zawrotną prędkość biegu po powierzchni i w jaskiniach.',
     iconTexture: 'icon_boots_wings',
     maxStack: 1,
     equipSlot: EquipSlotType.BOOTS,
@@ -327,10 +367,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   miner_charm: {
     id: 'miner_charm',
-    name: 'Subterranean Delver Charm',
+    name: 'Talizman Podziemnego Górnika',
     category: ItemCategory.ACCESSORY,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Increases digging reach and tool strike efficiency.',
+    description: 'Zwiększa zasięg kopania i siłę uderzeń narzędziami w skałę.',
     iconTexture: 'icon_talisman',
     maxStack: 1,
     equipSlot: EquipSlotType.RING_2,
@@ -338,12 +378,26 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     value: 210,
     obtainInfo: 'Wytworzono: Kowadło'
   },
+  diamond_ring: {
+    id: 'diamond_ring',
+    name: 'Diamentowy Sygnet',
+    category: ItemCategory.ACCESSORY,
+    rarity: ItemRarity.RARE,
+    description: 'Złoty sygnet koronowany lśniącym brylantem. Zwiększa manę oraz szansę na cios krytyczny.',
+    iconTexture: 'icon_diamond_ring',
+    maxStack: 1,
+    equipSlot: EquipSlotType.RING_1,
+    critChance: 0.08,
+    manaBonus: 35,
+    value: 480,
+    obtainInfo: 'Wytworzono: Kowadło (4 Diamenty, 2 Złote sztabki)'
+  },
   eclipse_cloak: {
     id: 'eclipse_cloak',
-    name: 'Mantle of Twilight Eclipse',
+    name: 'Płaszcz Zmierzchu Zaćmienia',
     category: ItemCategory.ACCESSORY,
     rarity: ItemRarity.LEGENDARY,
-    description: 'Woven from celestial eclipse fibers. Shields bearer and sharpens instincts.',
+    description: 'Utkany z gwiezdnych włókien zaćmienia. Osłania bohatera i wyostrza zmysły w boju.',
     iconTexture: 'icon_cloak',
     maxStack: 1,
     equipSlot: EquipSlotType.CAPE,
@@ -352,16 +406,16 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     hpBonus: 30,
     manaBonus: 30,
     value: 1200,
-    obtainInfo: 'Boss drop lub mistrzowski crafting'
+    obtainInfo: 'Drop z bossa lub mistrzowski crafting'
   },
 
-  // --- STATIONS & BUILDING BLOCKS ---
+  // --- STACJE CRAFTINGOWE (STATIONS) ---
   workbench_item: {
     id: 'workbench_item',
-    name: 'Artisan Workbench',
+    name: 'Stół Rzemieślniczy',
     category: ItemCategory.BLOCK,
     rarity: ItemRarity.COMMON,
-    description: 'Essential carpentry and engineering table unlocking standard blueprints.',
+    description: 'Niezbędny stół stolarski odblokowujący szeroki wachlarz receptur.',
     iconTexture: 'icon_workbench',
     maxStack: 99,
     isPlaceable: true,
@@ -371,10 +425,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   furnace_item: {
     id: 'furnace_item',
-    name: 'Smelting Furnace',
+    name: 'Piec Hutniczy',
     category: ItemCategory.BLOCK,
     rarity: ItemRarity.COMMON,
-    description: 'Stone kiln powered by coal. Melts raw mineral ores into pure ingots.',
+    description: 'Kamienny piec zasilany węglem. Przetapia surowe rudy na czyste sztabki.',
     iconTexture: 'icon_furnace',
     maxStack: 99,
     isPlaceable: true,
@@ -384,10 +438,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   anvil_item: {
     id: 'anvil_item',
-    name: 'Forgemaster Anvil',
+    name: 'Kowadło Kowalskie',
     category: ItemCategory.BLOCK,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Heavy iron block used for forging armaments and metal armor.',
+    description: 'Masywny blok z żelaza służący do kucia pancerzy, broni i narzędzi.',
     iconTexture: 'icon_anvil',
     maxStack: 99,
     isPlaceable: true,
@@ -396,13 +450,13 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     obtainInfo: 'Wytworzono: Piec hutniczy (5 Sztabek żelaza)'
   },
 
-  // --- REFINED METALS & MATERIALS ---
+  // --- SUROWCE I METALE (MATERIALS) ---
   copper_bar: {
     id: 'copper_bar',
-    name: 'Refined Copper Ingot',
+    name: 'Sztabka Miedzi',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.COMMON,
-    description: 'Pure copper ingot smelted free of rock slag.',
+    description: 'Czysta sztabka miedzi oczyszczona z kamiennego żużlu.',
     iconTexture: 'icon_copper_bar',
     maxStack: 999,
     value: 12,
@@ -410,10 +464,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   iron_bar: {
     id: 'iron_bar',
-    name: 'Forged Iron Ingot',
+    name: 'Sztabka Żelaza',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.UNCOMMON,
-    description: 'High-tensile structural steel bar essential for martial crafting.',
+    description: 'Wytrzymała żelazna sztabka niezbędna do kucia trwałego rynsztunku.',
     iconTexture: 'icon_iron_bar',
     maxStack: 999,
     value: 26,
@@ -421,23 +475,34 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   gold_bar: {
     id: 'gold_bar',
-    name: 'Pure Gold Bullion',
+    name: 'Sztabka Złota',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.RARE,
-    description: 'High-purity conductive ingot for celestial jewelry and runes.',
+    description: 'Szlachetny kruszec o wysokiej czystości, stosowany w biżuterii i magii.',
     iconTexture: 'icon_gold_bar',
     maxStack: 999,
     value: 80,
     obtainInfo: 'Piec: 4 Ruda złota'
   },
+  diamond: {
+    id: 'diamond',
+    name: 'Lśniący Diament',
+    category: ItemCategory.MATERIAL,
+    rarity: ItemRarity.RARE,
+    description: 'Niezwykle cenny i twardy klejnot o hipnotyzującym błękitnym blasku.',
+    iconTexture: 'icon_diamond',
+    maxStack: 999,
+    value: 160,
+    obtainInfo: 'Wydobycie z głębokich żył diamentowych'
+  },
 
-  // --- CONSUMABLES ---
+  // --- PRZEDMIOTY UŻYTKOWE (CONSUMABLES) ---
   minor_healing_potion: {
     id: 'minor_healing_potion',
-    name: 'Minor Vitality Draught',
+    name: 'Mniejsza Mikstura Zdrowia',
     category: ItemCategory.CONSUMABLE,
     rarity: ItemRarity.COMMON,
-    description: 'Restores 50 Hit Points instantly when imbibed.',
+    description: 'Błyskawicznie przywraca 50 Punktów Zdrowia po wypiciu.',
     iconTexture: 'icon_health_potion',
     maxStack: 30,
     healAmount: 50,
@@ -446,10 +511,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   minor_mana_potion: {
     id: 'minor_mana_potion',
-    name: 'Minor Mana Elixir',
+    name: 'Mniejsza Mikstura Many',
     category: ItemCategory.CONSUMABLE,
     rarity: ItemRarity.COMMON,
-    description: 'Restores 40 Mana Points instantly to fuel spellcasting.',
+    description: 'Błyskawicznie odnawia 40 Punktów Many do rzucania zaklęć.',
     iconTexture: 'icon_mana_potion',
     maxStack: 30,
     manaHealAmount: 40,
@@ -458,10 +523,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   swiftness_potion: {
     id: 'swiftness_potion',
-    name: 'Swiftness Brew',
+    name: 'Mikstura Zwinności',
     category: ItemCategory.CONSUMABLE,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Temporarily boosts movement velocity by +25% for 60 seconds.',
+    description: 'Tymczasowo zwiększa prędkość poruszania się o +25% na 60 sekund.',
     iconTexture: 'icon_speed_potion',
     maxStack: 30,
     speedBonus: 0.25,
@@ -469,13 +534,13 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     obtainInfo: 'Alchemia: 1 Szkło + 1 Ruda miedzi'
   },
 
-  // --- BLOCKS & WORLD ITEMS ---
+  // --- BLOKI I RUDY (BLOCKS & ORES) ---
   torch: {
     id: 'torch',
-    name: 'Solar Torch',
+    name: 'Słoneczna Pochodnia',
     category: ItemCategory.BLOCK,
     rarity: ItemRarity.COMMON,
-    description: 'Provides persistent illumination in subterranean depths.',
+    description: 'Zapewnia stałe oświetlenie w mrocznych podziemnych korytarzach.',
     iconTexture: 'icon_torch',
     maxStack: 99,
     isPlaceable: true,
@@ -485,10 +550,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   wood: {
     id: 'wood',
-    name: 'Ancient Wood',
+    name: 'Starożytne Drewno',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.COMMON,
-    description: 'Dense timber harvested from surface arbor groves.',
+    description: 'Twardy budulec pozyskiwany ze ścięcia pni pradawnych drzew.',
     iconTexture: 'icon_wood',
     maxStack: 999,
     isPlaceable: true,
@@ -498,10 +563,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   plank: {
     id: 'plank',
-    name: 'Wood Planks',
+    name: 'Drewniane Deski',
     category: ItemCategory.BLOCK,
     rarity: ItemRarity.COMMON,
-    description: 'Processed timber used for modular shelter building.',
+    description: 'Ociosane deski używane do budowy bezpiecznych schronień.',
     iconTexture: 'icon_plank',
     maxStack: 999,
     isPlaceable: true,
@@ -511,10 +576,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   grass_block: {
     id: 'grass_block',
-    name: 'Grass Block',
+    name: 'Blok Trawy',
     category: ItemCategory.BLOCK,
     rarity: ItemRarity.COMMON,
-    description: 'Fresh surface soil covered in lush vibrant grass.',
+    description: 'Świeża wierzchnia gleba porośnięta gęstą zieloną trawą.',
     iconTexture: 'icon_grass_block',
     maxStack: 999,
     isPlaceable: true,
@@ -524,23 +589,23 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   dirt: {
     id: 'dirt',
-    name: 'Loamy Soil',
+    name: 'Blok Ziemi',
     category: ItemCategory.BLOCK,
     rarity: ItemRarity.COMMON,
-    description: 'Fertile surface dirt rich with micro-nutrients.',
+    description: 'Podstawowa gleba zalegająca pod powierzchnią trawy.',
     iconTexture: 'icon_dirt',
     maxStack: 999,
     isPlaceable: true,
     placeBlockId: BlockId.DIRT,
     value: 1,
-    obtainInfo: 'Kopanie warstwy wierzchniej'
+    obtainInfo: 'Kopanie ziemi'
   },
   stone: {
     id: 'stone',
-    name: 'Granite Cobble',
+    name: 'Blok Kamienia',
     category: ItemCategory.BLOCK,
     rarity: ItemRarity.COMMON,
-    description: 'Rough stone quarried from subterranean strata.',
+    description: 'Twarda skała wydobywana z głębi ziemi.',
     iconTexture: 'icon_stone',
     maxStack: 999,
     isPlaceable: true,
@@ -550,10 +615,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   brick: {
     id: 'brick',
-    name: 'Stone Bricks',
+    name: 'Kamienna Cegła',
     category: ItemCategory.BLOCK,
     rarity: ItemRarity.COMMON,
-    description: 'Chiseled stone blocks bonded with mortar. Fortified defense.',
+    description: 'Ociosana kamienna cegła. Znakomity budulec do warownych baz.',
     iconTexture: 'icon_brick',
     maxStack: 999,
     isPlaceable: true,
@@ -563,10 +628,10 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   glass: {
     id: 'glass',
-    name: 'Silica Glass',
+    name: 'Czyste Szkło',
     category: ItemCategory.BLOCK,
     rarity: ItemRarity.COMMON,
-    description: 'Transparent glazed silicate allowing daylight to pierce shelters.',
+    description: 'Przezroczysta tafla szkła rozświetlająca wnętrza budowli.',
     iconTexture: 'icon_glass',
     maxStack: 999,
     isPlaceable: true,
@@ -576,73 +641,86 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   copper_ore: {
     id: 'copper_ore',
-    name: 'Raw Copper Cluster',
+    name: 'Ruda Miedzi',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.COMMON,
-    description: 'Malleable metallic ore extracted from shallow crust.',
+    description: 'Czerwonawy metaliczny surowiec z płytkich podziemi.',
     iconTexture: 'icon_copper_ore',
     maxStack: 999,
     isPlaceable: true,
     placeBlockId: BlockId.COPPER_ORE,
     value: 4,
-    obtainInfo: 'Wydobycie z rudy miedzi'
+    obtainInfo: 'Wydobycie z żył miedzi'
   },
   iron_ore: {
     id: 'iron_ore',
-    name: 'Iron Mineral Node',
+    name: 'Ruda Żelaza',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.UNCOMMON,
-    description: 'Dense structural iron ore needed for advanced metallurgical craft.',
+    description: 'Ciężka ruda niezbędna do wytopu sztabek żelaza.',
     iconTexture: 'icon_iron_ore',
     maxStack: 999,
     isPlaceable: true,
     placeBlockId: BlockId.IRON_ORE,
     value: 8,
-    obtainInfo: 'Wydobycie z rudy żelaza'
+    obtainInfo: 'Wydobycie z żył żelaza'
   },
   coal: {
     id: 'coal',
-    name: 'Bituminous Coal',
+    name: 'Węgiel Kamienny',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.COMMON,
-    description: 'High-combustion fuel source utilized in smelting and torch manufacture.',
+    description: 'Palny minerał używany do zasilania pieca i wytwarzania pochodni.',
     iconTexture: 'icon_coal',
     maxStack: 999,
     value: 3,
-    obtainInfo: 'Wydobycie z węgla'
+    obtainInfo: 'Wydobycie z pokładów węgla'
   },
   gold_ore: {
     id: 'gold_ore',
-    name: 'Native Gold Nugget',
+    name: 'Ruda Złota',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.RARE,
-    description: 'Pristine lustrous gold, prized for astral alchemy and circuitry.',
+    description: 'Lśniący kruszec ukryty w głębokich pieczarach.',
     iconTexture: 'icon_gold_ore',
     maxStack: 999,
     isPlaceable: true,
     placeBlockId: BlockId.GOLD_ORE,
     value: 25,
-    obtainInfo: 'Wydobycie z żył złota w głębinach'
+    obtainInfo: 'Wydobycie z głębokich żył złota'
+  },
+  diamond_ore: {
+    id: 'diamond_ore',
+    name: 'Ruda Diamentu',
+    category: ItemCategory.MATERIAL,
+    rarity: ItemRarity.RARE,
+    description: 'Twardy fragment skały z osadzonymi diamentowymi kryształami.',
+    iconTexture: 'icon_diamond_ore',
+    maxStack: 999,
+    isPlaceable: true,
+    placeBlockId: BlockId.DIAMOND_ORE,
+    value: 60,
+    obtainInfo: 'Wydobycie z głębokich jaskiń'
   },
   astral_crystal: {
     id: 'astral_crystal',
-    name: 'Astral Resonance Crystal',
+    name: 'Kryształ Astralny',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.EPIC,
-    description: 'A humming subterranean geode pulsating with eclipse mana.',
+    description: 'Mistycyzny geod z głębin otchłani emanujący energią pustki.',
     iconTexture: 'icon_crystal',
     maxStack: 999,
     isPlaceable: true,
     placeBlockId: BlockId.CRYSTAL_ORE,
     value: 75,
-    obtainInfo: 'Wydobycie z kryształowych jaskiń'
+    obtainInfo: 'Wydobycie z kryształowych pieczar'
   },
   obsidian: {
     id: 'obsidian',
-    name: 'Void Obsidian Shard',
+    name: 'Otchłanny Obsydian',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.RARE,
-    description: 'Rapidly chilled mantle rock with razor-sharp glassy fractures.',
+    description: 'Niezwykle twarda skała wulkaniczna zalegająca tuż nad skałą macierzystą.',
     iconTexture: 'icon_obsidian',
     maxStack: 999,
     isPlaceable: true,
@@ -652,13 +730,13 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
   },
   sapling: {
     id: 'sapling',
-    name: 'Arbor Sprout',
+    name: 'Młoda Sadzonka',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.COMMON,
-    description: 'A hardy sapling ready to take root in fertile soil.',
+    description: 'Młoda sadzonka gotowa do zapuszczenia korzeni w żyznej glebie.',
     iconTexture: 'icon_sapling',
     maxStack: 99,
     value: 2,
-    obtainInfo: 'Ścięcie liści drzewa'
+    obtainInfo: 'Ścięcie koron drzew'
   }
 };

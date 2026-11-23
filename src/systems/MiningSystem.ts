@@ -46,7 +46,7 @@ export class MiningSystem {
     this.chipEmitter.setDepth(25);
   }
 
-  public update(time: number, delta: number, pointer: Phaser.Input.Pointer): void {
+  public update(time: number, delta: number, pointer: Phaser.Input.Pointer): boolean {
     const T = GAME_CONSTANTS.TILE_SIZE;
     const camera = this.scene.cameras.main;
 
@@ -75,6 +75,8 @@ export class MiningSystem {
       this.reticle.setAlpha(0.4);
     }
 
+    let handled = false;
+
     // Handle Active Click (LMB)
     if (pointer.isDown && inReach) {
       const blockId = this.worldManager.getBlock(tileX, tileY);
@@ -83,9 +85,11 @@ export class MiningSystem {
       if (blockId !== BlockId.AIR && blockId !== BlockId.BEDROCK) {
         // Mining Mode
         this.handleMining(time, tileX, tileY, blockId, selectedItem);
+        handled = true;
       } else if (blockId === BlockId.AIR && selectedItem && selectedItem.isPlaceable && selectedItem.placeBlockId) {
         // Building Mode
         this.handlePlacement(time, tileX, tileY, selectedItem);
+        handled = true;
       }
     } else {
       // Released or out of reach
@@ -94,6 +98,8 @@ export class MiningSystem {
         this.currentMiningTile = null;
       }
     }
+
+    return handled;
   }
 
   private handleMining(

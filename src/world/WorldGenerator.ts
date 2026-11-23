@@ -23,12 +23,12 @@ export class WorldGenerator {
       background[x] = new Array(height).fill(BlockId.AIR);
     }
 
-    // 1. Calculate Surface Height Profile
+    // 1. Calculate Surface Height Profile across enlarged world
     const surfaceHeights: number[] = new Array(width);
     for (let x = 0; x < width; x++) {
-      const h1 = Math.sin(x * 0.045) * 6;
-      const h2 = Math.cos(x * 0.11) * 3;
-      const h3 = Math.sin(x * 0.22 + 0.8) * 1.5;
+      const h1 = Math.sin(x * 0.018) * 8;
+      const h2 = Math.cos(x * 0.042) * 4;
+      const h3 = Math.sin(x * 0.095 + 1.2) * 2;
       surfaceHeights[x] = Math.floor(GAME_CONSTANTS.SURFACE_HEIGHT + h1 + h2 + h3);
     }
 
@@ -44,7 +44,7 @@ export class WorldGenerator {
         } else if (y === surfaceY) {
           // Grass layer
           foreground[x][y] = BlockId.GRASS;
-          background[x][y] = BlockId.GRASS;
+          background[x][y] = BlockId.DIRT_WALL;
         } else if (y < surfaceY + 4) {
           // Dirt sub-layer
           foreground[x][y] = BlockId.DIRT;
@@ -61,24 +61,10 @@ export class WorldGenerator {
       }
     }
 
-    // 3. Carve Underground Caves (Smooth harmonic worm tunnels)
-    for (let x = 2; x < width - 2; x++) {
-      const surfaceY = surfaceHeights[x];
-      for (let y = surfaceY + 5; y < GAME_CONSTANTS.BEDROCK_DEPTH; y++) {
-        const n1 = Math.sin(x * 0.075 + y * 0.055);
-        const n2 = Math.cos(x * 0.115 - y * 0.085);
-        const n3 = Math.sin(x * 0.035 + y * 0.04);
-        const caveDensity = n1 + n2 + n3;
+    // 3. Carve Natural Winding Caves (Perlin Worms / Sinuous Tunnels)
+    this.carveNaturalCaves(width, height, foreground, surfaceHeights);
 
-        // If above threshold, carve cave pocket
-        if (caveDensity > 1.35) {
-          foreground[x][y] = BlockId.AIR;
-          // Keep background wall intact for subterranean depth
-        }
-      }
-    }
-
-    // 4. Generate Ore Veins
+    // 4. Generate Procedural Ore Veins (Organic, connected clusters with spacing)
     this.spawnOreVeins(width, height, foreground, surfaceHeights);
 
     // 5. Generate Procedural Trees on Surface
@@ -100,58 +86,269 @@ export class WorldGenerator {
     };
   }
 
+  /**
+   * Carves winding, natural caves ("zawijasy") using inertial tunnel worms.
+   * Eliminates large spherical holes and creates interconnected subterranean passages.
+   */
+  private static carveNaturalCaves(
+    width: number,
+    height: number,
+    grid: number[][],
+    surfaceHeights: number[]
+  ): void {
+    const spawnCenter = Math.floor(width / 2);
+
+    const carveWorm = (params: {
+      x: number;
+      y: number;
+      angle: number;
+      length: number;
+      radius: number;
+      turnSpeed: number;
+      isEntrance?: boolean;
+      branchDepth?: number;
+    }) => {
+      let curX = params.x;
+      let curY = params.y;
+      let curAngle = params.angle;
+      let angleVelocity = 0;
+      const branchDepth = params.branchDepth || 0;
+
+      for (let step = 0; step < params.length; step++) {
+        // Dynamic radius fluctuation creates natural rocky variations in tunnel width
+        const radNoise = Math.sin(step * 0.22) * 0.35 + (Math.random() - 0.5) * 0.2;
+        const radius = Math.max(1.5, Math.min(2.7, params.radius + radNoise));
+        const intR = Math.ceil(radius);
+
+        // Carve circular/elliptical segment
+        for (let ox = -intR; ox <= intR; ox++) {
+          for (let oy = -intR; oy <= intR; oy++) {
+            const dist = Math.sqrt(ox * ox + oy * oy);
+            if (dist <= radius) {
+              const tx = Math.floor(curX + ox);
+              const ty = Math.floor(curY + oy);
+
+              if (tx >= 2 && tx < width - 2 && ty >= 0 && ty < GAME_CONSTANTS.BEDROCK_DEPTH - 2) {
+                // Spawn protection: never carve directly under player start location
+                const isNearSpawn =
+                  Math.abs(tx - spawnCenter) <= 8 && ty < surfaceHeights[spawnCenter] + 8;
+                if (isNearSpawn) continue;
+
+                // Entrances can break through the surface; underground caves stay beneath surface
+                if (params.isEntrance || ty >= surfaceHeights[tx] + 3) {
+                  grid[tx][ty] = BlockId.AIR;
+                }
+              }
+            }
+          }
+        }
+
+        // Inertial turn rate produces smooth sinuous bends ("zawijasy") instead of jagged jumps
+        angleVelocity = angleVelocity * 0.72 + (Math.random() - 0.5) * params.turnSpeed;
+        curAngle += angleVelocity;
+
+        // Boundaries & depth steering
+        const avgSurfaceY = surfaceHeights[Math.max(0, Math.min(width - 1, Math.floor(curX)))];
+        if (curY > GAME_CONSTANTS.BEDROCK_DEPTH - 7) {
+          curAngle -= 0.18; // Steer away from bedrock
+        } else if (!params.isEntrance && curY < avgSurfaceY + 5) {
+          curAngle += 0.18; // Steer away from surface
+        }
+
+        curX += Math.cos(curAngle) * 1.0;
+        curY += Math.sin(curAngle) * 1.0;
+
+        // Bounce back from horizontal boundaries
+        if (curX < 4) {
+          curX = 4;
+          curAngle = Math.PI - curAngle;
+        } else if (curX > width - 5) {
+          curX = width - 5;
+          curAngle = Math.PI - curAngle;
+        }
+
+        // Branching: worms occasionally fork to form loops and side-paths
+        if (branchDepth < 1 && step > 20 && step < params.length - 15 && Math.random() < 0.035) {
+          const branchAngle = curAngle + (Math.random() > 0.5 ? 0.75 : -0.75);
+          carveWorm({
+            x: curX,
+            y: curY,
+            angle: branchAngle,
+            length: Math.floor(params.length * 0.5),
+            radius: Math.max(1.3, params.radius - 0.25),
+            turnSpeed: params.turnSpeed * 1.1,
+            isEntrance: false,
+            branchDepth: branchDepth + 1
+          });
+        }
+      }
+    };
+
+    // 1. Surface Cave Entrances (4 winding descents distributed across the 500-tile landscape)
+    const entranceXs = [
+      Math.floor(45 + Math.random() * 30),
+      Math.floor(150 + Math.random() * 40),
+      Math.floor(310 + Math.random() * 40),
+      Math.floor(420 + Math.random() * 35)
+    ];
+
+    for (const entX of entranceXs) {
+      const isRightSinking = Math.random() > 0.5;
+      carveWorm({
+        x: entX,
+        y: surfaceHeights[entX],
+        angle: isRightSinking
+          ? (Math.PI / 3 + (Math.random() - 0.5) * 0.25)
+          : ((2 * Math.PI) / 3 + (Math.random() - 0.5) * 0.25),
+        length: 70,
+        radius: 1.85,
+        turnSpeed: 0.30,
+        isEntrance: true
+      });
+    }
+
+    // 2. Subterranean Winding Worms (26 labyrinthine sinuous tunnels)
+    const numSubterraneanWorms = 26;
+    for (let i = 0; i < numSubterraneanWorms; i++) {
+      const startX = 18 + Math.random() * (width - 36);
+      const surfaceY = surfaceHeights[Math.floor(startX)];
+      const startY = surfaceY + 10 + Math.random() * (GAME_CONSTANTS.BEDROCK_DEPTH - surfaceY - 22);
+      const initialAngle = Math.random() * Math.PI * 2;
+
+      carveWorm({
+        x: startX,
+        y: startY,
+        angle: initialAngle,
+        length: 75 + Math.floor(Math.random() * 45),
+        radius: 1.85,
+        turnSpeed: 0.36,
+        isEntrance: false
+      });
+    }
+
+    // 3. Occasional Small Grottos (8 mini-cavern rooms, 3-3.8 tiles radius max)
+    const numGrottos = 8;
+    for (let g = 0; g < numGrottos; g++) {
+      const gx = Math.floor(25 + Math.random() * (width - 50));
+      const gy = Math.floor(
+        surfaceHeights[gx] + 18 + Math.random() * (GAME_CONSTANTS.BEDROCK_DEPTH - surfaceHeights[gx] - 30)
+      );
+      const gRadius = 3.2 + Math.random() * 0.6; // 3.2 to 3.8 tiles radius max
+
+      const intR = Math.ceil(gRadius);
+      for (let ox = -intR; ox <= intR; ox++) {
+        for (let oy = -intR; oy <= intR; oy++) {
+          const dist = Math.sqrt(ox * ox + oy * oy * 1.3); // slightly flattened horizontally
+          if (dist <= gRadius) {
+            const tx = gx + ox;
+            const ty = gy + oy;
+            if (tx >= 2 && tx < width - 2 && ty > surfaceHeights[tx] + 6 && ty < GAME_CONSTANTS.BEDROCK_DEPTH - 2) {
+              grid[tx][ty] = BlockId.AIR;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Spawns natural, connected ore veins using organic random walks.
+   * Limits cluster sizes to 2-7 blocks and ensures spacing between different ore veins.
+   */
   private static spawnOreVeins(
     width: number,
     height: number,
     grid: number[][],
     surfaceHeights: number[]
   ): void {
-    const seedVein = (
+    const placedCenters: { x: number; y: number }[] = [];
+
+    const seedOrganicVein = (
       oreId: BlockId,
-      clusterCount: number,
-      minDepth: number,
-      maxDepth: number,
-      veinSize: number
+      veinCount: number,
+      minDepthOffset: number,
+      maxDepthOffset: number,
+      minSize: number,
+      maxSize: number
     ) => {
-      for (let i = 0; i < clusterCount; i++) {
-        const cx = Math.floor(4 + Math.random() * (width - 8));
+      let placed = 0;
+      let attempts = 0;
+
+      while (placed < veinCount && attempts < veinCount * 35) {
+        attempts++;
+        const cx = Math.floor(6 + Math.random() * (width - 12));
         const surfaceY = surfaceHeights[cx];
         const cy = Math.floor(
-          Math.max(surfaceY + minDepth, Math.min(height - 6, surfaceY + minDepth + Math.random() * (maxDepth - minDepth)))
+          surfaceY + minDepthOffset + Math.random() * (maxDepthOffset - minDepthOffset)
         );
 
-        // Stamp out small cluster around center
-        for (let ox = -veinSize; ox <= veinSize; ox++) {
-          for (let oy = -veinSize; oy <= veinSize; oy++) {
-            const tx = cx + ox;
-            const ty = cy + oy;
-            if (tx >= 0 && tx < width && ty >= 0 && ty < height) {
-              if (grid[tx][ty] === BlockId.STONE && Math.random() > 0.35) {
-                grid[tx][ty] = oreId;
-              }
+        if (cy >= GAME_CONSTANTS.BEDROCK_DEPTH - 2 || grid[cx][cy] !== BlockId.STONE) {
+          continue;
+        }
+
+        // Distance check: ensure minimum 6 tiles spacing from existing ore vein centers
+        let tooClose = false;
+        for (const center of placedCenters) {
+          const distSq = (cx - center.x) ** 2 + (cy - center.y) ** 2;
+          if (distSq < 36) {
+            tooClose = true;
+            break;
+          }
+        }
+        if (tooClose) continue;
+
+        placedCenters.push({ x: cx, y: cy });
+
+        // Grow natural organic vein using connected neighbor walk
+        const targetSize = minSize + Math.floor(Math.random() * (maxSize - minSize + 1));
+        const vein: { x: number; y: number }[] = [{ x: cx, y: cy }];
+        grid[cx][cy] = oreId;
+
+        const dirs = [
+          { x: -1, y: 0 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: 0, y: 1 },
+          { x: -1, y: -1 }, { x: 1, y: -1 }, { x: -1, y: 1 }, { x: 1, y: 1 }
+        ];
+
+        let walkAttempts = 0;
+        while (vein.length < targetSize && walkAttempts < targetSize * 12) {
+          walkAttempts++;
+          const parent = vein[Math.floor(Math.random() * vein.length)];
+          const dir = dirs[Math.floor(Math.random() * dirs.length)];
+          const nx = parent.x + dir.x;
+          const ny = parent.y + dir.y;
+
+          if (nx >= 2 && nx < width - 2 && ny > surfaceY + 2 && ny < GAME_CONSTANTS.BEDROCK_DEPTH - 2) {
+            if (grid[nx][ny] === BlockId.STONE) {
+              grid[nx][ny] = oreId;
+              vein.push({ x: nx, y: ny });
             }
           }
         }
+
+        placed++;
       }
     };
 
-    // Coal Veins (Common throughout upper and mid depths)
-    seedVein(BlockId.COAL_ORE, 42, 3, 50, 2);
+    // Coal Veins: Common fuel, shallow to mid caverns (55 veins, 5-8 blocks each)
+    seedOrganicVein(BlockId.COAL_ORE, 55, 6, 145, 5, 8);
 
-    // Copper Veins (Upper subterranean)
-    seedVein(BlockId.COPPER_ORE, 35, 4, 45, 2);
+    // Copper Veins: Basic crafting metal, upper subterranean (45 veins, 4-7 blocks each)
+    seedOrganicVein(BlockId.COPPER_ORE, 45, 7, 120, 4, 7);
 
-    // Iron Veins (Mid depths)
-    seedVein(BlockId.IRON_ORE, 30, 14, 65, 2);
+    // Iron Veins: Durable metal, mid depths (40 veins, 4-6 blocks each)
+    seedOrganicVein(BlockId.IRON_ORE, 40, 16, 155, 4, 6);
 
-    // Gold Veins (Deep caverns)
-    seedVein(BlockId.GOLD_ORE, 18, 35, 75, 1);
+    // Gold Veins: Rare precious metal, deep caverns (28 veins, 3-5 blocks each)
+    seedOrganicVein(BlockId.GOLD_ORE, 28, 55, 172, 3, 5);
 
-    // Astral Crystal (Deep abyss)
-    seedVein(BlockId.CRYSTAL_ORE, 14, 50, 78, 1);
+    // Diamond Veins: Highly prized brilliant crystals in deep caverns (22 veins, 2-4 blocks each)
+    seedOrganicVein(BlockId.DIAMOND_ORE, 22, 85, 175, 2, 4);
 
-    // Obsidian deposits (Near bedrock)
-    seedVein(BlockId.OBSIDIAN, 10, 65, 80, 2);
+    // Astral Crystal: Rare mystical deposits, deep abyss (16 veins, 2-4 blocks each)
+    seedOrganicVein(BlockId.CRYSTAL_ORE, 16, 110, 175, 2, 4);
+
+    // Void Obsidian: Near bedrock layer (14 veins, 4-6 blocks each)
+    seedOrganicVein(BlockId.OBSIDIAN, 14, 130, 176, 4, 6);
   }
 
   private static spawnTrees(width: number, grid: number[][], surfaceHeights: number[]): void {

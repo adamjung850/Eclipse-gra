@@ -27,27 +27,28 @@ export var BlockId;
     BlockId[BlockId["WORKBENCH"] = 20] = "WORKBENCH";
     BlockId[BlockId["FURNACE"] = 21] = "FURNACE";
     BlockId[BlockId["ANVIL"] = 22] = "ANVIL";
+    BlockId[BlockId["DIAMOND_ORE"] = 23] = "DIAMOND_ORE";
 })(BlockId || (BlockId = {}));
 export var ItemRarity;
 (function (ItemRarity) {
-    ItemRarity["COMMON"] = "Common";
-    ItemRarity["UNCOMMON"] = "Uncommon";
-    ItemRarity["RARE"] = "Rare";
-    ItemRarity["EPIC"] = "Epic";
-    ItemRarity["LEGENDARY"] = "Legendary";
-    ItemRarity["MYTHICAL"] = "Mythical";
-    ItemRarity["DIVINE"] = "Divine";
+    ItemRarity["COMMON"] = "Zwyk\u0142y";
+    ItemRarity["UNCOMMON"] = "Niezwyk\u0142y";
+    ItemRarity["RARE"] = "Rzadki";
+    ItemRarity["EPIC"] = "Epicki";
+    ItemRarity["LEGENDARY"] = "Legendarny";
+    ItemRarity["MYTHICAL"] = "Mityczny";
+    ItemRarity["DIVINE"] = "Boski";
 })(ItemRarity || (ItemRarity = {}));
 export var ItemCategory;
 (function (ItemCategory) {
-    ItemCategory["WEAPON"] = "Weapon";
-    ItemCategory["ARMOR"] = "Armor";
-    ItemCategory["ACCESSORY"] = "Accessory";
-    ItemCategory["TOOL"] = "Tool";
-    ItemCategory["BLOCK"] = "Block";
-    ItemCategory["WALL"] = "Wall";
-    ItemCategory["CONSUMABLE"] = "Consumable";
-    ItemCategory["MATERIAL"] = "Material";
+    ItemCategory["WEAPON"] = "Bro\u0144";
+    ItemCategory["ARMOR"] = "Pancerz";
+    ItemCategory["ACCESSORY"] = "Akcesorium";
+    ItemCategory["TOOL"] = "Narz\u0119dzie";
+    ItemCategory["BLOCK"] = "Blok";
+    ItemCategory["WALL"] = "\u015Aciana";
+    ItemCategory["CONSUMABLE"] = "U\u017Cytkowy";
+    ItemCategory["MATERIAL"] = "Materia\u0142";
 })(ItemCategory || (ItemCategory = {}));
 export var EquipSlotType;
 (function (EquipSlotType) {
@@ -70,11 +71,11 @@ export var CraftingStation;
 })(CraftingStation || (CraftingStation = {}));
 export const GAME_CONSTANTS = {
     TILE_SIZE: 24,
-    WORLD_WIDTH: 200,
-    WORLD_HEIGHT: 120,
-    SURFACE_HEIGHT: 38,
-    CAVERN_DEPTH: 65,
-    BEDROCK_DEPTH: 116,
+    WORLD_WIDTH: 500,
+    WORLD_HEIGHT: 240,
+    SURFACE_HEIGHT: 55,
+    CAVERN_DEPTH: 110,
+    BEDROCK_DEPTH: 232,
     GRAVITY: 980,
     PLAYER_SPEED: 210,
     PLAYER_JUMP_VELOCITY: -370,

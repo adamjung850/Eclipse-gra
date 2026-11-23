@@ -34,12 +34,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     coyoteTimer = 0;
     jumpBufferTimer = 0;
     isFacingLeft = false;
+    // Combat State
+    invulnerabilityTimer = 0;
+    spawnX = 0;
+    spawnY = 0;
     // Arm & Tool Visual
     toolSprite;
     isSwinging = false;
     swingProgress = 0;
     constructor(scene, x, y) {
         super(scene, x, y, 'player_idle');
+        this.spawnX = x;
+        this.spawnY = y;
         scene.add.existing(this);
         scene.physics.add.existing(this);
         this.setDepth(20);
@@ -340,7 +346,60 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             this.stop();
             this.setTexture('player_idle');
         }
+        // Invulnerability visual flashing
+        if (this.invulnerabilityTimer > 0) {
+            this.invulnerabilityTimer -= delta;
+            const flicker = Math.floor(this.invulnerabilityTimer / 70) % 2 === 0;
+            this.setAlpha(flicker ? 0.35 : 0.85);
+            this.setTint(0xff6666);
+        }
+        else {
+            this.setAlpha(1);
+            this.clearTint();
+        }
         this.updateToolVisual(delta);
+    }
+    takeDamage(amount, knockbackX = 0, knockbackY = -180) {
+        if (this.invulnerabilityTimer > 0) {
+            return { tookDamage: false, damageDealt: 0, isDead: false };
+        }
+        const defenseReduction = Math.floor(this.defense * 0.5);
+        const finalDamage = Math.max(1, amount - defenseReduction);
+        this.hp = Math.max(0, this.hp - finalDamage);
+        this.invulnerabilityTimer = 650; // 650ms invulnerability frames
+        const body = this.body;
+        if (body) {
+            body.setVelocityX(knockbackX);
+            body.setVelocityY(knockbackY);
+        }
+        const isDead = this.hp <= 0;
+        return { tookDamage: true, damageDealt: finalDamage, isDead };
+    }
+    respawn() {
+        this.hp = this.maxHp;
+        this.mana = this.maxMana;
+        this.setPosition(this.spawnX, this.spawnY);
+        const body = this.body;
+        if (body) {
+            body.setVelocity(0, 0);
+        }
+        this.invulnerabilityTimer = 1600; // grace period after respawn
+    }
+    gainXp(amount) {
+        this.xp += amount;
+        let leveledUp = false;
+        while (this.xp >= this.maxXp) {
+            this.xp -= this.maxXp;
+            this.level += 1;
+            this.maxXp = Math.floor(this.maxXp * 1.4);
+            this.baseHp += 15;
+            this.baseMana += 10;
+            this.hp = this.maxHp;
+            this.mana = this.maxMana;
+            this.recalculateStats();
+            leveledUp = true;
+        }
+        return leveledUp;
     }
     updateToolVisual(delta) {
         if (!this.toolSprite.visible)
