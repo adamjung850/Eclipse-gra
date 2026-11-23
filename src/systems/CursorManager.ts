@@ -202,24 +202,24 @@ export class CursorManager {
       'H': '#ff94a0'
     };
 
-    // Render 16x16 scaled 2x to 32x32 crisp canvas data URLs
-    this.dataUrls['default'] = this.generateDataUrl(this.ARROW_NORMAL, mapDefault, 2);
-    this.dataUrls['default_down'] = this.generateDataUrl(this.ARROW_PRESSED, mapDefault, 2);
-    this.dataUrls['interact'] = this.generateDataUrl(this.INTERACT_NORMAL, mapInteract, 2);
-    this.dataUrls['interact_down'] = this.generateDataUrl(this.INTERACT_PRESSED, mapInteract, 2);
-    this.dataUrls['target'] = this.generateDataUrl(this.TARGET_LAYOUT, mapTarget, 2);
-    this.dataUrls['grab'] = this.generateDataUrl(this.GRAB_CLOSED, mapGrab, 2);
-    this.dataUrls['grab_open'] = this.generateDataUrl(this.GRAB_OPEN, mapDefault, 2);
+    // Render crisp 16x16 pixel art canvas data URLs (classic 1:1 retro scale)
+    this.dataUrls['default'] = this.generateDataUrl(this.ARROW_NORMAL, mapDefault, 1);
+    this.dataUrls['default_down'] = this.generateDataUrl(this.ARROW_PRESSED, mapDefault, 1);
+    this.dataUrls['interact'] = this.generateDataUrl(this.INTERACT_NORMAL, mapInteract, 1);
+    this.dataUrls['interact_down'] = this.generateDataUrl(this.INTERACT_PRESSED, mapInteract, 1);
+    this.dataUrls['target'] = this.generateDataUrl(this.TARGET_LAYOUT, mapTarget, 1);
+    this.dataUrls['grab'] = this.generateDataUrl(this.GRAB_CLOSED, mapGrab, 1);
+    this.dataUrls['grab_open'] = this.generateDataUrl(this.GRAB_OPEN, mapDefault, 1);
 
-    // CSS cursor strings with appropriate hotspots (scaled 2x: tip at 2, 2; center at 15, 15; hand at 14, 14)
+    // CSS cursor strings with appropriate hotspots (scale 1: tip at 1, 1; center at 7, 7)
     this.cursorCss = {
-      [CursorState.DEFAULT]: `url('${this.dataUrls['default']}') 2 2, default`,
-      [CursorState.DEFAULT_DOWN]: `url('${this.dataUrls['default_down']}') 4 4, default`,
-      [CursorState.INTERACT]: `url('${this.dataUrls['interact']}') 2 2, pointer`,
-      [CursorState.INTERACT_DOWN]: `url('${this.dataUrls['interact_down']}') 4 4, pointer`,
-      [CursorState.TARGET]: `url('${this.dataUrls['target']}') 15 15, crosshair`,
-      [CursorState.GRAB]: `url('${this.dataUrls['grab']}') 14 14, grabbing`,
-      [CursorState.GRAB_OPEN]: `url('${this.dataUrls['grab_open']}') 14 14, grab`
+      [CursorState.DEFAULT]: `url('${this.dataUrls['default']}') 1 1, default`,
+      [CursorState.DEFAULT_DOWN]: `url('${this.dataUrls['default_down']}') 2 2, default`,
+      [CursorState.INTERACT]: `url('${this.dataUrls['interact']}') 1 1, pointer`,
+      [CursorState.INTERACT_DOWN]: `url('${this.dataUrls['interact_down']}') 2 2, pointer`,
+      [CursorState.TARGET]: `url('${this.dataUrls['target']}') 7 7, crosshair`,
+      [CursorState.GRAB]: `url('${this.dataUrls['grab']}') 7 7, grabbing`,
+      [CursorState.GRAB_OPEN]: `url('${this.dataUrls['grab_open']}') 7 7, grab`
     };
   }
 

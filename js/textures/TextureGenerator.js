@@ -1384,10 +1384,10 @@ export class TextureGenerator {
             '. . . . . . . . . . . . . . . .',
             '. . . . . . . . . . . . . . . .'
         ];
-        drawGrid('cursor_default', arrowNorm, mapDef, 2);
-        drawGrid('cursor_interact', arrowInt, mapInt, 2);
-        drawGrid('cursor_target', tgtLayout, mapTgt, 2);
-        drawGrid('cursor_grab', grabClosed, mapTgt, 2);
+        drawGrid('cursor_default', arrowNorm, mapDef, 1);
+        drawGrid('cursor_interact', arrowInt, mapInt, 1);
+        drawGrid('cursor_target', tgtLayout, mapTgt, 1);
+        drawGrid('cursor_grab', grabClosed, mapTgt, 1);
     }
     static createCombatTextures(scene) {
         // 1. SLIMES (Green, Blue, Red Cyclops Slimes) - 24x20 with big central eye socket
