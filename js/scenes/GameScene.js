@@ -1,0 +1,179 @@
+import { GAME_CONSTANTS } from '../types/index.js';
+import { WorldGenerator } from '../world/WorldGenerator.js';
+import { WorldManager } from '../world/WorldManager.js';
+import { Player } from '../entities/Player.js';
+import { DroppedItem } from '../entities/DroppedItem.js';
+import { MiningSystem } from '../systems/MiningSystem.js';
+import { InputManager } from '../systems/InputManager.js';
+import { SoundSynthesizer } from '../systems/SoundSynthesizer.js';
+import { BLOCK_DEFINITIONS } from '../world/BlockTypes.js';
+import { ITEM_REGISTRY } from '../world/ItemTypes.js';
+
+export class GameScene extends Phaser.Scene {
+  constructor() {
+    super('GameScene');
+    this.gameTime = 240;
+  }
+
+  create() {
+    const T = GAME_CONSTANTS.TILE_SIZE;
+    const worldWidthPx = GAME_CONSTANTS.WORLD_WIDTH * T;
+    const worldHeightPx = GAME_CONSTANTS.WORLD_HEIGHT * T;
+
+    this.physics.world.setBounds(0, 0, worldWidthPx, worldHeightPx);
+    this.sounds = new SoundSynthesizer();
+
+    this.skyGraphic = this.add.graphics();
+    this.skyGraphic.setScrollFactor(0);
+    this.skyGraphic.setDepth(-10);
+
+    const worldData = WorldGenerator.generate();
+    this.worldManager = new WorldManager(this, worldData);
+
+    this.player = new Player(this, worldData.spawnX, worldData.spawnY);
+    this.droppedItems = this.physics.add.group();
+
+    this.physics.add.collider(this.player, this.worldManager.foregroundLayer);
+    this.physics.add.collider(this.droppedItems, this.worldManager.foregroundLayer);
+
+    this.worldManager.onBlockBroken = (tileX, tileY, blockId) => {
+      this.handleBlockDrop(tileX, tileY, blockId);
+    };
+
+    this.miningSystem = new MiningSystem(this, this.player, this.worldManager);
+    this.miningSystem.onPlaySound = (type) => {
+      this.sounds.play(type);
+    };
+
+    this.inputManager = new InputManager(this, this.player);
+    this.inputManager.onDropItem = () => {
+      this.handlePlayerDropItem();
+    };
+
+    // Launch Parallel UI Scene
+    this.scene.launch('UIScene', { player: this.player });
+
+    const camera = this.cameras.main;
+    camera.setBounds(0, 0, worldWidthPx, worldHeightPx);
+    camera.startFollow(this.player, true, 0.08, 0.08);
+    camera.setZoom(1.55);
+
+    this.time.delayedCall(400, () => {
+      this.showWorldFloatingText(
+        this.player.x,
+        this.player.y - 30,
+        'Welcome to ECLIPSE: THE LOST WORLD',
+        '#6ee7b7'
+      );
+    });
+  }
+
+  handleBlockDrop(tileX, tileY, blockId) {
+    const def = BLOCK_DEFINITIONS[blockId];
+    if (!def || !def.dropItemId) return;
+
+    const count = Phaser.Math.Between(def.dropMin, def.dropMax);
+    if (count <= 0) return;
+
+    const T = GAME_CONSTANTS.TILE_SIZE;
+    const dropX = tileX * T + T / 2;
+    const dropY = tileY * T + T / 2;
+
+    const dropped = new DroppedItem(this, dropX, dropY, def.dropItemId, count);
+    this.droppedItems.add(dropped);
+  }
+
+  handlePlayerDropItem() {
+    const item = this.player.getSelectedItem();
+    if (!item) return;
+
+    const success = this.player.consumeSelectedItem(1);
+    if (success) {
+      const dropOffset = this.player.isFacingLeft ? -20 : 20;
+      const dropped = new DroppedItem(this, this.player.x + dropOffset, this.player.y, item.id, 1);
+      this.droppedItems.add(dropped);
+      this.sounds.play('place');
+    }
+  }
+
+  update(time, delta) {
+    this.updateAtmosphere(delta);
+    this.inputManager.update(delta);
+    this.miningSystem.update(time, delta, this.input.activePointer);
+
+    const items = this.droppedItems.getChildren();
+    for (let i = items.length - 1; i >= 0; i--) {
+      const item = items[i];
+      if (item && item.active) {
+        item.updateItem(delta, this.player.x, this.player.y, (collected) => {
+          this.handleItemPickup(collected);
+        });
+      }
+    }
+  }
+
+  handleItemPickup(item) {
+    const success = this.player.addItem(item.itemId, item.amount);
+    if (success) {
+      this.sounds.play('pickup');
+      const itemData = ITEM_REGISTRY[item.itemId];
+      const name = itemData ? itemData.name : item.itemId;
+      this.showWorldFloatingText(
+        this.player.x,
+        this.player.y - 20,
+        `+${item.amount} ${name}`,
+        '#fcd34d'
+      );
+    }
+  }
+
+  showWorldFloatingText(worldX, worldY, text, color = '#44ff88') {
+    const floatText = this.add.text(worldX, worldY - 10, text, {
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      fontStyle: 'bold',
+      color: color,
+      stroke: '#000000',
+      strokeThickness: 3
+    });
+    floatText.setOrigin(0.5, 0.5);
+    floatText.setDepth(50);
+
+    this.tweens.add({
+      targets: floatText,
+      y: worldY - 45,
+      alpha: 0,
+      duration: 1000,
+      ease: 'Power1',
+      onComplete: () => {
+        floatText.destroy();
+      }
+    });
+  }
+
+  updateAtmosphere(delta) {
+    this.gameTime = (this.gameTime + delta * 0.02) % 1440;
+
+    const width = this.scale.width;
+    const height = this.scale.height;
+
+    this.skyGraphic.clear();
+
+    let skyTop = 0x5b93d3;
+    let skyBottom = 0xbce3fa;
+
+    if (this.gameTime > 1000 || this.gameTime < 400) {
+      skyTop = 0x090b14;
+      skyBottom = 0x181e2e;
+    } else if (this.gameTime >= 400 && this.gameTime < 550) {
+      skyTop = 0x824970;
+      skyBottom = 0xf5a267;
+    } else if (this.gameTime >= 900 && this.gameTime <= 1000) {
+      skyTop = 0x7a3052;
+      skyBottom = 0xde7043;
+    }
+
+    this.skyGraphic.fillGradientStyle(skyTop, skyTop, skyBottom, skyBottom, 1);
+    this.skyGraphic.fillRect(0, 0, width, height);
+  }
+}

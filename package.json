@@ -1,0 +1,17 @@
+{
+  "name": "eclipse-the-lost-world",
+  "version": "0.1.0",
+  "description": "2D Sandbox RPG Game inspired by Terraria, Starbound and Core Keeper",
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 8080",
+    "build": "tsc"
+  },
+  "keywords": ["game", "rpg", "sandbox", "phaser3", "typescript"],
+  "author": "Eclipse Dev Team",
+  "license": "MIT",
+  "devDependencies": {
+    "phaser": "^3.88.2",
+    "typescript": "^5.4.0"
+  }
+}

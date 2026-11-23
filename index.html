@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ECLIPSE – THE LOST WORLD | 2D Sandbox RPG</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Phaser 3 Engine (Local first, CDN fallback) -->
+  <script src="lib/phaser.min.js"></script>
+  <script>
+    if (typeof Phaser === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/phaser@3.88.2/dist/phaser.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <div id="ui-overlay">
+    <!-- Controls Guide Pill -->
+    <div class="controls-pill interactive">
+      <h4>Sterowanie [Etap 1]</h4>
+      <div><span class="key">A</span> / <span class="key">D</span> Poruszanie</div>
+      <div><span class="key">SPACE</span> / <span class="key">W</span> Skok</div>
+      <div><span class="key">LPM</span> Kopanie (bloki) / Stawianie</div>
+      <div><span class="key">1-9</span> Wybór slotu hotbara</div>
+      <div><span class="key">Scroll</span> Przełączanie slotu</div>
+      <div><span class="key">Q</span> Wyrzucenie przedmiotu</div>
+      <div><span class="key">E</span> Ekwipunek (Etap 2)</div>
+    </div>
+
+    <!-- Click to unlock audio banner -->
+    <div id="audio-banner" class="interactive" onclick="this.style.display='none';">
+      🔊 Kliknij tutaj lub w grę, aby włączyć retro dźwięki
+    </div>
+  </div>
+
+  <!-- Game Bootstrap Module -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
