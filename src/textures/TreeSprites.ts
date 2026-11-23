@@ -1,5 +1,339 @@
-// Generated Tree Sprites & Textures based on user-provided pixel art sticker
-export const CROWN_72_64_RGBA = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf///wIkJCQHZHtstXCPfORVd2G+XHlnsWZ6cBkAAAAAKlUqBgAAAAFcd2ePdpeB+YOdhvt3jHjogY1/cP///wFVVVUDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf39/BP///wGdsaR2HkUs/wEzEf8AORL/JVMx/8jWxWsMCgsAAAAAAP///zNLaVP/ACYB/wg2EP4AIwH/m7ih/////1sAAAAAzP/MBQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAT8/PwQ/f38EP39/BH9/fwQ/f38EVapVAwAAAAAAAAAAAAAAAAAAAAAAAAAAVVVVAwAAAACqvq6vH0sr/go/F/oJSxr8E1Uh/IOhgu6AnonPaId1qYusleo2b0r9DVMi/hRcKf8NTSH8YZBw/JSrmd4VHxUYAAAAAD9/fwQAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8BqqpVA////wjC0b+1G0Ml/gVAFPwUWyT/FF4p/wE/FP8DORb/DD0b/wA0DP8XZjT/H3tB/xp6Pf8jfUT/Dksf+wYpDf9KXE+a////DAAAAAD///8BAAAAAAAAAAD///8BAAAAAAAAAAD///8BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABVqlUDf7+/BH9/fwYAAAABAAAADmSAdGV8l4iHfZeHiH+Wh4h4k4SJcIN3Qv///wOZmZkFv7+/BJmZmQWqqqoGAAAAAKa5qb6dvJ//D0Ye/QdQHP8VYCb/E2Er/whSIv4MSyH9DUkb+wdMGv4eczn/Hn4+/xt8PP8lfED/F2ox/w1LHP1fimz9scm234SXh08AAAAAkZGRB39/fwQAAAAAJDYtHAAAAA0AAAAAf39/BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP///wEAAAAAAAAAAAAAAAAHBQYAOVJCrRQ+JP8VRSX/FUQj/xpGJf8MNhf/dJB6/////yQAAAAAAAAAAAAAAAAAAAAAe4l+Vxs9I/8EOQ78FV8o/w9iJ/8RYCX/EGIo/xBgKP8RXSj/D14k/wpgIv8jg0D/JI9H/xqEPv8YeTv/GIpE/yuaVv8eYS/9BCwG/2Z8ZuX///8CAAAAAAAAAABfbWQ4DDUh8zJWRM7///8TAAAAAH9/fwIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv7+/BAAAAACap5Y9t8y7dbC/sHHK38qrUX1b/wA4CPoFRRP7AkMR+wVGEvsBNgf5YYxs/s3ez5yzwLFztMS0dbHAsXPF0sF9mrSd9QxDG/4IThj+EGAj/w1hJP8QYyf/DWMm/xFoKf8PZyj/CWMi/wlkIf8igTz/JItD/xaFPf8OgDr/FIc//yGOR/8eazH/BzkM/GuWdf/P4tK2pLyoc8HWxJ2Ur5ftBj0S/ztzTP/J28nOqLqrVar//wOqqqoDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8DAAAAAOPq4yVHYUz5IlAu/ypVMv8iVSv/EVkj/RBkI/8QXyL/EGAm/w5gI/8SYyn/FVAo/yBNLP8oVTP/JVMw/yVTL/8kUS7/GU0k/xFiKf8IYyP/DGEj/w5oKv8aezv/HH47/yWNRf8nk0j/EW8r/wtiIf8MZSP/B2Yi/xmDPf8kj0r/GnQy/wdjIv8XeDn/K45S/x1oOv4dSir/JlYz/yBSKf8eVCf/Hn8+/htqL/sbSSL/LU839P8/vwQAAAAAAH8AAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL+/vwQAAAAAxdXJPtXp2sk2WEP+ADIJ+QM9EPsBQBD8DVgg/w1iI/8LZSX/DWQo/w1jJ/8PZir/DFQe/wA7DvwAPhP7AD0Q+wA9D/sAPA37B0kX/g5fJf8HYiP/BmQi/wlpJv8deDn/HHo4/xyQRf8ilUr/DnMt/whmIv8LZyT/BWYh/xeDO/8lkUv/GHUy/whkIP8WfTX/IpNO/xVpMf8BOQv8AkIR+wFAD/sMUR3+HYBC/xhtNf8ANwn8I1It+Mzl1MrI4dIzqv+qA6r/qgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf39/AgAAAAB/f38SP1tF8CtYN/8PQB/9B0EU/xJWI/8RWiX/D18l/w5jJv8UcTH/Gno8/xl4Ov8Zejv/FWov/w5YI/8TWyf/FFol/xJaJP8QWyT/Dl4l/wlhJP8Kayn/IYhB/x6GP/8LZyf/C2wp/yOfUf8pplf/HY5E/xmLQf8mmU7/K5xS/x+LQ/8Vfzr/IJFH/yefUv8flkf/HZJH/x56O/8MVh7/GXU3/y6aWP8ljk3/G3w+/xp5Pf8dcjn/KWY5/jBeP/8oRjXgAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8B////Av///xve8eaHL1k8/wA0CvkIQhz/B0EW/wxbI/8PZCn/DWUo/wtlJ/8WdDT/HXw9/xp7O/8afz3/GHEz/wpgI/8PYyX/EGEk/w1iIv8JYyP/DGMl/whjI/8Iaif/J45I/yWLRv8PZCX/DWcn/yifU/8sqVv/H5dL/xWWRv8jplb/Laha/yCKQ/8UeTX/HJhK/yisW/8fm0v/IY9E/x1+Of8CXBr/E384/yqwYv8gnVL/GXk4/xd9O/8agD//JW86/wA2CfoiTy7+y+HRe////wwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF/f38CAAAABTVPQMdEblT/FlYp+xJdJf8VWyr/FFso/xBjJv8PZSj/GXQ1/xt5Ov8afDv/G3w8/x+DQf8hi0j/IYJC/xp2Nv8bcjP/D2Ai/xRuK/8ghj//IYdC/ySIQ/8gh0L/H4xG/x+KRP8RZif/E2gp/yKVSv8fmEv/JaJU/yWjVf8Zj0P/F4k+/yaVTP8pnVT/JKVW/ympWf8jlkn/G383/yOORv8nl07/J5JM/xSIP/8bj0P/K5tS/yiYUP8ijUj/JYpH/x+DQf8ngUf/Nm1H/0BhTOiZsqM1AAAAAP///wIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFWqVQMAAAAAjqSXOx1CLP8AMgn7DV8g/wxlHv8PZCL/DWUj/wtfIP8HYCD/GnY2/x99Pv8YfTz/FHs5/xiEQP8ckUr/GohD/xl6OP8XcTL/Bl0d/xBtK/8tlU7/H5JH/xuQRP8ekEb/G5JH/xqORf8EZSL/BGQh/xuPRP8YkUT/KKNW/zOmW/8ZhT3/DHcv/ymcUf8nr13/IKpX/yqoWP8gkkT/DXYt/x2XS/8qsGH/KJhQ/xFzMf8YiDz/JqtZ/yShUv8fkkf/H5JJ/ymUT/8kh0X/ADkI+iNMLf+UrZtI////AqqqqgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH+/fwQAAAAAwdTGozFZPP4FPhP7El4n/wxlJP8QZiT/D2Ul/xt2OP8Zgj//F3Q1/xFoK/8Wdzj/GXw9/xyFQ/8ekkv/H49G/xyHPf8fjUP/HI5D/x6JQv8TdDD/FYA3/yCgUf8kmk7/Goc+/xqHPv8ij0b/GpFE/yGbTv8nn1L/JZNK/yGMQ/8hmEv/JJxO/yeQSP8ji0T/HJFG/x+MRP8hlEj/IZxO/x6WSf8aj0P/I5VL/yaXTf8gmkr/H5xL/x+aSv8dk0T/IJBG/x2CQf8gez7/BUgY+yxYNv6ZsZxVAAAAAJmZmQUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH+/fwQAAAAAvtHEhitTN/8AOhD7EF0n/wdiI/8GYB7/BWAe/x+EQf8jlU//DnAv/wRcHv8RcDD/GXo7/x6GQ/8lkkv/IJJH/xuPQf8inkz/LrBd/yKXSf8AXBX/Cm8o/yynWf8ln1L/D3oy/xGAN/8xqlz/MKtd/yqpWv8rqlv/GYU7/w13Lv8koE//KK5Y/xWJO/8TcjP/E3g2/w91M/8gkEz/Lq9i/x2SRv8Sci3/IIxD/yutXf8moVL/FY9A/xWPQP8ckUT/Ho5E/xZ9N/8beDf/AEAQ/RtKKP3W7t3D////MwAAAAD///8CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH+/fwQAAAAAq72xUi1UOv4FPRX7El4p/wplJv8SbCz/EnAt/x6JQ/8ckkj/EHUx/wliIv8aejj/I4pI/xmBPf8WeDT/HItA/yOhTv8eok3/HKBM/x6YSP8chjz/H4lB/x6RRv8Zk0b/IZJI/yWUSv8gk0j/JZJJ/yKSSP8glEn/IJVI/xmUQ/8gslf/IL9c/xexUP8VqU3/GqhL/x+mTP8inEz/HpBG/yGUSf8dk0f/IJZK/yCVSf8hlkr/IZpN/yCZTP8bkUX/IJBG/x6JQP8hhUD/EmMs/xxaMv1zm3//cYl54SY/MxQAMzMFf39/BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH+/fwQAAAAAsMa4XiJLMf8AKwP4Elwo/wtlJ/8feDj/IH08/ySNR/8elUn/EHUw/wReHP8bfTv/JpVQ/xB6Nf8EWhj/F4E3/yyuXP8koVD/GI1B/yKYTP8zr2L/J6FU/xB2L/8QgTb/Latc/y6mWf8SfzX/FXYx/xZ3Mv8RfDP/KKRT/yWsVf8lx2L/I9Nm/yTRZf8f0WT/HtRh/ynZav8io0z/C3Ap/x6TSP8usGD/IZlM/w92L/8XiD//Mahc/ymiVv8YjEL/HY5G/x+RSP8fjkb/HYA//yJ5Qf8ANAj6Ejgc/7LDt6cDAAIAAAAAAP///wEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH9/fwL///8BnLCqJ2R+a+9li2z/F1Up/gpVH/8Way//FnEy/xp5Nv8YgTr/EnUx/w1tKf8bhT//IJRM/xN8Nv8KXx3/GYQ5/yivWv8inU7/HoZD/yKMSf8il03/H5ZL/x+MRP8bkEX/HJdL/x+WTP8aiUD/H4Q+/yOOR/8fkkn/JZpL/x6dSf8ir1L/G7VQ/xvDWf8izGP/GrtV/xKvTv8fpFD/GptK/xydS/8kl0v/IZRJ/x2SRv8ek0z/JZRP/yOWTv8fmk3/H5hM/xmJQ/8ZiUH/GIpD/xyCQP8MThz/FD0Z/XaWevl0knuniZmJPwAAAABVqlUDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8CAAAAAP///zjr9+i0J1M0/QE5Dv4LWyH/BmEh/wheIP8EXB3/FXQy/xl9Ov8ii0b/JpVO/xh7Nv8FXxz/FIM3/yywWf8im0z/Eno5/xh6Of8UdzP/F4Y//yypXv8lpFf/D3s3/xV7OP8jjET/IpFF/yilVv8op1v/H5BG/xiQQf8Zjz3/Eo83/xy6VP8m1mn/FpxE/wtsJP8fok3/K9hz/xupUP8MdCv/H45E/yusWv8il0//EHQx/xeEO/8prFr/JKNT/xR7Nv8Yfzr/H5FK/ySJR/8IRhT/DTcP/wAxCfwSQh//p7qpzv///wQAAAAA////AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/9/AgAAAAAAAAANH0Qr9Ag+E/8OXiP+CmYl/xBqKf8ObSv/Gnw5/xuBPf8fhEH/I4hG/xh6OP8Kayr/FoQ8/yygUv8lkkn/F389/xd/PP8Xgjv/GItC/yidU/8ol0//Gn04/xuBOP8gm0f/FqBG/x6jTf8loVL/HphN/xmVR/8alEP/GpdC/yeyVf8mwV3/GadK/xaLOf8iqlL/JMxn/x6jTf8WdDD/IJJG/x6yWP8bpEr/FIg4/xqNP/8jnVD/IplO/xeGPP8ai0H/H5BI/yKJRv8IVB3/DEoZ/wpOHP8KSR76i6yS/bHDstZ4jX8k////AX9/fwIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAqv+qAwAAAADJ2dQwJFA1+QM7DP0PXyH+CmUk/yKDQP8mkUv/IZBI/yWTTP8QeDP/AGAc/xN4Nf8jkkz/HYpF/xd9OP8chD//I5BM/yKPSv8lkUv/H4xG/xZ9OP8XezX/F3gy/w+INf8jxWD/JMdi/xWbRP8aj0P/JqVX/yekVf8mplP/JKpR/xmbQv8Qjzb/JLRV/yLWa/8bvVr/HKxO/yCVRP8XczH/HZ5M/ybSav8cxVz/Iq5S/yOeTf8OfDX/FoM8/yioVf8lp1b/G5RJ/x+QSv8YgD//HXo8/xd9Pf8efEP/CEQa+hg/IP9yinuXAAAAAD8/PwQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8CAAAAAKSnnUy40b7gIF01/gVFDf0RYyL/DGQn/yB9Pf8giEP/GodA/x6GQv8UeTT/CWwk/xeBOf8emEz/HopE/xl6Of8ch0T/HZJK/x6RSv8hj0r/G4tG/xqGP/8Zhjv/Eos7/xCVPf8fvVn/JsFf/xyXRf8ZlUj/IqRT/yiiUf8krFP/ILNT/xmkR/8UnUP/JLNS/yPIXv8eulf/ILBS/yOdTf8Yfzv/Gp1J/ybEXv8iuFj/IqNO/ySZTP8Tfjr/HYU+/ymoU/8ip1T/H5BH/x+MSP8Tgz//FX48/xCBO/8YgED/DFAf+w5BGP19mISnVaqqA21tbQe/v78EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFWqVQMAAAABrbmtQjRROfwSQx//Elwp/g1lJf8JYR//CmEh/whkIv8GZCH/CWMh/wVjH/8kjUT/MaVW/yakUf8nqFf/I5FL/xV6OP8fjkf/LaRX/yeaUP8PfTf/F4tA/y2iVf8irlT/Kspk/yvDX/8XnUP/GZhF/yekVf8nplj/G5lJ/xuQQP8ivVz/GNJh/yDIXP8izmX/GLBO/xuON/8fsU7/I9Jj/yS9Wv8lpFL/J59Q/xqWQf8ZjUD/F3w1/x58Of8afTr/GYY9/yqlVf8poVb/FII7/xeAOv8gjUb/JI1F/xyPRP8nkE3/DVUj+wtCHP96lIGcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAqv+qA7/fvwi/v78EtcO4XixXOf8AOg75E18o/wpnKP8MZST/DWQk/wlkIv8KYiL/D2Ei/wZgH/8ijkX/MKhY/yWnUv8qplf/JpFL/xd5OP8gkEf/LapZ/yecUP8TeTb/GYk+/yapUf8hslD/J8pj/yTGY/8YnEf/G5ZH/yOoVv8nqVf/Hp1K/xaWQf8jvFr/IMth/x/GXP8mymL/IapP/xqPOv8dsU3/J9Fl/yS8Wv8kpVD/J6BQ/xiXRf8akEX/EoE6/xeBPP8afz7/GYlB/yalVv8pn1j/FIQ+/xeCOf8ikkb/IJBE/xyTRf8kkk7/DFwm/A8/Gf+MnonItL60M7jIvFDJ281y////AqqqqgMAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAr76yVy5UN/4BOxD7FF4q/wtkJf8ddDX/Ink8/xNpKv8JYSH/DmEj/wljI/8ZhT7/IppM/xyXRv8hl0n/HopE/xd5OP8ej0b/LK1b/yaeUv8YeDn/HoxG/x7IXv8kwVX/GppG/xuWSf8flEb/HJZI/yOnVP8frFP/J8Be/yLHYf8YpUr/HZNB/xaYQv8VlD3/I65T/yXLZf8fsU//GJdB/xiVRf8fkUP/I5xL/x+mT/8fsVb/JMBi/x+5Xf8dpVH/KJ1P/xeEO/8UhT//KZ5W/yiiVP8lolH/KaRV/x6XSv8fkEr/IIdF/yiFRf8qYzn/JEww/ypWOP82XEL/Pk9CdgAAAABIbUgHAAAAAP///wIBAQEA7PvwRvD/8mfr//BmzOHP1iJMKf8AOw79D10p/wpkJ/8ddzn/IX5A/xFrLf8FYiL/DWQm/wdgIv8XgDz/IpRK/x6RRP8fkkb/GopD/w96Nv8ajEL/Matc/yeeUf8Rezj/G49H/yTPaP8gxFv/F488/x+LP/8akz//GJdF/yelUv8hqlH/JMli/yTQaP8ao0r/HYs//xuOQf8Xizz/GbNU/yDYbf8drU//G4s9/xmQQP8Vkz3/Hp5I/yalUP8gtVb/Ks5p/yLFYv8br1H/KqFP/xR3Mv8TgTv/K6Vc/yaqWf8kp1T/JahX/x6WTP8fj0f/FpNE/x2YSP8IVh/+ADUN/gM6EvwAKAT6fJuD9v///0UAAAAAVX9/BgAAAACHloxkVHFc/0hyUP9JdFb/PmlK/xFNIP8GTBn/DWEq/wpnKf8beDr/Gnw+/xd5Of8UeTf/GHQ2/xx1OP8VdDT/E24v/xVxLv8Obin/GoA7/yudVv8llk3/GoY7/yCRRv8jnlX/IJxR/xqOQv8XnEX/I8Fc/x/DWf8cxVr/JL5d/yKaR/8ilUL/HZ9G/yCgSf8ko0//IKRP/yCmUv8kplT/IKFL/x2hR/8bpk3/H6NO/yKwUv8ixV//IbVX/x+YR/8klEr/HZNI/xqRR/8ch0L/HotE/yKcTv8mm1P/G4xF/xyKQP8nplT/I6pX/yGVTP8fjkb/HKBM/yemU/8gfD7/GGo2/xZuOf8dazb+Mm5F/zhZQ/5WcmSiAAAAAP///wevxLPKDDkY/QAzCvgAMQv7ADYM/QhKGf8FURn/DWEl/whjJf8YeDj/Gno6/xh7O/8YfTv/H3s8/yB9PP8PbCv/BV0e/wdiIf8IWx3/HH07/zWuZP8fl03/C3ct/xmJPP8jqlT/IZ9R/xZ2NP8Njjv/JNNn/x/WZv8d1Wn/Kstp/yGZRv8aiz3/GJA7/xmRPv8kolH/JqtU/yKqUf8lrFj/G5pF/xeJN/8inkz/JKpR/yG7W/8s1HL/Jbhc/xOOOP8bhjr/Gnc4/xN4Ov8Udzf/F385/yWoWv8rpFj/Ensz/xJ9M/8pp1X/LaZW/yGTRv8Ujz7/I6JQ/y6pXP8fi0b/G3w+/xp9QP8agkL/Elcp/wAkAv9oiXH/TWNWO0BgTdhEclH/EEog/hFNIv8PSB3/DEoa/xBYIv8OXSP/DmIm/whmJ/8ghkT/JItJ/x6KR/8eikb/GHc3/wxmJv8dgz7/JJZL/x2NRP8dhT//G4pC/xmKQf8enEz/KLVc/yO3Vv8hw1r/JbVX/x2IQf8Zkkn/H7dX/yC2U/8YqU3/GqhN/yKjTf8dpE//H6ZP/yakUf8inU3/GpxI/yGzVf8iw1v/JL1W/yK/Wf8hq1D/HJlG/xqkT/8ap1L/IK1S/yK6Vv8hslX/JJxN/yOfUf8gs1j/IbFW/xqPRP8bkUP/IrBX/yCzVv8ck0X/HolC/ySeTv8fpE//GZpF/x+bTf8SejT/DGkp/xx+P/8fjkn/G2c1/gU2Evxkh2z5g5yLugo9HP8AOAv8C0sb/whKF/8HSBX/B0wW/xRgJ/8RYSb/Cl8i/wdmJv8iiUf/JY9M/x+QS/8kk07/EnIy/wRbHP8mj0n/Ma9g/yWfUv8dlEj/G4tA/xR2MP8dn0z/K9Rt/yPSZP8n12X/JMJY/w+OPP8akUn/J6ZS/yejTP8YkD//GZVC/yWnUf8gq1L/H6lR/yanUv8blkP/DY06/yS7W/8n02H/LNBg/yTcav8ds1H/FIw9/xiTR/8WjD7/IKdO/yjTaP8jx2D/GqtM/ySxU/8o1Wb/I8pg/w94Lf8PgDD/Kcxo/yfNZv8Vgjv/FXc4/yukV/8sr1r/HJdD/xyURf8McCn/AVsb/xt+Pf8sm1b/GmMz/wAoCf9piHD/lKmYxBVFIPsNTR39FVsm/xFdJf8RXCX/EVwk/xBbI/8NXCL/EmUp/w5oKv8aeDj/HHo7/xd6Ov8Wezn/Em0u/w1kJf8eikL/JaBQ/yKcTf8joVD/J5JI/yB8N/8enEr/JcBi/x+1Vf8Yo0b/HKlK/yK2Vf8ksFX/JJ5N/yScTv8flEb/IpVH/ySpU/8kqlP/J7hc/yW9XP8iulj/I7ZX/yGwVP8hrlH/IK9O/xqzUf8hqFD/JZ5O/yOgUf8moFH/J6ZS/x2wUP8etFH/I8Fb/yK7Vv8esk7/IbRR/yeoTv8lqVD/I7lb/yW3XP8biEL/IHw+/yCFQf8bhTz/Gn01/xh7Nf8YdjT/GXI1/xhvM/8SZCr/TnpZ9XGIeNqPopO0hZuMuwg1FP8APA36FGEs/w5hJ/8PYCf/EV0m/whOG/8GTBb/Clof/wlfIv8LXiL/DF4i/wleIv8GYCL/CmEk/wdgIf8TgDj/GpJE/yOdTv8qrVv/I5NH/xJ0Lf8XkkP/Ja5c/yWaT/8Lbin/EYo5/zDRav8lxl3/EpE//xqLQv8ciz//GJBA/x+pUf8fq1P/Ksll/x/UZP8c1WL/KtVp/xilSv8dikL/GI5A/xmNPv8lm07/MKlY/ySpVP8iq1f/I55P/xWLOv8bpEf/LdJq/yLAW/8Qizb/F5c//yvRZ/8ozGj/I61Y/yKlVv8PhT3/GXc2/w9jJv8JXB//DF0g/wlcH/8VcDL/H3w+/w1ZIvsDPA7/XHddsf///wQEBAQAVW1hP1NwXuJWg2L/ElIm/Q5YJ/8NWCP/D1cg/wpNGv8NTRr/Fm4w/w90Mf8NZCT/DGEj/xJrLf8Tay7/FG0v/xBsLf8Xejj/GYA7/x+HQv8ijEX/IIxE/xqMQP8clEn/IJtS/x+YTv8elkn/HqZO/yG3W/8hsFf/HJxK/yKZSv8bpU3/F6xO/yagTP8lnk//JLFW/x23Vv8ctlT/JLRX/x6mTf8emkj/IaNO/x6qUv8hpVH/JZ5L/yGuVP8ful7/Ja1Y/x+YSP8epE3/J7ZY/yGzU/8Zpk3/IKpR/xyyUf8arVL/IJlM/x6XT/8ak0j/IY9G/w9uK/8OXyL/FGkr/xNrL/8cfTz/JYpI/xVfKv0INhL/cYp34f///wkAAAABAAAAAP///xiswrC2CDQW/wA1DfsMSh3/CUoY/wxKGf8IUhv/J4tK/yqVUf8LbSv/BWIg/xp4OP8gejz/H3k7/yB/P/8Oayv/B18f/w5fIv8JWxv/FoI5/ymuXf8plU//GXEw/xWTQv8l1m//IsVg/x2MOv8ekT//HqtR/xivUf8ky2X/LMpm/x2XQf8ciz3/GY5D/xuPRv8ajkX/GI5E/yehVP8kqlP/JMJe/yjTa/8dr1H/Dok8/xqxVP8l02P/JcFb/yOqVf8loFD/Do85/xKjRP8p02v/JcRj/wx8MP8Qciz/FXQx/xl7Of8tplr/Lapb/w90Lv8KXyH/GXU1/xh9PP8hikb/LZVT/xdjLv4ALwz/do577////w0AAAAAPz8/BAAAAAAKFRUYUm5d8klwVP8SQR39D0gb/w5JGf8IURr/HnQ5/yB9Pv8UdTX/EnAw/xt8O/8cezv/G3c4/xd2Nv8VdDP/E3Mx/xZsLf8RXyH/EIU5/yKvXP8ilk3/F3cx/xqTQf8kxGH/ILlZ/ymWRf8dnUb/H7VV/x+1U/8evVf/JLpb/xqfSP8YmUT/GppH/yCXSP8goEz/G6dN/yGiTf8fnkr/G75W/x/SY/8drk7/FYlA/x6vU/8l1V3/IsBT/yChTv8knlH/G5dH/x+hS/8lt1j/HK9S/xmXSf8mkEj/Gn47/xqAO/8lpFb/JqlZ/w1zLf8IXyD/Gns5/xiEQP8XgT3/H4RE/xRfLv4CMhD/dY566////wwAAAAAAAAAAP///wMAAAAA////QsDZyNwYPSD9CDwS/Q1KGf8KTBn/CUgW/wJOFv8ehEL/KI9N/x2CQP8afTz/D24u/wJgIf8dfT3/KJdQ/xB7Nf8HWhr/E4Q6/yivXf8ilkz/Encz/xqIP/8nqFb/IKpU/yKoUf8gslb/Kc9s/yrGYv8Tlzv/EJE9/yGnVP8irFf/H6ZQ/yKmTf8mxWD/KdNn/xylSf8Siz3/F7NN/yjUZv8erVD/FYc6/x+yVP8i1mP/HLZS/xaOP/8fl0r/Kaha/yKfU/8KeS//E4k3/yrPbP8pyGv/F384/xp+PP8np1r/KqVX/w5vK/8FXB3/I4VC/yySUP8Lbiz/AWAj/wlQI/4BMBH/dI167P///wwAAAAAAAAAAaqqqgN/n38IAAAAAKi9sLwgRSv/Bz4W/AxOHf8KThv/DEwa/wdVHP8chUL/IJFK/xp/Pf8bdzj/EnEx/wVqJv8cgj3/I5lN/w+DOP8JaSP/GYU9/ymkVv8lk0v/G3w6/xyKRP8lpVj/IaNS/x+iUP8jp1L/I79g/yC9Wf8ToED/E51G/yajU/8mp1X/J6pR/yGrT/8gwV3/Islh/yCkTP8VkUP/HbBR/yjGYf8erVP/GJNB/yKuU/8kyGT/HrFX/xiPQv8elUn/JqFY/x6bU/8SgT3/HI1C/yS/Xv8fu17/GIY8/yCEQf8mpVf/J6FU/w9uK/8KXyH/HX48/yiHR/8TbjD/D2kw/wxTJf4BMhD/dY967P///wwAAAAAAQEAAAAAAAAAAAAA////AbXLu+0YPSP/CT8a/g5NIP8MTBv/Elcj/xBjKP8giEP/H5ZL/wxyMP8IXiD/HYQ//x2SSP8nnlD/KahW/yWkUv8rp1j/IJZK/xF4Mv8djkT/KKla/yOcUf8Ufzr/Fn07/xZ8Of8Wfjj/En01/w+KNf8jxmD/JMpo/x+aSP8YkkL/JMNc/yLQY/8dokj/EpM9/x+jTv8lqVX/GJ1I/xOUP/8dn0v/JahV/yOdTf8Vjz//FZFC/x2PRP8djET/FHs5/xWGQv8pqF3/J6NV/xSDOP8Uhjn/J6dV/yioVv8Zlkf/HZJH/xJuLP8NYCL/B2Yl/wZjIv8XcjT/I35F/xJbLP4AMg3/dI967P///wwAAAAAAAAAAMbZzkTG2s1N0urbcrPRuvsSOhz+CUEY/wlLG/8ISxj/E1sl/w1hJv8ehEL/IJFJ/xByMP8DXyD/GoE8/x2QR/8lnFD/KKRU/yGlU/8npFb/I5NK/xh3NP8djkX/I6tb/yCaTv8VejT/GYA+/xh9PP8Yejn/GXc4/xiEPP8rwmb/Ichn/xecSP8dkET/IMJg/xzRZv8cn0f/FpFA/yKkU/8oplf/IZZJ/x+LQP8bnkj/GK9S/x6hTP8fjUH/H45C/x+PQv8iiUP/GXg4/xuGQ/8oplr/J51R/xd+Nv8ThTn/KZ9S/yWhUv8alUf/IZJI/xFrKv8QXSH/DGQk/wVjIP8Ydzf/H35D/xFbK/4BMg7/dI967P///wwAAAAAlqqZvjNXO/8wWzv/Llo6/x5RLv8NRx//BUoa/wtaJP8JYST/GnQ2/x52Of8LXyP/B1Yb/xlvM/8deTr/EW4u/wRnJP8ZhD3/KpVM/xOAN/8DbCX/FXo2/x2NRP8ZiEL/F307/xqKQf8kolD/IKVP/yemVP8kmkz/EHwz/xaCPP8hqVb/FbFT/xmlTP8spVX/IpxL/xKaQf8buVf/H8po/x2TR/8YfDj/GYA9/xZ5Nv8Xpk3/Ic5m/x+wVP8YjkD/H5dI/yalUf8gmUv/F3w4/xt9PP8YgTv/F4U7/ySgUv8im07/Cm0o/wxtKP8foFD/IqZV/wxwKv8MWx//Gm0v/xV3Mv8ghEL/K45Q/xhgL/4AMAz/dY967P///wwAAAAAkqqX2Ac5FP0ANgz6ADQN/AM+FP8NSR7/CE4b/wxeJP8OZSj/HXU4/yJ4O/8KVh3/B0sV/xtzN/8cgkH/D20u/wVgIv8WfTj/K49J/xpzMf8CXx7/D3s2/xuVSf8fikb/GnU6/x6JQf8mq1P/HqxT/ySsV/8moFb/Fn08/xqBQP8no1T/HqpN/x+rTP8nq1T/IJhJ/xCTOf8kulf/K9Ju/x6USP8UdjX/D308/xV1Nf8epk//K9Rq/yCvU/8VkET/HJ1M/ySqUv8enEv/F346/xx7O/8XfDf/FoU7/yKsXP8kpVf/CWMj/wxhIv8soFb/Lada/wxxK/8GYCD/FnYz/xp/OP8hikX/K5NU/xpkMv4BLwr/d5B77P///wwAAAAAiKKRvBBCH/8JQxv9EEcg/w9JHf8MShv/CU4Z/w1eJP8PYSb/Clkg/wpZH/8QXiX/C1wi/x6AQP8ijUr/HX8+/xp2N/8ScjH/CGcj/xRzMf8WeTX/F41B/yelWP8nlFD/F3g4/xqMQf8jq1T/HqZR/xuZSv8fj0j/GHw9/xiCP/8nolH/IapN/yrCW/8jw1n/IMRc/yLGXf8em0P/GYk6/x6TSP8djkX/GY1G/yGKRv8bj0P/EYs7/yKlTv8pw2H/IbhY/yKlUP8imkv/FH83/x6GQf8nnVD/IaBO/yKoVf8jo1L/B2gk/wliIf8Pbir/Dm8p/xqDPf8cikP/HotE/yWPSP8OdTL/C24s/w1WJP4CMRD/d4977P///wwAAAAAh6KQwgxAHP8IRBr9EUog/w1LHP8KTBr/B08Z/xBfJf8UYSj/BlAY/wFMFP8MXyT/BF8i/yKDQ/8sk1H/HoNB/xt9Pf8Rby7/A2Ae/xJyMv8YfDj/GZFC/yarWf8ml07/GXg3/x6LQ/8pqlr/J6RU/yGVSf8gikX/FX07/xuCPf8xn1P/JKtT/yXMY/8Y02D/IdFk/y3Qa/8bk0P/FXc0/xyQR/8elkn/HZFG/x+RSP8Xhj7/DHQw/yKlUP8w1mv/JsRe/yelVP8pmU3/EH41/xiIP/8wqlr/J6hT/yapVf8lolD/A2gh/wZfH/8HYR7/BWAd/x6JQv8flUv/I49J/yqSTP8Obi7/BWIf/wpRH/4CMhT/d4987P///wwAAAAAiaaTwQ9DH/8JRBv9D0kf/wtOHf8SWSb/EFki/w1VHf8PVR//DVkh/wtfJP8cfD3/HIRC/xp3OP8ScDH/HYRC/yKLSP8SdTP/BmUj/xdvMv8fezv/G5JG/yOtV/8gnE3/H4dE/yKMSf8bjUX/HopE/xuEQf8chEL/IYdG/x+LR/8aj0X/GZFE/xqVRP8ZmET/FptG/xmbSf8Zhz//GX08/x6PSf8dlkv/HpNH/x6SRv8ilUn/JphN/yCcS/8XnUX/GJdD/xuLQP8dj0X/IplN/x6SRf8XezP/F4I2/yGoVP8kpVP/HIlA/xuAPf8Pair/DmYm/ySLRf8ik0v/Fn85/xd3M/8SbS7/EWwq/w1VI/4EMxT/d4987P///wwAAAAAiqaTwQ1BHf8GQRj9Dkge/wlMG/8UXir/EF0k/wVNFf8CTBT/Cl8k/wVjJf8ljEv/LpdV/xZwMv8HWR7/HIA//yiTT/8XczP/A2Ag/xFtL/8adjf/H49F/yyuW/8jn1H/H5BK/x+OSP8OfDX/FXk3/xJ5N/8TfTn/I41K/ySNSf8UfDf/FXg1/xRzMP8ZdTP/Gnk4/xp7O/8Zezr/Fno5/yCLR/8ckEf/GI1C/xmRQv8hnEv/L6hY/yCRRv8OdzH/E3k0/w54MP8PiT3/Ma1e/yeZS/8AWBP/CGki/yeqV/8pqFn/JJVN/yWPS/8JZif/B18i/yCIRP8fkUn/CXMt/wRlIf8NaCr/Emwq/wxSIf4ALxD/dY156////wwAAAAAjqqXwRJGIv8LRh39E0si/w5OH/8NVyP/C1oh/xBaIv8OWiH/G20z/xlxNf8ZcDT/F24y/xNoLP8VXyf/FHM0/xZ8Ov8aai//C2Ek/xR4OP8jhkb/HoQ//x2EPv8YgDz/Enk2/xmAOf8jiUD/IIlD/yOSSv8hkkn/G4lA/xyJQP8kk0r/JJRM/yGSS/8hlE7/G3c4/xdvMv8hjEf/H5VL/xyNRP8bh0D/H5NH/yCeTf8gpE7/J6xX/yGWSv8bfT3/JIlI/yKWTP8ikUr/GYU7/xiFOP8aij3/HotB/xuIPf8WhTv/GHk3/xp4OP8UcDL/FXAz/yCKR/8ckUj/GIY+/xiAOv8SczL/FG8t/xJXJv4HNBf+eZB97v///w0AAAAAiKaSwBFAHf8KQRr9Ckgc/wpIGP8KSBf/Ck4a/xJfKP8OZCr/InpA/yp9RP8HUhr/AEQO/w5cIv8NXyT/BV8g/wdfH/8QXSL/CFwf/xJ9Nf8rmlH/GHs4/wZbHf8KWh7/B1sc/xBuLP8nj0n/IZdL/yyuXv8opFb/Dn0z/w6ANf8ppVb/K6hY/yinV/8pq1n/EHAu/wZdHv8gmEz/Ja9c/xmKQP8RdDD/H5hH/yeuVv8lqlP/J6xY/x+VSf8UdTX/JIxJ/zCuYP8hlkr/BVsa/xRvK/8yrl//KqFV/wReHf8HXB3/Bl4e/wxiI/8heD3/Ins//x6EQv8YjET/HpFI/yeVT/8YeTv/FG0u/wRMG/sAKA3/Ynpp1f///wUAAAACjKiWxhRAIP4MRhr9C1Mg/wxTH/8PUB7/D1Ef/w5XIv8LWiP/FGUt/xdnL/8WZiz/FWUs/xduMf8RbzD/FHMz/xl6N/8beDf/GHc2/xV6Mv8Zfzf/GHs4/xR3NP8WdjT/FnQy/xl+Ov8gjUb/HZFF/x6YSv8hkkj/GYY9/xmMQf8hmEv/IJpM/x+dTP8fn03/EG8r/wxiIP8fl0j/IK1W/xyZSP8bi0H/H5JF/yGWSP8ilkv/IZVM/yGUS/8bjEb/I5dM/yiiUv8bjUL/DGIh/xRxLv8klUr/H41F/xVyM/8Way7/Em8v/xZxMv8ifz//HoNA/xuTSP8cmkz/Foc9/xyBP/8UaC//D1Ea/kp9V/9tiHb5WmpfXQAAAABVVVUDeZCDnxE3G/8COw38FmIq/xBdJ/8ITxv/BksX/wVJFv8GSxf/BEkW/wJMFv8gdTn/IoBC/x9/QP8df0D/JIpI/ymST/8kkUr/K5VO/xp4Nf8AWhj/EXUw/yCSSv8ekUj/JZJL/yaRS/8lkEr/Io1G/xN9Nv8aezf/JpBJ/yKTS/8hkEj/Ho9F/x2RRf8dk0T/DWol/wVfGv8nl0r/Ka1Y/yGoUf8nqVf/H4xD/xd4N/8Vejv/EnY2/ySSTf8vr2D/I6JQ/xuRQf8YhDv/CGIg/wlsJ/8SfDT/Fno3/xh8PP8Zejv/E3o5/xl9Pf8pjkr/IpNI/ySoV/8rrVz/Enoy/xJlK/8MTh3+AC8C/Yyojuj///83AAAAAP///wIAAAAAFy4iFklgT95BbUn/F1gm/hNYJf8KTxz/CE4a/wpRHf8NUh7/C00b/wlPG/8dcTb/HX0+/xhxNv8VbTL/H3s9/x+CQv8agz3/G4I7/xl4OP8Pby7/FX82/x+SSP8bjkX/GIQ9/x2DP/8hgj//IIVB/xmEP/8fgT//H4A+/x+EQP8ghUH/H4VA/x2FPv8dhT7/FXYy/xBxK/8ojUX/JpZJ/yKhTf8jqFT/IJJI/x2CQP8fiEX/HopF/yWRSf8klEf/IphJ/yOcTf8bi0H/CWIg/wxtKP8ahTz/G4Q+/xiCPv8ZhD//FYlC/xuKRf8gh0L/HIU+/yKSSv8nlE7/F28x/xhgK/8RTiH7EkIa/110XaQAAAAAACoABgAAAAAAAAAAAAAAAP///zO10bz4ADMM+QE6DPwMTRv/CVAc/xJfKf8UXyn/B0wZ/whOGv8gcTf/InxA/w1bJf8AShT/DV0j/wtkJ/8HZCP/A2Ed/xh6Of8rlFD/IJFG/yOQSP8chD//AWQg/wdjIv8FXR3/DW4s/yaVTv8hikX/B2Ag/wlhIv8HYyL/CGQj/wZjIP8EYh7/IolD/yySTf8QbSr/AFwX/x2RRP8srlr/IJhN/xqNRv8jmk7/LadZ/xqHPf8AWBD/F341/zCuYv8gk0n/CV8e/w9rKP8fkEX/IJBH/yGPR/8fkUn/K6VZ/y6iWP8GaiX/Bl8f/whgIv8JXyP/B1Ic/whNGv8CPhT6BDUR/GF5ZrD///8CAD8ABAAAAAAAAAAAZmZmBQAAAACTpZl+TWxV/y9cOv8QRh3/Dksc/w5dJ/8PXyj/CVEc/whRHP8fbjf/InU9/xBaKP8ETxj/DV0i/xBfJv8PXib/Clwh/xpzNP8kiET/HYlC/yaQSv8dgD3/CWMj/wxlJf8NaCf/FXQy/yWLR/8dhUD/D2oq/xFnJ/8QaSX/D2om/wxqJf8LbSf/HItC/ySQSP8TeDH/Cm4o/yCPRf8on1P/JJZN/xyOR/8gm1P/Kadb/x2IQP8LYyD/Gn03/ymhVf8hj0j/CWgk/w10Lf8ek0X/HpJG/x6SR/8flEn/KJtQ/yaXTP8Qci//EGYm/wxkI/8QYif/DE8e/wlEGP8pVzX/PGJJ/1hxYoIAAAAAAD8/BAAAAAAAAAAA////AX//fwK2trYH3OveZqvFs8YVPyD/CkAW/RNfKv8PYCn/ClIe/wlPG/8ITxz/BU8b/xFaKf8SXij/CVUc/wVMFv8ISxj/C0oY/w1KGP8ESxT/E24v/ymTTv8bfTv/BFwd/xBvLv8nkkz/HoQ//wlkI/8Rayv/J45K/yGPRf8kj0P/IY9D/yCORP8gjkX/HpFG/xqRRP8mn1H/MaVZ/xR9Nf8DYB3/Gn87/yWSTP8fkUr/HZJI/x6SRv8jkUf/HIM7/wRnIP8LdS7/Jo5H/x6SR/8jqVb/JKlW/yWlVf8nnVH/Bm8n/whqJf8kikX/KYtH/xJxLv8Tai3/CU4d/gY3E/6Zspvi7frtZp+fnwj///8BAAD/AQAAAAAAAAAAAAAAAAAAAAB/f38EAAAAAHeQhFEeSC3/BT4V+xBfKP8PXyn/DFEg/wtLHP8KSRr/CEkZ/xNZKP8UXSf/DFMc/wlMF/8MTBr/DUwb/xBKGv8ISxb/Fmsw/ymLSv8ffT7/CmUn/w91M/8ek0z/GIhA/wpkJP8TaSr/IY1H/xqSRP8dlET/GpdG/xqXR/8blUb/G5RF/xmWRf8joVD/LKNU/xJ9M/8IYyL/GX44/yKRSP8fkkj/H5RH/xiWRf8ZmUj/GIY6/whfHP8Qbiz/KohF/yCQRv8lqlf/H6xW/yGpVf8pn1P/CWwo/w1mJf8jiET/JYxF/xBzLv8QaCv/BUsa+wxAIP98j3+cAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABmmZkFv7+/BKS9rqcdSCz+Bz0U+gpNHP8JTRz/BUQV/gZCFP4QSx7/DEoc/wtOH/8ITxr/Bk4W/whNF/8QVyL/El0m/xJfJv8SYSb/DVwg/wROFf8TaS3/KI9N/x6PSv8cj0n/HpBI/x+LRf8ghkL/Bmgm/whvJv8soE//J6ZT/yKkUf8jo1H/IqVS/y2mV/8UgDX/Bm8l/xqHPP8klEv/F303/wVrJP8ajED/KqZW/yOmU/8nrVn/H49C/whfG/8NZCT/CmAf/w94MP8qqln/IapU/ySsVv8tn1P/D28r/xFpK/8RcS//D20q/w9rKP8Vai7/B0wc+ww+IP2BloSq////AzMzMwUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABVVVUDAAAAAJSpmmUmRCz/DTYU+xNFHP4LRxz/D0Ic/w07Gf8QRx/+Ekof/wlLG/8HTBn/Bk0X/wZNF/8OVCD/EF0k/wxhI/8PYyT/D1ke/wJIEP8TZSv/Ko9O/x+MSP8jj0v/IZJK/xqUSP8djkX/CGAg/w1mIv8yoFL/LKVV/yqlVf8rpVb/J6VU/y+lVf8aeTH/B2gg/x2HP/8nkU3/G3c0/wpkH/8hhj3/LKRW/yWjU/8sqFf/IY1D/wZhHf8IYiL/Al8b/wp2Kv8pqVj/JKhV/yqoV/8wnVL/EG8t/w9nLP8RaCv/EWYn/xBpKP8WaC7/B0QY/Bg8JP91hneHAAAAAD8/PwQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////AgAAAACqt6qWsM61/xRHIPkQRyH8m7Oe67XJuPAoXDv/BTwQ/AxNHf8KTBz/DEsd/wpMGv8LThz/CVAc/wlbHf8LYSH/FGgt/x90Of8ZajD/C1kf/w1jJv8Layn/C3Ut/xqSRv8biUH/DGgl/wxnI/8Pdy3/C3ku/w54MP8PdzH/DnYv/wh6LP8Rbib/Dm0o/wlcIf4HThj7DWEi/g5tJv8ScCn/DHcu/wx3L/8Mdy//DnIt/whkI/8ScDD/I4hA/xqFOP8QeC3/EXkx/w95Mv8Scy//Blsg/wlVIv8HTR39BkoX+wZKFvsHPBD5ka6U/bTHutdVamoM////Af///wEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJnMmQUCAgIAzd7NdidPNf8kTDH/s8GxcP///yY4W0L8ATcS/w5HHf4OSx3/CkoZ/wpMGf8HShj/BUoX/wtWH/8MYCT/FG0w/yJ+Qv8XbTH/AEkQ/wdUGv8OXSP/DWop/yORSf8hikX/DG0r/wxpJf8OaCP/Dmkl/wppJP8LaCT/DGkn/wxsKP8XZij/GWkt/xFNGv8JOwz/EFYf/xNsLP8PaSj/B2sl/wppJf8Main/D2kq/xBoKv8Tejj/K5RO/yKHP/8JaCD/DWgj/w9pJ/8RZCb/ClEc/wxIHf8FQRr/D0Qf/xFBH/8bQCX/qrmozP///xH///8B////AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF/f38CAAAAAGZ/cnias6TGorOoLwAAAABTY1dAk7Cd0zdnRP8EOw3+EFQe/xBVIP8MTxz/CEkZ/wxQH/8GUh3/DmYr/xl9Pv8TdTj/FW0x/xZoLv8FURf/Cloe/xFwL/8PbS3/CWYm/wljI/8LUhn/DFEY/w9lJv8UaCn/CVgd/wpWHv8MTBv9DE0b/ydHIOEpOBhoH0ge7QhNGP8RWiP+FGwt/xFgJf8HSxr8B00c+wZLGfwLTxz7EFci+xBdI/0QaSb/D2om/xBpKf8QYib/BUYW/BVMJvt9oojRf5uHpH2ZiaOFpJOknraoTQAAAACqqqoDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////AQAAAAAGBQYAAQEBAP///wMAAAAA////Fz5oSvIANwj+EFoh/hJfJv8MVSH/CEoa/w9KIP8HSRr/E2Ur/yJ9Qv8ffEH/KIFH/x9zOP8ASxL/CU8Y/wpeI/8KXSH/DV8j/w1eJf8KQBT/DkAT/xNmLP8VbDD/BlAY/wlHGf8JQBf7CkEU/yc7G28AAAAAGjwapQRAFP8PVSH7G28z/wlOHf4FOBb/Dz4f/wU6FP8KQBf/BD4V/wNIGP8Tay3/D20q/xZsLP8UYyf/ADYJ/zBYOv/N3c2mAAAAAAAAAAAAAAAAAAAAAP///wEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD8/PwQAAAABAAAAAP///wF/f38C////DDNeQewCPBH/D1oi/hBfJv8MUyL/DUse/xJIH/8NSCD/EVIk/xNZJ/8SWif/FF4o/xJgKv8LWiP/D1gg/w1XHv8NVh7/D2Al/w9eJf8KRBb+DUMY/Q9WJP8KViD/CU8c/xFJHf8MRR3+C0Mb/x82EjgAPwAEEjsWfAlGG/8NTiD7DkwZ/lJ/Wv90jnqtMlA9dW6JdrcqTTNzLE41blV8Y8saUir+EVUi/Q1SIP4kXTT+cpV630xfTnjD1MZff79/BD8/PwQ/Pz8Ef/9/AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP///wEAAAAA////DzdeQu0DNw7/EVgi/hZfKP8RUiP/EE0f/wk8Ev4ALQ3/BTYU/wM8E/8HQxf/BkYU/whRHv8SYS3/EFwl/wpPGf8MUBv/El4n/xBcJf8ERBL/CUAW/w9HHv8LRxn/CUca/xFHGf8KQxv+CD8Y/x81ETkAAAAAEzgVggtFG/8DNxH5AB4A/2+Hb/f///8MAAAAAAQBAwAAAAAAAAAAAHWGflsPNx3/ACsG+QAkAfsrUTf/3uzifgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP///wEAAAAA////DjleRO0HOhL/DVQf/hFaJP8OTh7/BUEP/z1qRf9zj37+PmNJ/wc7F/8SSyL/D00f/wxQIP8OVyb/D1Uk/wxPHv8PTyD/E1Ej/hpSJf8jRCHnJUIi3hZHIP8KRRz+D0wi/w1MHf8KRBz+DUAZ/x81ETkAAAAAGzsZgQo9F/87Y0b4bY92/V9xY34AAAAAKlVVBgAAAAMzMzMFM2YzBUdfTyBjfmzkbY11/2uJc/9shHPhhZCFFzNmZgWZzJkFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP///wEAAAAA////DjZbRe0FNhP/CU0c/gZOHf8KRBr+AzMN/myOdeL///87bot2zQs4Gf8RQyD9Dkgd/whIGv8JSRz/CEka/whKG/8KSRv+Az8R/hY7FvJfVz8gWlo8IhlAGvYIQBn+EUsk/glMHP8MRBz+ET4Y/x8xETkAAAAAHTsZgQAwDP+KqJL/////jQICAgC/v78EAAAAAAAAAAAAAAAA////AQAAAAD///8v////Uv///0L///8mAAAAAP///wEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+// 100% Handcrafted Pixel Art Tree Sprites & Procedural Foliage Generators
+// Multiple crown shapes, palettes, and organic branch variations
+
+export interface FoliageCluster {
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+}
+
+export interface CrownDef {
+  id: number;
+  name: string;
+  width: number;
+  height: number;
+  clusters: FoliageCluster[];
+}
+
+export interface CrownPalette {
+  name: string;
+  outline: string;
+  deepShadow: string;
+  midShadow: string;
+  baseLeaf: string;
+  sunlit: string;
+  highlight: string;
+  specular: string;
+  particlePrimary: number;
+  particleSecondary: number;
+}
+
+export const CROWN_PALETTES: CrownPalette[] = [
+  // 0: Lush Emerald (Klasyczny Szmaragd)
+  {
+    name: 'emerald',
+    outline: '#0c2610',
+    deepShadow: '#13471e',
+    midShadow: '#1f6a2e',
+    baseLeaf: '#2d8e3f',
+    sunlit: '#44bb57',
+    highlight: '#77e086',
+    specular: '#b2f7bc',
+    particlePrimary: 0x2d8e3f,
+    particleSecondary: 0x77e086,
+  },
+  // 1: Warm Olive Forest (Ciepły Dąb / Oliwka)
+  {
+    name: 'olive',
+    outline: '#1a280c',
+    deepShadow: '#284313',
+    midShadow: '#3c641d',
+    baseLeaf: '#528328',
+    sunlit: '#72ad37',
+    highlight: '#9ed654',
+    specular: '#d5f68b',
+    particlePrimary: 0x528328,
+    particleSecondary: 0x9ed654,
+  },
+  // 2: Deep Teal Spruce (Głęboki Bór / Świerk)
+  {
+    name: 'teal',
+    outline: '#08231c',
+    deepShadow: '#0f3c32',
+    midShadow: '#165c4c',
+    baseLeaf: '#1f7d67',
+    sunlit: '#2ea58d',
+    highlight: '#5bdabc',
+    specular: '#9ef2df',
+    particlePrimary: 0x1f7d67,
+    particleSecondary: 0x5bdabc,
+  },
+  // 3: Golden Summer Apple (Złocisty Letni Gaj)
+  {
+    name: 'golden',
+    outline: '#1e2808',
+    deepShadow: '#30420e',
+    midShadow: '#496317',
+    baseLeaf: '#658821',
+    sunlit: '#8ab92e',
+    highlight: '#b7df4b',
+    specular: '#eaf793',
+    particlePrimary: 0x658821,
+    particleSecondary: 0xb7df4b,
+  }
+];
+
+export const CROWN_DEFS: CrownDef[] = [
+  // Variant 0: Round Oak (Gęsty, okrągły dąb)
+  {
+    id: 0,
+    name: 'round_oak',
+    width: 76,
+    height: 64,
+    clusters: [
+      { cx: 38, cy: 30, rx: 22, ry: 20 },
+      { cx: 38, cy: 16, rx: 17, ry: 13 },
+      { cx: 22, cy: 26, rx: 16, ry: 16 },
+      { cx: 54, cy: 26, rx: 16, ry: 16 },
+      { cx: 16, cy: 40, rx: 14, ry: 13 },
+      { cx: 60, cy: 40, rx: 14, ry: 13 },
+      { cx: 28, cy: 46, rx: 14, ry: 11 },
+      { cx: 48, cy: 46, rx: 14, ry: 11 }
+    ]
+  },
+  // Variant 1: Tall Forest (Wysokie smukłe drzewo leśne)
+  {
+    id: 1,
+    name: 'tall_forest',
+    width: 62,
+    height: 78,
+    clusters: [
+      { cx: 31, cy: 15, rx: 13, ry: 12 },
+      { cx: 31, cy: 28, rx: 17, ry: 14 },
+      { cx: 22, cy: 42, rx: 15, ry: 14 },
+      { cx: 40, cy: 41, rx: 15, ry: 14 },
+      { cx: 18, cy: 56, rx: 15, ry: 13 },
+      { cx: 44, cy: 55, rx: 15, ry: 13 },
+      { cx: 31, cy: 61, rx: 14, ry: 10 }
+    ]
+  },
+  // Variant 2: Wide Ancient (Szerokie, rozłożyste prastare drzewo)
+  {
+    id: 2,
+    name: 'wide_ancient',
+    width: 90,
+    height: 54,
+    clusters: [
+      { cx: 45, cy: 22, rx: 20, ry: 16 },
+      { cx: 33, cy: 15, rx: 14, ry: 11 },
+      { cx: 57, cy: 14, rx: 14, ry: 11 },
+      { cx: 24, cy: 27, rx: 17, ry: 15 },
+      { cx: 66, cy: 26, rx: 17, ry: 15 },
+      { cx: 12, cy: 36, rx: 11, ry: 11 },
+      { cx: 78, cy: 35, rx: 11, ry: 11 },
+      { cx: 32, cy: 38, rx: 15, ry: 10 },
+      { cx: 58, cy: 38, rx: 15, ry: 10 }
+    ]
+  },
+  // Variant 3: Split Twin (Rozwidlona, podwójna korona)
+  {
+    id: 3,
+    name: 'split_twin',
+    width: 82,
+    height: 60,
+    clusters: [
+      { cx: 26, cy: 25, rx: 18, ry: 17 },
+      { cx: 24, cy: 14, rx: 13, ry: 11 },
+      { cx: 13, cy: 37, rx: 12, ry: 12 },
+      { cx: 56, cy: 25, rx: 18, ry: 17 },
+      { cx: 58, cy: 14, rx: 13, ry: 11 },
+      { cx: 69, cy: 37, rx: 12, ry: 12 },
+      { cx: 41, cy: 34, rx: 13, ry: 12 },
+      { cx: 29, cy: 43, rx: 12, ry: 9 },
+      { cx: 53, cy: 43, rx: 12, ry: 9 }
+    ]
+  },
+  // Variant 4: Wild Bushy (Asymetryczna, dzika korona)
+  {
+    id: 4,
+    name: 'wild_bushy',
+    width: 70,
+    height: 56,
+    clusters: [
+      { cx: 39, cy: 24, rx: 19, ry: 17 },
+      { cx: 45, cy: 14, rx: 14, ry: 11 },
+      { cx: 20, cy: 30, rx: 16, ry: 14 },
+      { cx: 10, cy: 37, rx: 9, ry: 9 },
+      { cx: 55, cy: 36, rx: 13, ry: 13 },
+      { cx: 26, cy: 42, rx: 13, ry: 10 },
+      { cx: 46, cy: 42, rx: 14, ry: 10 }
+    ]
+  }
+];
+
+function hexToRgbaArray(hex: string): [number, number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b, 255];
+}
+
+export function renderCrownToContext(
+  ctx: CanvasRenderingContext2D,
+  crownDef: CrownDef,
+  palette: CrownPalette
+): void {
+  const { width, height, clusters } = crownDef;
+  const imgData = ctx.createImageData(width, height);
+  const pixels = imgData.data;
+
+  const mask = new Uint8Array(width * height);
+  const clusterIdMap = new Int16Array(width * height);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let minDist = 999;
+      let bestCluster = -1;
+
+      for (let c = 0; c < clusters.length; c++) {
+        const cl = clusters[c];
+        const dx = (x - cl.cx) / cl.rx;
+        const dy = (y - cl.cy) / cl.ry;
+        const baseDist = dx * dx + dy * dy;
+
+        // Leafy scalloping contour (bumps around perimeter that look like foliage bunches)
+        const angle = Math.atan2(dy, dx);
+        const scalloping = Math.sin(angle * 6.0) * 0.08 + Math.cos(angle * 3.0) * 0.04;
+        const effectiveDist = baseDist + scalloping;
+
+        if (effectiveDist <= 1.0) {
+          if (effectiveDist < minDist) {
+            minDist = effectiveDist;
+            bestCluster = c;
+          }
+        }
+      }
+
+      // Trunk notch: indent at bottom center where the trunk joins
+      const trunkCenterX = width / 2;
+      const distFromTrunk = Math.abs(x - trunkCenterX);
+      if (distFromTrunk <= 4 && y >= height - 7) {
+        continue;
+      }
+
+      const idx = y * width + x;
+      if (bestCluster !== -1) {
+        mask[idx] = 1;
+        clusterIdMap[idx] = bestCluster;
+      }
+    }
+  }
+
+  // Identify outline pixels
+  const isOutline = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = y * width + x;
+      if (!mask[idx]) continue;
+
+      let edge = false;
+      if (x === 0 || x === width - 1 || y === 0 || y === height - 1) {
+        edge = true;
+      } else {
+        if (!mask[idx - 1] || !mask[idx + 1] || !mask[idx - width] || !mask[idx + width]) {
+          edge = true;
+        }
+      }
+      if (edge) isOutline[idx] = 1;
+    }
+  }
+
+  const cOutline = hexToRgbaArray(palette.outline);
+  const cDeepShadow = hexToRgbaArray(palette.deepShadow);
+  const cMidShadow = hexToRgbaArray(palette.midShadow);
+  const cBaseLeaf = hexToRgbaArray(palette.baseLeaf);
+  const cSunlit = hexToRgbaArray(palette.sunlit);
+  const cHighlight = hexToRgbaArray(palette.highlight);
+  const cSpecular = hexToRgbaArray(palette.specular);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = y * width + x;
+      if (!mask[idx]) continue;
+
+      const pIdx = idx * 4;
+
+      if (isOutline[idx]) {
+        pixels[pIdx] = cOutline[0];
+        pixels[pIdx + 1] = cOutline[1];
+        pixels[pIdx + 2] = cOutline[2];
+        pixels[pIdx + 3] = 255;
+        continue;
+      }
+
+      const cId = clusterIdMap[idx];
+      const cl = clusters[cId];
+
+      const nx = (x - cl.cx) / cl.rx;
+      const ny = (y - cl.cy) / cl.ry;
+
+      // Illumination from top-left
+      let light = -0.45 * nx - 0.85 * ny;
+      const heightGrad = (1.0 - y / height) * 0.40;
+      light += heightGrad;
+
+      // Soft cluster shadow: if another cluster is above us, cast shadow down
+      let castShadow = 0;
+      for (let c = 0; c < clusters.length; c++) {
+        if (c === cId) continue;
+        const other = clusters[c];
+        if (other.cy < cl.cy) {
+          const odx = (x - other.cx) / other.rx;
+          const ody = (y - (other.cy + other.ry * 0.6)) / (other.ry * 0.7);
+          if (odx * odx + ody * ody < 1.0 && y > other.cy) {
+            castShadow = 0.45;
+          }
+        }
+      }
+      light -= castShadow;
+
+      // Leaf texture flecks (2x2 pixel resolution for chunky retro feel)
+      const gx = Math.floor(x / 2);
+      const gy = Math.floor(y / 2);
+      const dappleVal = ((gx * 374761393 + gy * 668265263) ^ 0x5bf03635) >>> 0;
+      const dapple = (dappleVal % 1000) / 1000;
+
+      let dappleMod = 0;
+      if (dapple > 0.75) dappleMod = +0.26;
+      else if (dapple < 0.22) dappleMod = -0.26;
+
+      const totalIllum = light + dappleMod;
+
+      let col: [number, number, number, number];
+      if (totalIllum < -0.32) {
+        col = cDeepShadow;
+      } else if (totalIllum < 0.08) {
+        col = cMidShadow;
+      } else if (totalIllum < 0.58) {
+        col = cBaseLeaf;
+      } else if (totalIllum < 1.08) {
+        col = cSunlit;
+      } else if (totalIllum < 1.48) {
+        col = cHighlight;
+      } else {
+        col = cSpecular;
+      }
+
+      pixels[pIdx] = col[0];
+      pixels[pIdx + 1] = col[1];
+      pixels[pIdx + 2] = col[2];
+      pixels[pIdx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+}
 
 export function drawTreeTrunk(ctx: CanvasRenderingContext2D, T: number): void {
   // Centered tree trunk (width 14px in 24px tile)
@@ -52,15 +386,16 @@ export function drawTreeBranchL(ctx: CanvasRenderingContext2D, T: number): void 
   for (const [x, y] of branchPts) ctx.fillRect(x, y, 1, 1);
   ctx.fillStyle = '#382012';
   for (const [x, y] of [[4,14],[3,13],[2,12],[1,11]]) ctx.fillRect(x, y, 1, 1);
-  // Leaf cluster on branch tip
-  ctx.fillStyle = '#0d381e';
+
+  // Handcrafted leaf cluster on branch tip matching pixel art foliage
+  ctx.fillStyle = '#0c2610';
   const outlinePts = [[1,4],[2,4],[0,5],[3,5],[0,6],[4,6],[0,7],[4,7],[0,8],[4,8],[0,9],[3,9],[1,10]];
   for (const [x, y] of outlinePts) ctx.fillRect(x, y, 1, 1);
-  ctx.fillStyle = '#279649';
+  ctx.fillStyle = '#2d8e3f';
   ctx.fillRect(1, 5, 2, 4); ctx.fillRect(3, 6, 1, 2);
-  ctx.fillStyle = '#72ee93'; ctx.fillRect(2, 5, 1, 2);
-  ctx.fillStyle = '#3fc867'; ctx.fillRect(1, 6, 1, 2);
-  ctx.fillStyle = '#196332'; ctx.fillRect(1, 9, 2, 1);
+  ctx.fillStyle = '#77e086'; ctx.fillRect(2, 5, 1, 2);
+  ctx.fillStyle = '#44bb57'; ctx.fillRect(1, 6, 1, 2);
+  ctx.fillStyle = '#13471e'; ctx.fillRect(1, 9, 2, 1);
 }
 
 export function drawTreeBranchR(ctx: CanvasRenderingContext2D, T: number): void {
@@ -71,15 +406,16 @@ export function drawTreeBranchR(ctx: CanvasRenderingContext2D, T: number): void 
   for (const [x, y] of branchPts) ctx.fillRect(x, y, 1, 1);
   ctx.fillStyle = '#382012';
   for (const [x, y] of [[19,14],[20,13],[21,12],[22,11]]) ctx.fillRect(x, y, 1, 1);
-  // Leaf cluster on branch tip
-  ctx.fillStyle = '#0d381e';
+
+  // Handcrafted leaf cluster on branch tip
+  ctx.fillStyle = '#0c2610';
   const outlinePts = [[21,4],[22,4],[20,5],[23,5],[19,6],[23,6],[19,7],[23,7],[19,8],[23,8],[20,9],[23,9],[22,10]];
   for (const [x, y] of outlinePts) ctx.fillRect(x, y, 1, 1);
-  ctx.fillStyle = '#279649';
+  ctx.fillStyle = '#2d8e3f';
   ctx.fillRect(20, 5, 2, 4); ctx.fillRect(19, 6, 1, 2);
-  ctx.fillStyle = '#72ee93'; ctx.fillRect(21, 5, 1, 2);
-  ctx.fillStyle = '#3fc867'; ctx.fillRect(22, 6, 1, 2);
-  ctx.fillStyle = '#196332'; ctx.fillRect(20, 9, 2, 1);
+  ctx.fillStyle = '#77e086'; ctx.fillRect(21, 5, 1, 2);
+  ctx.fillStyle = '#44bb57'; ctx.fillRect(22, 6, 1, 2);
+  ctx.fillStyle = '#13471e'; ctx.fillRect(20, 9, 2, 1);
 }
 
 export function drawTreeSapling(ctx: CanvasRenderingContext2D, T: number): void {
@@ -92,43 +428,59 @@ export function drawTreeSapling(ctx: CanvasRenderingContext2D, T: number): void 
   ctx.fillStyle = '#855331'; ctx.fillRect(12, 13, 1, 9);
   ctx.fillStyle = '#b3774c'; ctx.fillRect(12, 13, 1, 5);
   // Left baby leaf
-  ctx.fillStyle = '#0d381e';
+  ctx.fillStyle = '#0c2610';
   for (const [x, y] of [[8,11],[7,12],[6,13],[6,14],[7,15],[8,16],[9,16]]) ctx.fillRect(x, y, 1, 1);
-  ctx.fillStyle = '#279649'; ctx.fillRect(7, 13, 3, 2); ctx.fillRect(8, 12, 3, 1); ctx.fillRect(8, 15, 2, 1);
-  ctx.fillStyle = '#72ee93'; ctx.fillRect(8, 13, 1, 1);
-  ctx.fillStyle = '#3fc867'; ctx.fillRect(9, 12, 1, 1);
+  ctx.fillStyle = '#2d8e3f'; ctx.fillRect(7, 13, 3, 2); ctx.fillRect(8, 12, 3, 1); ctx.fillRect(8, 15, 2, 1);
+  ctx.fillStyle = '#77e086'; ctx.fillRect(8, 13, 1, 1);
+  ctx.fillStyle = '#44bb57'; ctx.fillRect(9, 12, 1, 1);
   // Right baby leaf
-  ctx.fillStyle = '#0d381e';
+  ctx.fillStyle = '#0c2610';
   for (const [x, y] of [[13,8],[14,8],[15,9],[16,10],[17,11],[16,12],[15,13],[14,14]]) ctx.fillRect(x, y, 1, 1);
-  ctx.fillStyle = '#279649'; ctx.fillRect(13, 10, 3, 3); ctx.fillRect(13, 9, 2, 1); ctx.fillRect(16, 11, 1, 1);
-  ctx.fillStyle = '#72ee93'; ctx.fillRect(14, 10, 1, 1); ctx.fillRect(15, 11, 1, 1);
-  ctx.fillStyle = '#3fc867'; ctx.fillRect(14, 11, 1, 1);
+  ctx.fillStyle = '#2d8e3f'; ctx.fillRect(13, 10, 3, 3); ctx.fillRect(13, 9, 2, 1); ctx.fillRect(16, 11, 1, 1);
+  ctx.fillStyle = '#77e086'; ctx.fillRect(14, 10, 1, 1); ctx.fillRect(15, 11, 1, 1);
+  ctx.fillStyle = '#44bb57'; ctx.fillRect(14, 11, 1, 1);
   // Top sprout bud
-  ctx.fillStyle = '#0d381e'; ctx.fillRect(11, 9, 2, 1);
-  ctx.fillStyle = '#3fc867'; ctx.fillRect(11, 10, 1, 1);
-  ctx.fillStyle = '#72ee93'; ctx.fillRect(12, 10, 1, 1);
+  ctx.fillStyle = '#0c2610'; ctx.fillRect(11, 9, 2, 1);
+  ctx.fillStyle = '#44bb57'; ctx.fillRect(11, 10, 1, 1);
+  ctx.fillStyle = '#77e086'; ctx.fillRect(12, 10, 1, 1);
 }
 
 export function drawLushLeaves(ctx: CanvasRenderingContext2D, T: number): void {
-  // Seamless organic leaf block (no ugly black borders!)
-  ctx.fillStyle = '#279649';
+  // Beautiful seamless organic pixel art leaf block
+  ctx.fillStyle = '#2d8e3f';
   ctx.fillRect(0, 0, T, T);
-  // Clustered highlights
-  ctx.fillStyle = '#72ee93';
-  ctx.fillRect(3, 2, 4, 3); ctx.fillRect(13, 4, 5, 3);
-  ctx.fillRect(6, 12, 4, 3); ctx.fillRect(16, 14, 4, 3);
-  // Vibrant midtones
-  ctx.fillStyle = '#3fc867';
-  ctx.fillRect(2, 4, 6, 4); ctx.fillRect(12, 6, 7, 4);
-  ctx.fillRect(5, 14, 6, 4); ctx.fillRect(15, 16, 6, 4);
-  // Foliage shadows & depth clefts
-  ctx.fillStyle = '#196332';
-  ctx.fillRect(0, 8, 3, 3); ctx.fillRect(9, 10, 3, 3);
-  ctx.fillRect(8, 0, 4, 3); ctx.fillRect(19, 8, 4, 3);
-  ctx.fillRect(10, 19, 4, 4); ctx.fillRect(0, 18, 3, 4);
-  ctx.fillStyle = '#0d381e';
-  ctx.fillRect(1, 9, 1, 2); ctx.fillRect(10, 1, 2, 1);
-  ctx.fillRect(10, 11, 1, 1); ctx.fillRect(20, 9, 2, 1);
+
+  // Layered foliage clusters
+  // 1. Shaded underside crevices
+  ctx.fillStyle = '#13471e';
+  ctx.fillRect(0, 7, 3, 3); ctx.fillRect(8, 9, 4, 3);
+  ctx.fillRect(18, 6, 4, 3); ctx.fillRect(10, 18, 5, 4);
+  ctx.fillRect(0, 19, 4, 3); ctx.fillRect(19, 18, 3, 4);
+
+  // 2. Mid shadow
+  ctx.fillStyle = '#1f6a2e';
+  ctx.fillRect(2, 5, 5, 3); ctx.fillRect(11, 7, 6, 3);
+  ctx.fillRect(4, 16, 6, 3); ctx.fillRect(14, 15, 5, 3);
+
+  // 3. Vibrant sunlit leaf clusters
+  ctx.fillStyle = '#44bb57';
+  ctx.fillRect(3, 2, 6, 4); ctx.fillRect(13, 3, 7, 4);
+  ctx.fillRect(6, 11, 6, 4); ctx.fillRect(15, 12, 6, 4);
+
+  // 4. Bright sunlit highlights
+  ctx.fillStyle = '#77e086';
+  ctx.fillRect(4, 2, 3, 2); ctx.fillRect(14, 3, 4, 2);
+  ctx.fillRect(7, 11, 3, 2); ctx.fillRect(16, 12, 3, 2);
+
+  // 5. Specular leaf tip glints
+  ctx.fillStyle = '#b2f7bc';
+  ctx.fillRect(5, 2, 1, 1); ctx.fillRect(15, 3, 1, 1);
+  ctx.fillRect(8, 11, 1, 1); ctx.fillRect(17, 12, 1, 1);
+
+  // 6. Deep inner leaf gaps (dark accents)
+  ctx.fillStyle = '#0c2610';
+  ctx.fillRect(1, 8, 2, 1); ctx.fillRect(9, 10, 2, 1);
+  ctx.fillRect(19, 7, 2, 1); ctx.fillRect(11, 19, 2, 1);
 }
 
 export function drawWoodBlock(ctx: CanvasRenderingContext2D, T: number): void {

@@ -1,6 +1,8 @@
 import { BlockId, GAME_CONSTANTS } from '../types/index.js';
 import {
-  CROWN_72_64_RGBA,
+  CROWN_DEFS,
+  CROWN_PALETTES,
+  renderCrownToContext,
   drawTreeTrunk,
   drawTreeRoot,
   drawTreeBranchL,
@@ -44,13 +46,31 @@ export class TextureGenerator {
     // 7. Generate Celestial Textures (Sun & Moon)
     this.createCelestialTextures(scene);
 
-    // 8. Generate Tree Crown Texture (72x64) from Terraria-inspired pixel art
+    // 8. Generate Procedural Handcrafted Tree Crown Textures (5 shapes x 4 palettes = 20 textures)
+    for (let v = 0; v < CROWN_DEFS.length; v++) {
+      const cDef = CROWN_DEFS[v];
+      for (let p = 0; p < CROWN_PALETTES.length; p++) {
+        const key = `tree_crown_${v}_${p}`;
+        if (!scene.textures.exists(key)) {
+          const canvas = scene.textures.createCanvas(key, cDef.width, cDef.height);
+          if (canvas) {
+            const ctx = canvas.context;
+            ctx.imageSmoothingEnabled = false;
+            renderCrownToContext(ctx, cDef, CROWN_PALETTES[p]);
+            canvas.refresh();
+          }
+        }
+      }
+    }
+
+    // Default fallback crown alias
     if (!scene.textures.exists('tree_crown')) {
-      const canvas = scene.textures.createCanvas('tree_crown', 72, 64);
+      const def = CROWN_DEFS[0];
+      const canvas = scene.textures.createCanvas('tree_crown', def.width, def.height);
       if (canvas) {
         const ctx = canvas.context;
         ctx.imageSmoothingEnabled = false;
-        this.decodePixelData(ctx, 72, 64, CROWN_72_64_RGBA);
+        renderCrownToContext(ctx, def, CROWN_PALETTES[0]);
         canvas.refresh();
       }
     }

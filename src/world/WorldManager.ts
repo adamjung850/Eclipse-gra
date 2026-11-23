@@ -1,12 +1,15 @@
 import { BlockId, GAME_CONSTANTS } from '../types/index.js';
 import { BLOCK_DEFINITIONS } from './BlockTypes.js';
 import { GeneratedWorldData, TreeRecord } from './WorldGenerator.js';
+import { CROWN_PALETTES, CROWN_DEFS } from '../textures/TreeSprites.js';
 
 export interface ActiveTree {
   x: number;
   surfaceY: number;
   treeTopY: number;
   trunkHeight: number;
+  crownVariant: number;
+  colorVariant: number;
   crownSprite?: Phaser.GameObjects.Image;
 }
 
@@ -51,7 +54,9 @@ export class WorldManager {
           x: t.x,
           surfaceY: t.surfaceY,
           treeTopY: t.treeTopY,
-          trunkHeight: t.trunkHeight
+          trunkHeight: t.trunkHeight,
+          crownVariant: t.crownVariant ?? 0,
+          colorVariant: t.colorVariant ?? 0
         });
       }
     }
@@ -120,7 +125,9 @@ export class WorldManager {
 
   public isNaturalTreeLeaf(x: number, y: number): boolean {
     for (const tree of this.activeTrees) {
-      if (Math.abs(tree.x - x) <= 1 && y <= tree.treeTopY && y >= tree.treeTopY - 2) {
+      const halfW = (tree.crownVariant === 2 || tree.crownVariant === 3) ? 2 : 1;
+      const topY = tree.crownVariant === 1 ? tree.treeTopY - 3 : tree.treeTopY - 2;
+      if (Math.abs(tree.x - x) <= halfW && y <= tree.treeTopY && y >= topY) {
         return true;
       }
     }
@@ -130,9 +137,14 @@ export class WorldManager {
   private spawnInitialTreeCrowns(): void {
     const T = GAME_CONSTANTS.TILE_SIZE;
     for (const tree of this.activeTrees) {
-      const crown = this.scene.add.image(tree.x * T + T / 2, tree.treeTopY * T - 18, 'tree_crown');
+      const texKey = `tree_crown_${tree.crownVariant}_${tree.colorVariant}`;
+      const crown = this.scene.add.image(
+        tree.x * T + T / 2,
+        tree.treeTopY * T + 7,
+        this.scene.textures.exists(texKey) ? texKey : 'tree_crown'
+      );
       crown.setDepth(0);
-      crown.setOrigin(0.5, 0.5);
+      crown.setOrigin(0.5, 1.0);
       tree.crownSprite = crown;
     }
   }
@@ -276,11 +288,15 @@ export class WorldManager {
 
     // If breaking a leaf block of a tree, check if crown needs to be removed
     if (blockId === BlockId.LEAVES) {
-      const treeIdx = this.activeTrees.findIndex(t => Math.abs(t.x - tileX) <= 1 && tileY <= t.treeTopY && tileY >= t.treeTopY - 2);
+      const treeIdx = this.activeTrees.findIndex(t => {
+        const halfW = (t.crownVariant === 2 || t.crownVariant === 3) ? 2 : 1;
+        const topY = t.crownVariant === 1 ? t.treeTopY - 3 : t.treeTopY - 2;
+        return Math.abs(t.x - tileX) <= halfW && tileY <= t.treeTopY && tileY >= topY;
+      });
       if (treeIdx !== -1) {
         const tree = this.activeTrees[treeIdx];
         if (tree.crownSprite) {
-          this.emitLeafBurst(tree.x * GAME_CONSTANTS.TILE_SIZE + 12, tree.treeTopY * GAME_CONSTANTS.TILE_SIZE - 18);
+          this.emitLeafBurst(tree.x * GAME_CONSTANTS.TILE_SIZE + 12, tree.treeTopY * GAME_CONSTANTS.TILE_SIZE - 20, tree.colorVariant);
           tree.crownSprite.destroy();
           tree.crownSprite = undefined;
         }
@@ -321,13 +337,16 @@ export class WorldManager {
     if (treeIdx !== -1) {
       const tree = this.activeTrees[treeIdx];
       if (tree.crownSprite) {
-        this.emitLeafBurst(tree.x * GAME_CONSTANTS.TILE_SIZE + 12, tree.treeTopY * GAME_CONSTANTS.TILE_SIZE - 18);
+        this.emitLeafBurst(tree.x * GAME_CONSTANTS.TILE_SIZE + 12, tree.treeTopY * GAME_CONSTANTS.TILE_SIZE - 20, tree.colorVariant);
         tree.crownSprite.destroy();
       }
 
       // Clear canopy blocks and drop saplings
-      for (let lx = tree.x - 1; lx <= tree.x + 1; lx++) {
-        for (let ly = tree.treeTopY - 2; ly <= tree.treeTopY; ly++) {
+      const halfW = (tree.crownVariant === 2 || tree.crownVariant === 3) ? 2 : 1;
+      const topY = tree.crownVariant === 1 ? tree.treeTopY - 3 : tree.treeTopY - 2;
+
+      for (let lx = tree.x - halfW; lx <= tree.x + halfW; lx++) {
+        for (let ly = topY; ly <= tree.treeTopY; ly++) {
           if (lx >= 0 && lx < this.width && ly >= 0) {
             if (this.foreground[lx][ly] === BlockId.LEAVES) {
               this.foreground[lx][ly] = BlockId.AIR;
@@ -345,18 +364,19 @@ export class WorldManager {
     }
   }
 
-  public emitLeafBurst(worldX: number, worldY: number): void {
-    for (let i = 0; i < 12; i++) {
+  public emitLeafBurst(worldX: number, worldY: number, colorVariant: number = 0): void {
+    const pal = CROWN_PALETTES[colorVariant] || CROWN_PALETTES[0];
+    for (let i = 0; i < 16; i++) {
       const p = this.scene.add.image(
-        worldX + (Math.random() - 0.5) * 40,
-        worldY + (Math.random() - 0.5) * 32,
+        worldX + (Math.random() - 0.5) * 44,
+        worldY + (Math.random() - 0.5) * 36,
         'particle_chip'
       );
-      p.setTint(Math.random() > 0.4 ? 0x279649 : 0x72ee93);
+      p.setTint(Math.random() > 0.4 ? pal.particlePrimary : pal.particleSecondary);
       p.setDepth(15);
       this.scene.tweens.add({
         targets: p,
-        x: p.x + (Math.random() - 0.5) * 44,
+        x: p.x + (Math.random() - 0.5) * 48,
         y: p.y + 25 + Math.random() * 40,
         alpha: 0,
         duration: 450 + Math.random() * 350,
@@ -368,11 +388,26 @@ export class WorldManager {
   public growTreeAt(tileX: number, surfaceY: number): void {
     if (this.getBlock(tileX, surfaceY) !== BlockId.SAPLING) return;
 
-    const trunkHeight = 5 + Math.floor(Math.random() * 3); // 5 to 7 blocks
+    // Pick diverse height for grown saplings:
+    const roll = Math.random();
+    let trunkHeight: number;
+    if (roll < 0.3) {
+      trunkHeight = 4 + Math.floor(Math.random() * 2);
+    } else if (roll < 0.75) {
+      trunkHeight = 6 + Math.floor(Math.random() * 3);
+    } else {
+      trunkHeight = 9 + Math.floor(Math.random() * 2);
+    }
     const treeTopY = surfaceY - trunkHeight + 1;
 
+    // Pick random crown and color variants
+    const crownVariant = Math.floor(Math.random() * CROWN_DEFS.length);
+    const colorVariant = Math.floor(Math.random() * CROWN_PALETTES.length);
+    const halfWidth = (crownVariant === 2 || crownVariant === 3) ? 2 : 1;
+    const canopyTop = crownVariant === 1 ? treeTopY - 3 : treeTopY - 2;
+
     // Check space above
-    for (let ty = surfaceY - 1; ty >= treeTopY - 2; ty--) {
+    for (let ty = surfaceY - 1; ty >= canopyTop; ty--) {
       if (ty < 0 || this.isSolid(tileX, ty)) return; // Obstacle above
     }
 
@@ -384,21 +419,35 @@ export class WorldManager {
     this.foreground[tileX][surfaceY] = BlockId.TREE_ROOT;
     this.foregroundLayer.putTileAt(BlockId.TREE_ROOT, tileX, surfaceY);
 
-    // 2. Trunk with branches
-    const branchLY = trunkHeight >= 5 ? surfaceY - 2 : -1;
-    const branchRY = trunkHeight >= 6 ? surfaceY - 4 : -1;
+    // 2. Trunk with dynamic branches
+    const branchSpots: { y: number; side: 'L' | 'R' }[] = [];
+    if (trunkHeight >= 5) {
+      const bRoll = Math.random();
+      if (bRoll < 0.35) {
+        branchSpots.push({ y: surfaceY - 2, side: 'L' });
+        if (trunkHeight >= 7) branchSpots.push({ y: surfaceY - 4, side: 'R' });
+      } else if (bRoll < 0.70) {
+        branchSpots.push({ y: surfaceY - 2, side: 'R' });
+        if (trunkHeight >= 7) branchSpots.push({ y: surfaceY - 4, side: 'L' });
+      } else if (bRoll < 0.90) {
+        branchSpots.push({ y: surfaceY - 3, side: 'L' });
+        branchSpots.push({ y: surfaceY - 5, side: 'R' });
+      }
+    }
 
     for (let ty = surfaceY - 1; ty >= treeTopY; ty--) {
+      const branch = branchSpots.find(b => b.y === ty);
       let bId = BlockId.WOOD;
-      if (ty === branchLY) bId = BlockId.TREE_BRANCH_L;
-      else if (ty === branchRY) bId = BlockId.TREE_BRANCH_R;
+      if (branch) {
+        bId = branch.side === 'L' ? BlockId.TREE_BRANCH_L : BlockId.TREE_BRANCH_R;
+      }
       this.foreground[tileX][ty] = bId;
       this.foregroundLayer.putTileAt(bId, tileX, ty);
     }
 
     // 3. Mark canopy
-    for (let lx = tileX - 1; lx <= tileX + 1; lx++) {
-      for (let ly = treeTopY - 2; ly <= treeTopY; ly++) {
+    for (let lx = tileX - halfWidth; lx <= tileX + halfWidth; lx++) {
+      for (let ly = canopyTop; ly <= treeTopY; ly++) {
         if (lx >= 0 && lx < this.width && ly >= 0) {
           if (this.foreground[lx][ly] === BlockId.AIR) {
             this.foreground[lx][ly] = BlockId.LEAVES;
@@ -409,20 +458,27 @@ export class WorldManager {
 
     // 4. Create Crown Sprite
     const T = GAME_CONSTANTS.TILE_SIZE;
-    const crown = this.scene.add.image(tileX * T + T / 2, treeTopY * T - 18, 'tree_crown');
+    const texKey = `tree_crown_${crownVariant}_${colorVariant}`;
+    const crown = this.scene.add.image(
+      tileX * T + T / 2,
+      treeTopY * T + 7,
+      this.scene.textures.exists(texKey) ? texKey : 'tree_crown'
+    );
     crown.setDepth(0);
-    crown.setOrigin(0.5, 0.5);
+    crown.setOrigin(0.5, 1.0);
 
     this.activeTrees.push({
       x: tileX,
       surfaceY: surfaceY + 1,
       treeTopY,
       trunkHeight,
+      crownVariant,
+      colorVariant,
       crownSprite: crown
     });
 
     // Growth particle poof
-    this.emitLeafBurst(tileX * T + T / 2, surfaceY * T);
+    this.emitLeafBurst(tileX * T + T / 2, surfaceY * T, colorVariant);
   }
 
   public update(delta: number): void {

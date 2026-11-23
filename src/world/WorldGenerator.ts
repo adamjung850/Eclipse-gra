@@ -5,6 +5,8 @@ export interface TreeRecord {
   surfaceY: number;
   treeTopY: number;
   trunkHeight: number;
+  crownVariant: number;
+  colorVariant: number;
 }
 
 export interface GeneratedWorldData {
@@ -382,31 +384,80 @@ export class WorldGenerator {
         continue;
       }
 
-      // 45% chance to grow a tree
-      if (Math.random() < 0.45) {
-        const trunkHeight = 5 + Math.floor(Math.random() * 4); // 5 to 8 blocks high
+      // 48% chance to grow a tree
+      if (Math.random() < 0.48) {
+        // Diverse tree heights:
+        // 25% short trees (4-5 blocks), 50% medium (6-8 blocks), 25% tall forest trees (9-11 blocks)
+        const roll = Math.random();
+        let trunkHeight: number;
+        if (roll < 0.25) {
+          trunkHeight = 4 + Math.floor(Math.random() * 2);
+        } else if (roll < 0.75) {
+          trunkHeight = 6 + Math.floor(Math.random() * 3);
+        } else {
+          trunkHeight = 9 + Math.floor(Math.random() * 3);
+        }
+
         const treeTopY = surfaceY - trunkHeight;
+
+        // Pick crown shape variant (0..4) and color variant (0..3)
+        let crownVariant: number;
+        if (trunkHeight >= 9) {
+          // Tall trees suit tall forest (1), wide ancient (2), or split twin (3)
+          crownVariant = [1, 2, 3][Math.floor(Math.random() * 3)];
+        } else if (trunkHeight <= 5) {
+          // Short trees suit round oak (0), wild bushy (4), or compact
+          crownVariant = [0, 4, 0][Math.floor(Math.random() * 3)];
+        } else {
+          crownVariant = Math.floor(Math.random() * 5);
+        }
+
+        // Color palette variety: adjacent trees have alternating harmonious palettes
+        const colorVariant = (trees.length * 2 + Math.floor(Math.random() * 2)) % 4;
 
         // 1. Root base resting directly on grass
         grid[x][surfaceY - 1] = BlockId.TREE_ROOT;
 
-        // 2. Trunk segments with organic branches
-        const branchLY = trunkHeight >= 5 ? surfaceY - 3 : -1;
-        const branchRY = trunkHeight >= 6 ? surfaceY - 5 : -1;
+        // 2. Branch pattern selection based on height
+        const branchSpots: { y: number; side: 'L' | 'R' }[] = [];
+        if (trunkHeight >= 5) {
+          const patternRoll = Math.random();
+          if (trunkHeight >= 8 && patternRoll < 0.35) {
+            // Dual/triple staggered branches on tall trees
+            branchSpots.push({ y: surfaceY - 3, side: 'L' });
+            branchSpots.push({ y: surfaceY - 5, side: 'R' });
+            if (trunkHeight >= 10) branchSpots.push({ y: surfaceY - 8, side: 'L' });
+          } else if (patternRoll < 0.30) {
+            // Single left branch
+            const by = surfaceY - 3 - Math.floor(Math.random() * (trunkHeight - 4));
+            branchSpots.push({ y: by, side: 'L' });
+          } else if (patternRoll < 0.60) {
+            // Single right branch
+            const by = surfaceY - 3 - Math.floor(Math.random() * (trunkHeight - 4));
+            branchSpots.push({ y: by, side: 'R' });
+          } else if (patternRoll < 0.85) {
+            // Staggered branches left & right
+            branchSpots.push({ y: surfaceY - 3, side: 'L' });
+            branchSpots.push({ y: surfaceY - 5, side: 'R' });
+          }
+          // Remaining 15% have clean bare straight trunks
+        }
 
         for (let ty = surfaceY - 2; ty >= treeTopY; ty--) {
-          if (ty === branchLY) {
-            grid[x][ty] = BlockId.TREE_BRANCH_L;
-          } else if (ty === branchRY) {
-            grid[x][ty] = BlockId.TREE_BRANCH_R;
+          const branch = branchSpots.find(b => b.y === ty);
+          if (branch) {
+            grid[x][ty] = branch.side === 'L' ? BlockId.TREE_BRANCH_L : BlockId.TREE_BRANCH_R;
           } else {
             grid[x][ty] = BlockId.WOOD;
           }
         }
 
-        // 3. Mark Canopy blocks in grid (3x3 tiles centered on top of tree)
-        for (let lx = x - 1; lx <= x + 1; lx++) {
-          for (let ly = treeTopY - 2; ly <= treeTopY; ly++) {
+        // 3. Mark Canopy blocks in grid for reach and mining detection
+        const halfWidth = (crownVariant === 2 || crownVariant === 3) ? 2 : 1;
+        const canopyTop = crownVariant === 1 ? treeTopY - 3 : treeTopY - 2;
+
+        for (let lx = x - halfWidth; lx <= x + halfWidth; lx++) {
+          for (let ly = canopyTop; ly <= treeTopY; ly++) {
             if (lx >= 0 && lx < width && ly >= 0) {
               if (grid[lx][ly] === BlockId.AIR) {
                 grid[lx][ly] = BlockId.LEAVES;
@@ -415,7 +466,7 @@ export class WorldGenerator {
           }
         }
 
-        trees.push({ x, surfaceY, treeTopY, trunkHeight });
+        trees.push({ x, surfaceY, treeTopY, trunkHeight, crownVariant, colorVariant });
         lastTreeX = x;
       }
     }
