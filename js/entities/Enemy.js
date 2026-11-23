@@ -220,7 +220,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             body.setGravityY(GAME_CONSTANTS.GRAVITY);
             body.setMaxVelocity(280, 650);
             body.setBounce(0, 0);
-            body.setDragX(this.config.behavior === 'slime' ? 320 : 180);
+            body.setDragX(180);
         }
         this.setCollideWorldBounds(true);
     }
@@ -381,44 +381,63 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             case 'slime': {
                 this.hopCooldown -= delta;
                 if (isGrounded) {
-                    // Strong ground friction: stops completely between hops
-                    body.setVelocityX(body.velocity.x * 0.70);
+                    // Natural deceleration on ground between hops
+                    body.setVelocityX(body.velocity.x * 0.90);
                     // If time to hop:
                     if (this.hopCooldown <= 0) {
                         const isAggro = this.slimeAggroTimer > 0;
-                        const chaseDist = isAggro ? 420 : 250;
+                        const chaseDist = isAggro ? 550 : 420;
+                        // Determine hop parameters based on slime size
+                        let baseHopX = 75;
+                        let baseHopY = -245;
+                        let cooldownBase = 750;
+                        let cooldownVar = 300;
+                        if (this.slimeVariant?.size === 'small') {
+                            baseHopX = 85;
+                            baseHopY = -230;
+                            cooldownBase = 600;
+                            cooldownVar = 250;
+                        }
+                        else if (this.slimeVariant?.size === 'large') {
+                            baseHopX = 65;
+                            baseHopY = -270;
+                            cooldownBase = 950;
+                            cooldownVar = 350;
+                        }
+                        // Obstacle boost: if blocked by terrain in front, jump higher to climb blocks
+                        const isBlocked = (dirToPlayer > 0 && body.blocked.right) || (dirToPlayer < 0 && body.blocked.left);
+                        if (isBlocked) {
+                            baseHopY = Math.min(baseHopY, -295);
+                            baseHopX += 12;
+                        }
                         if (distToPlayer < chaseDist) {
+                            // Active pursuit towards player: steady, rhythmic hops at ~35% of player speed
+                            this.hopCooldown = cooldownBase + Math.random() * cooldownVar;
                             if (isAggro) {
-                                // Aggro pursuit: calm, low, steady hops directly towards player (Terraria style)
-                                this.hopCooldown = 1100 + Math.random() * 400;
-                                const hopStrengthX = 46 + Math.random() * 12;
-                                const hopStrengthY = -165; // Clean natural hop (~1.2 tiles)
-                                body.setVelocityX(dirToPlayer * hopStrengthX);
-                                body.setVelocityY(hopStrengthY);
-                                this.setFlipX(dirToPlayer < 0);
-                                this.triggerJumpStretch();
+                                this.hopCooldown *= 0.82;
+                                baseHopX += 12;
                             }
-                            else {
-                                // Calm, gentle idle-approach (Terraria style)
-                                this.hopCooldown = 1800 + Math.random() * 800;
-                                const hopStrengthX = 32 + Math.random() * 10;
-                                const hopStrengthY = -145; // Gentle low hop (~0.9 tiles)
-                                body.setVelocityX(dirToPlayer * hopStrengthX);
-                                body.setVelocityY(hopStrengthY);
-                                this.setFlipX(dirToPlayer < 0);
-                                this.triggerJumpStretch();
-                            }
+                            body.setVelocityX(dirToPlayer * (baseHopX + Math.random() * 8));
+                            body.setVelocityY(baseHopY);
+                            this.setFlipX(dirToPlayer < 0);
+                            this.triggerJumpStretch();
                         }
                         else {
-                            // Idle hopping: occasionally wander slowly
-                            this.hopCooldown = 2400 + Math.random() * 1500;
-                            if (Math.random() < 0.55) {
-                                this.wanderDirection = Math.random() > 0.5 ? 1 : -1;
-                                body.setVelocityX(this.wanderDirection * 26);
-                                body.setVelocityY(-135);
-                                this.setFlipX(this.wanderDirection < 0);
-                                this.triggerJumpStretch();
+                            // Idle wandering: rhythmic slow hops
+                            this.hopCooldown = cooldownBase * 1.35 + Math.random() * (cooldownVar * 1.5);
+                            // Change wander direction periodically or when hitting a wall
+                            if ((this.wanderDirection > 0 && body.blocked.right) || (this.wanderDirection < 0 && body.blocked.left)) {
+                                this.wanderDirection = -this.wanderDirection;
                             }
+                            else if (Math.random() < 0.25) {
+                                this.wanderDirection = Math.random() > 0.5 ? 1 : -1;
+                            }
+                            const idleHopX = (baseHopX * 0.75) + Math.random() * 6;
+                            const idleHopY = (body.blocked.left || body.blocked.right) ? -280 : baseHopY * 0.92;
+                            body.setVelocityX(this.wanderDirection * idleHopX);
+                            body.setVelocityY(idleHopY);
+                            this.setFlipX(this.wanderDirection < 0);
+                            this.triggerJumpStretch();
                         }
                     }
                 }
