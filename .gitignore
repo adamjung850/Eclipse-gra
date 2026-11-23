@@ -60,6 +60,7 @@ $RECYCLE.BIN/
 
 # Local helper scripts
 push.bat
+wyslij_gre.bat
 *.zip
 *.tar.gz
 *.rar
