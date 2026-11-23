@@ -2,6 +2,7 @@ import { CraftingStation, EquipSlotType, GAME_CONSTANTS, ItemCategory, RARITY_CO
 import { CRAFTING_RECIPES } from '../world/CraftingRecipes.js';
 import { ITEM_REGISTRY } from '../world/ItemTypes.js';
 import { CursorManager } from '../systems/CursorManager.js';
+import { BiomeSystem } from '../world/BiomeSystem.js';
 export class UIScene extends Phaser.Scene {
     player;
     gameScene;
@@ -1004,18 +1005,11 @@ export class UIScene extends Phaser.Scene {
     }
     updateDepthDisplay() {
         const T = GAME_CONSTANTS.TILE_SIZE;
+        const tileX = Math.floor(this.player.x / T);
         const tileY = Math.floor(this.player.y / T);
-        let zone = 'Wzgórza Powierzchni';
-        if (tileY < GAME_CONSTANTS.SURFACE_HEIGHT)
-            zone = 'Korony Drzew';
-        else if (tileY < GAME_CONSTANTS.CAVERN_DEPTH)
-            zone = 'Płytkie Jaskinie';
-        else if (tileY < GAME_CONSTANTS.BEDROCK_DEPTH)
-            zone = 'Głębokie Pieczary';
-        else
-            zone = 'Otchłań Pustki';
+        const biome = BiomeSystem.getBiomeAt(tileX, tileY);
         const depthMeters = (tileY - GAME_CONSTANTS.SURFACE_HEIGHT) * 2;
         const timeStr = this.gameScene.dayNightSystem ? ` | ${this.gameScene.dayNightSystem.getTimeString()}` : '';
-        this.depthText.setText(`[Głębokość: ${depthMeters}m] ${zone} | Poziom ${this.player.level}${timeStr}`);
+        this.depthText.setText(`[Biom: ${biome.polishName} | Głębokość: ${depthMeters}m] | Poziom ${this.player.level}${timeStr}`);
     }
 }

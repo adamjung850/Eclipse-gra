@@ -1,3 +1,5 @@
+import { BiomeId, GAME_CONSTANTS } from '../types/index.js';
+import { BiomeSystem } from '../world/BiomeSystem.js';
 export class DayNightSystem {
     scene;
     // Exact Timings: 5 min Day (300,000ms), 5 min Night (300,000ms) = 10 min Total
@@ -179,9 +181,54 @@ export class DayNightSystem {
         const botR = Math.round(k1.bottom.r + (k2.bottom.r - k1.bottom.r) * smoothFactor);
         const botG = Math.round(k1.bottom.g + (k2.bottom.g - k1.bottom.g) * smoothFactor);
         const botB = Math.round(k1.bottom.b + (k2.bottom.b - k1.bottom.b) * smoothFactor);
-        const botColor = (botR << 16) | (botG << 8) | botB;
+        let botColor = (botR << 16) | (botG << 8) | botB;
+        let finalTopColor = topColor;
+        let finalBotColor = botColor;
+        // Adapt sky lighting dynamically to active biome and subterranean depth
+        const player = this.scene.player;
+        if (player) {
+            const tileX = Math.floor(player.x / GAME_CONSTANTS.TILE_SIZE);
+            const tileY = Math.floor(player.y / GAME_CONSTANTS.TILE_SIZE);
+            const biome = BiomeSystem.getBiomeAt(tileX, tileY);
+            if (tileY >= GAME_CONSTANTS.VOID_DEPTH) {
+                finalTopColor = 0x05020a;
+                finalBotColor = 0x140728;
+            }
+            else if (tileY >= GAME_CONSTANTS.NETHER_DEPTH) {
+                finalTopColor = 0x360904;
+                finalBotColor = 0x5e160a;
+            }
+            else if (tileY >= GAME_CONSTANTS.CRYSTAL_DEPTH) {
+                finalTopColor = 0x1f0c33;
+                finalBotColor = 0x381559;
+            }
+            else if (tileY >= GAME_CONSTANTS.SURFACE_HEIGHT + 10) {
+                finalTopColor = 0x0b0e14;
+                finalBotColor = 0x151921;
+            }
+            else {
+                if (biome.id === BiomeId.DESERT) {
+                    const r = Math.min(255, topR + 25);
+                    const g = Math.max(0, topG - 10);
+                    const b = Math.max(0, topB - 25);
+                    finalTopColor = (r << 16) | (g << 8) | b;
+                }
+                else if (biome.id === BiomeId.FROZEN_PEAKS) {
+                    const r = Math.max(0, topR - 15);
+                    const g = Math.min(255, topG + 15);
+                    const b = Math.min(255, topB + 30);
+                    finalTopColor = (r << 16) | (g << 8) | b;
+                }
+                else if (biome.id === BiomeId.DARK_FOREST) {
+                    const r = Math.min(255, topR + 10);
+                    const g = Math.max(0, topG - 25);
+                    const b = Math.min(255, topB + 20);
+                    finalTopColor = (r << 16) | (g << 8) | b;
+                }
+            }
+        }
         this.skyGraphic.clear();
-        this.skyGraphic.fillGradientStyle(topColor, topColor, botColor, botColor, 1);
+        this.skyGraphic.fillGradientStyle(finalTopColor, finalTopColor, finalBotColor, finalBotColor, 1);
         this.skyGraphic.fillRect(visLeft - 40, visTop - 40, (halfVisW * 2) + 80, (halfVisH * 2) + 80);
     }
     getStarAlpha(progress) {
@@ -221,6 +268,16 @@ export class DayNightSystem {
         }
     }
     updateCelestialPositions(progress, visLeft, visRight, visTop, visBottom) {
+        const player = this.scene.player;
+        if (player) {
+            const tileY = Math.floor(player.y / GAME_CONSTANTS.TILE_SIZE);
+            if (tileY >= GAME_CONSTANTS.SURFACE_HEIGHT + 14) {
+                this.sunSprite.setVisible(false);
+                this.moonSprite.setVisible(false);
+                this.starsGraphic.setVisible(false);
+                return;
+            }
+        }
         const startX = visLeft - 55;
         const endX = visRight + 55;
         const horizonY = visTop + (visBottom - visTop) * 0.74; // Rises and sets at 74% visible height

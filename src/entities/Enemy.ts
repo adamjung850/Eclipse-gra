@@ -25,7 +25,7 @@ export interface EnemyTypeConfig {
   drops: EnemyDrop[];
 }
 
-export type SlimeColor = 'green' | 'blue' | 'red';
+export type SlimeColor = 'green' | 'blue' | 'red' | 'sand' | 'ice' | 'dark' | 'magma';
 export type SlimeSize = 'small' | 'medium' | 'large';
 
 export interface SlimeVariant {

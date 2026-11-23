@@ -1,7 +1,8 @@
-import { BlockId, GAME_CONSTANTS } from '../types/index.js';
+import { BlockId, BiomeId, GAME_CONSTANTS } from '../types/index.js';
 import { BLOCK_DEFINITIONS } from './BlockTypes.js';
 import { GeneratedWorldData, TreeRecord, BranchSpot } from './WorldGenerator.js';
 import { CROWN_PALETTES, CROWN_DEFS } from '../textures/TreeSprites.js';
+import { BiomeSystem } from './BiomeSystem.js';
 
 export interface ActiveTree {
   x: number;
@@ -13,6 +14,7 @@ export interface ActiveTree {
   crownSprite?: Phaser.GameObjects.Image;
   branchSprites: Phaser.GameObjects.Image[];
   branchSpots?: BranchSpot[];
+  isDarkWood?: boolean;
 }
 
 export interface PlantedSapling {
@@ -60,7 +62,8 @@ export class WorldManager {
           crownVariant: t.crownVariant ?? 0,
           colorVariant: t.colorVariant ?? 0,
           branchSprites: [],
-          branchSpots: t.branchSpots ?? []
+          branchSpots: t.branchSpots ?? [],
+          isDarkWood: t.isDarkWood
         });
       }
     }
@@ -90,8 +93,8 @@ export class WorldManager {
     const bgLayer = this.tilemap.createBlankLayer('BackgroundLayer', tileset, 0, 0);
     if (bgLayer) {
       this.backgroundLayer = bgLayer;
-      this.backgroundLayer.setAlpha(0.92);
-      this.backgroundLayer.setTint(0xccccdd);
+      this.backgroundLayer.setAlpha(0.95);
+      this.backgroundLayer.setTint(0x525463);
 
       // Populate background tiles
       for (let x = 0; x < this.width; x++) {
@@ -156,12 +159,13 @@ export class WorldManager {
 
       // 2. Large Pixel Art Branches
       if (tree.branchSpots) {
+        const darkSuffix = tree.isDarkWood ? '_dark' : '';
         for (const b of tree.branchSpots) {
           if (b.side === 'L') {
             const bSprite = this.scene.add.image(
               tree.x * T + 5,
               b.y * T + 12,
-              `tree_branch_left_${tree.colorVariant}`
+              `tree_branch_left_${tree.colorVariant}${darkSuffix}`
             );
             bSprite.setOrigin(47 / 48, 35 / 42);
             bSprite.setDepth(1);
@@ -170,7 +174,7 @@ export class WorldManager {
             const bSprite = this.scene.add.image(
               tree.x * T + 19,
               b.y * T + 12,
-              `tree_branch_right_${tree.colorVariant}`
+              `tree_branch_right_${tree.colorVariant}${darkSuffix}`
             );
             bSprite.setOrigin(0, 35 / 42);
             bSprite.setDepth(1);
@@ -187,7 +191,8 @@ export class WorldManager {
 
     // 2. Identify all solid block IDs from BLOCK_DEFINITIONS
     const solidBlockIds: number[] = [];
-    for (let id = 1; id < 32; id++) {
+    for (const key of Object.keys(BLOCK_DEFINITIONS)) {
+      const id = Number(key);
       const def = BLOCK_DEFINITIONS[id];
       if (def && def.isSolid) {
         solidBlockIds.push(id);
@@ -195,14 +200,19 @@ export class WorldManager {
     }
     this.foregroundLayer.setCollision(solidBlockIds, true);
 
-    // 3. Explicitly disable collision on wood, leaves, torches, walls, saplings and tree parts
+    // 3. Explicitly disable collision on wood, leaves, torches, walls, saplings, cacti and tree parts
     const nonSolidIds = [
       BlockId.WOOD,
+      BlockId.DARK_WOOD,
+      BlockId.PALM_WOOD,
       BlockId.LEAVES,
+      BlockId.DARK_LEAVES,
+      BlockId.CACTUS,
       BlockId.TORCH,
       BlockId.DIRT_WALL,
       BlockId.STONE_WALL,
       BlockId.WOOD_WALL,
+      BlockId.CRYSTAL_WALL,
       BlockId.SAPLING,
       BlockId.TREE_ROOT,
       BlockId.TREE_BRANCH_L,
@@ -293,7 +303,9 @@ export class WorldManager {
       blockId === BlockId.WOOD ||
       blockId === BlockId.TREE_ROOT ||
       blockId === BlockId.TREE_BRANCH_L ||
-      blockId === BlockId.TREE_BRANCH_R
+      blockId === BlockId.TREE_BRANCH_R ||
+      blockId === BlockId.DARK_WOOD ||
+      blockId === BlockId.PALM_WOOD
     );
   }
 
@@ -307,10 +319,18 @@ export class WorldManager {
       return;
     }
 
-    // If breaking a grass block, ensure the background wall shows the grass block texture (with green top), not dirt
-    if (blockId === BlockId.GRASS) {
-      this.background[tileX][tileY] = BlockId.GRASS;
-      this.backgroundLayer.putTileAt(BlockId.GRASS, tileX, tileY);
+    // Whenever ANY terrain, ore, or building block is broken, place it in the background wall layer
+    // (which is tinted dark) so that the destroyed block's texture appears behind it dark,
+    // making it immediately clear that the block was destroyed!
+    const isTreeFlora = this.isTreeTrunkBlock(blockId) ||
+      blockId === BlockId.LEAVES || blockId === BlockId.DARK_LEAVES ||
+      blockId === BlockId.TREE_ROOT || blockId === BlockId.TREE_BRANCH_L ||
+      blockId === BlockId.TREE_BRANCH_R || blockId === BlockId.CACTUS ||
+      blockId === BlockId.SAPLING;
+
+    if (!isTreeFlora && blockId !== BlockId.TORCH && blockId !== BlockId.CHEST) {
+      this.background[tileX][tileY] = blockId;
+      this.backgroundLayer.putTileAt(blockId, tileX, tileY);
     }
 
     // Remove from grids
@@ -383,13 +403,17 @@ export class WorldManager {
       }
 
       // Clear canopy proxy blocks from foreground
-      const halfW = (tree.crownVariant === 2 || tree.crownVariant === 3) ? 2 : 1;
-      const topY = tree.crownVariant === 1 ? tree.treeTopY - 3 : tree.treeTopY - 2;
+      const isConifer = tree.crownVariant === 5 || tree.crownVariant === 6;
+      const isWillow = tree.crownVariant === 7;
+      const isPalm = tree.crownVariant === 8;
+      const halfW = (tree.crownVariant === 2 || tree.crownVariant === 3 || isConifer || isWillow || isPalm) ? 2 : 1;
+      const topY = isConifer ? tree.treeTopY - 4 : (tree.crownVariant === 1 || isWillow ? tree.treeTopY - 3 : tree.treeTopY - 2);
 
       for (let lx = tree.x - halfW; lx <= tree.x + halfW; lx++) {
         for (let ly = topY; ly <= tree.treeTopY; ly++) {
           if (lx >= 0 && lx < this.width && ly >= 0) {
-            if (this.foreground[lx][ly] === BlockId.LEAVES) {
+            const blk = this.foreground[lx][ly];
+            if (blk === BlockId.LEAVES || blk === BlockId.DARK_LEAVES || blk === BlockId.SNOW) {
               this.foreground[lx][ly] = BlockId.AIR;
               this.foregroundLayer.removeTileAt(lx, ly);
               this.clearDamage(lx, ly);
@@ -446,11 +470,37 @@ export class WorldManager {
     }
     const treeTopY = surfaceY - trunkHeight + 1;
 
-    // Pick random crown and color variants
-    const crownVariant = Math.floor(Math.random() * CROWN_DEFS.length);
-    const colorVariant = Math.floor(Math.random() * CROWN_PALETTES.length);
-    const halfWidth = (crownVariant === 2 || crownVariant === 3) ? 2 : 1;
-    const canopyTop = crownVariant === 1 ? treeTopY - 3 : treeTopY - 2;
+    // Determine biome to grow authentic flora!
+    const biome = BiomeSystem.getBiomeAt(tileX, surfaceY);
+    let crownVariant = Math.floor(Math.random() * 5); // Default: oaks 0..4
+    let colorVariant = [0, 1, 3][Math.floor(Math.random() * 3)];
+    let woodBlock = BlockId.WOOD;
+    let leafBlock = BlockId.LEAVES;
+    let isDarkWood = false;
+
+    if (biome.id === BiomeId.FROZEN_PEAKS) {
+      // Frozen Peaks: Snowy Conifer or Boreal Pine
+      crownVariant = Math.random() < 0.65 ? 5 : 6;
+      colorVariant = Math.random() < 0.75 ? 4 : 2; // 4: snow_frost, 2: teal
+      leafBlock = BlockId.SNOW;
+    } else if (biome.id === BiomeId.DARK_FOREST) {
+      // Dark Forest: Gloom Willow with purple/amethyst leaves
+      crownVariant = Math.random() < 0.70 ? 7 : 1;
+      colorVariant = Math.random() < 0.75 ? 5 : 2; // 5: dark_amethyst, 2: teal
+      woodBlock = BlockId.DARK_WOOD;
+      leafBlock = BlockId.DARK_LEAVES;
+      isDarkWood = true;
+    } else if (biome.id === BiomeId.DESERT) {
+      // Desert: Tropical Desert Palm
+      crownVariant = 8;
+      colorVariant = 6;
+      woodBlock = BlockId.PALM_WOOD;
+    }
+
+    const isConifer = crownVariant === 5 || crownVariant === 6;
+    const isWillow = crownVariant === 7;
+    const isPalm = crownVariant === 8;
+    const canopyTop = isConifer ? treeTopY - 4 : (crownVariant === 1 || isWillow ? treeTopY - 3 : treeTopY - 2);
 
     // Check space above
     for (let ty = surfaceY - 1; ty >= canopyTop; ty--) {
@@ -462,12 +512,13 @@ export class WorldManager {
     this.foregroundLayer.removeTileAt(tileX, surfaceY);
 
     // 1. Root base
-    this.foreground[tileX][surfaceY] = BlockId.TREE_ROOT;
-    this.foregroundLayer.putTileAt(BlockId.TREE_ROOT, tileX, surfaceY);
+    const rootBlock = isDarkWood ? BlockId.DARK_WOOD : (isPalm ? BlockId.PALM_WOOD : BlockId.TREE_ROOT);
+    this.foreground[tileX][surfaceY] = rootBlock;
+    this.foregroundLayer.putTileAt(rootBlock, tileX, surfaceY);
 
-    // 2. Trunk with dynamic leafy branches
+    // 2. Trunk with dynamic leafy branches (palms have no side branches)
     const branchSpots: { y: number; side: 'L' | 'R' }[] = [];
-    if (trunkHeight >= 4) {
+    if (!isPalm && trunkHeight >= 4) {
       const bRoll = Math.random();
       if (trunkHeight >= 6) {
         if (bRoll < 0.55) {
@@ -487,22 +538,11 @@ export class WorldManager {
     }
 
     for (let ty = surfaceY - 1; ty >= treeTopY; ty--) {
-      this.foreground[tileX][ty] = BlockId.WOOD;
-      this.foregroundLayer.putTileAt(BlockId.WOOD, tileX, ty);
+      this.foreground[tileX][ty] = woodBlock;
+      this.foregroundLayer.putTileAt(woodBlock, tileX, ty);
     }
 
-    // 3. Mark canopy
-    for (let lx = tileX - halfWidth; lx <= tileX + halfWidth; lx++) {
-      for (let ly = canopyTop; ly <= treeTopY; ly++) {
-        if (lx >= 0 && lx < this.width && ly >= 0) {
-          if (this.foreground[lx][ly] === BlockId.AIR) {
-            this.foreground[lx][ly] = BlockId.LEAVES;
-          }
-        }
-      }
-    }
-
-    // 4. Create Crown Sprite & Large Branch Sprites
+    // 3. Create Crown Sprite & Large Branch Sprites (Clean pixel-art canopy, no fake square tiles)
     const T = GAME_CONSTANTS.TILE_SIZE;
     const crownKey = `tree_crown_${crownVariant}_${colorVariant}`;
     const crown = this.scene.add.image(
@@ -514,12 +554,13 @@ export class WorldManager {
     crown.setOrigin(0.5, 1.0);
 
     const branchSprites: Phaser.GameObjects.Image[] = [];
+    const darkSuffix = isDarkWood ? '_dark' : '';
     for (const b of branchSpots) {
       if (b.side === 'L') {
         const bSprite = this.scene.add.image(
           tileX * T + 5,
           b.y * T + 12,
-          `tree_branch_left_${colorVariant}`
+          `tree_branch_left_${colorVariant}${darkSuffix}`
         );
         bSprite.setOrigin(47 / 48, 35 / 42);
         bSprite.setDepth(1);
@@ -528,7 +569,7 @@ export class WorldManager {
         const bSprite = this.scene.add.image(
           tileX * T + 19,
           b.y * T + 12,
-          `tree_branch_right_${colorVariant}`
+          `tree_branch_right_${colorVariant}${darkSuffix}`
         );
         bSprite.setOrigin(0, 35 / 42);
         bSprite.setDepth(1);
@@ -545,7 +586,8 @@ export class WorldManager {
       colorVariant,
       crownSprite: crown,
       branchSprites,
-      branchSpots
+      branchSpots,
+      isDarkWood
     });
 
     // Growth particle poof

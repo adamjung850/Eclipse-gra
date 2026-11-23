@@ -32,7 +32,38 @@ export var BlockId;
     BlockId[BlockId["TREE_ROOT"] = 25] = "TREE_ROOT";
     BlockId[BlockId["TREE_BRANCH_L"] = 26] = "TREE_BRANCH_L";
     BlockId[BlockId["TREE_BRANCH_R"] = 27] = "TREE_BRANCH_R";
+    // Etap 4: New Biome Blocks
+    BlockId[BlockId["SNOW"] = 28] = "SNOW";
+    BlockId[BlockId["ICE"] = 29] = "ICE";
+    BlockId[BlockId["SAND"] = 30] = "SAND";
+    BlockId[BlockId["SANDSTONE"] = 31] = "SANDSTONE";
+    BlockId[BlockId["DARK_GRASS"] = 32] = "DARK_GRASS";
+    BlockId[BlockId["DARK_DIRT"] = 33] = "DARK_DIRT";
+    BlockId[BlockId["DARK_WOOD"] = 34] = "DARK_WOOD";
+    BlockId[BlockId["DARK_LEAVES"] = 35] = "DARK_LEAVES";
+    BlockId[BlockId["MOSSY_STONE"] = 36] = "MOSSY_STONE";
+    BlockId[BlockId["CACTUS"] = 37] = "CACTUS";
+    BlockId[BlockId["CRYSTAL_BLOCK"] = 38] = "CRYSTAL_BLOCK";
+    BlockId[BlockId["CRYSTAL_WALL"] = 39] = "CRYSTAL_WALL";
+    BlockId[BlockId["HELLSTONE"] = 40] = "HELLSTONE";
+    BlockId[BlockId["ASH_BLOCK"] = 41] = "ASH_BLOCK";
+    BlockId[BlockId["LAVA_ROCK"] = 42] = "LAVA_ROCK";
+    BlockId[BlockId["VOID_STONE"] = 43] = "VOID_STONE";
+    BlockId[BlockId["VOID_CRYSTAL"] = 44] = "VOID_CRYSTAL";
+    BlockId[BlockId["CHEST"] = 45] = "CHEST";
+    BlockId[BlockId["PALM_WOOD"] = 46] = "PALM_WOOD";
 })(BlockId || (BlockId = {}));
+export var BiomeId;
+(function (BiomeId) {
+    BiomeId["GREENLANDS"] = "greenlands";
+    BiomeId["DARK_FOREST"] = "dark_forest";
+    BiomeId["DESERT"] = "desert";
+    BiomeId["FROZEN_PEAKS"] = "frozen_peaks";
+    BiomeId["UNDERGROUND"] = "underground";
+    BiomeId["CRYSTAL_CAVES"] = "crystal_caves";
+    BiomeId["NETHER"] = "nether";
+    BiomeId["THE_VOID"] = "the_void";
+})(BiomeId || (BiomeId = {}));
 export var ItemRarity;
 (function (ItemRarity) {
     ItemRarity["COMMON"] = "Zwyk\u0142y";
@@ -78,8 +109,11 @@ export const GAME_CONSTANTS = {
     WORLD_WIDTH: 500,
     WORLD_HEIGHT: 240,
     SURFACE_HEIGHT: 55,
-    CAVERN_DEPTH: 110,
-    BEDROCK_DEPTH: 232,
+    CAVERN_DEPTH: 105,
+    CRYSTAL_DEPTH: 145,
+    NETHER_DEPTH: 190,
+    VOID_DEPTH: 222,
+    BEDROCK_DEPTH: 234,
     GRAVITY: 980,
     PLAYER_SPEED: 210,
     PLAYER_JUMP_VELOCITY: -370,

@@ -12,6 +12,8 @@ import { CursorManager } from '../systems/CursorManager.js';
 import { DayNightSystem } from '../systems/DayNightSystem.js';
 import { BLOCK_DEFINITIONS } from '../world/BlockTypes.js';
 import { ITEM_REGISTRY } from '../world/ItemTypes.js';
+import { ChestSystem } from '../world/ChestSystem.js';
+import { BiomeSystem } from '../world/BiomeSystem.js';
 export class GameScene extends Phaser.Scene {
     worldManager;
     player;
@@ -41,8 +43,71 @@ export class GameScene extends Phaser.Scene {
         // 4. Generate Procedural World
         const worldData = WorldGenerator.generate();
         this.worldManager = new WorldManager(this, worldData);
-        // 5. Spawn Player
-        this.player = new Player(this, worldData.spawnX, worldData.spawnY);
+        // 5. Spawn Player & Check URL Teleport overrides (?tp=desert, ?tp=ice, ?tp=dark, ?tp=crystal, ?tp=nether, ?tp=void)
+        let pSpawnX = worldData.spawnX;
+        let pSpawnY = worldData.spawnY;
+        if (typeof window !== 'undefined') {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const tp = urlParams.get('tp');
+                if (tp) {
+                    const T = GAME_CONSTANTS.TILE_SIZE;
+                    if (tp === 'desert') {
+                        const tx = 430;
+                        let sy = 50;
+                        for (let y = 30; y < 80; y++) {
+                            if (this.worldManager.getBlock(tx, y) !== BlockId.AIR) {
+                                sy = y - 2;
+                                break;
+                            }
+                        }
+                        pSpawnX = tx * T + T / 2;
+                        pSpawnY = sy * T;
+                    }
+                    else if (tp === 'ice') {
+                        const tx = 50;
+                        let sy = 40;
+                        for (let y = 25; y < 70; y++) {
+                            if (this.worldManager.getBlock(tx, y) !== BlockId.AIR) {
+                                sy = y - 2;
+                                break;
+                            }
+                        }
+                        pSpawnX = tx * T + T / 2;
+                        pSpawnY = sy * T;
+                    }
+                    else if (tp === 'dark') {
+                        const tx = 310;
+                        let sy = 50;
+                        for (let y = 30; y < 80; y++) {
+                            if (this.worldManager.getBlock(tx, y) !== BlockId.AIR) {
+                                sy = y - 2;
+                                break;
+                            }
+                        }
+                        pSpawnX = tx * T + T / 2;
+                        pSpawnY = sy * T;
+                    }
+                    else if (tp === 'crystal') {
+                        pSpawnX = 200 * T;
+                        pSpawnY = 135 * T;
+                    }
+                    else if (tp === 'nether') {
+                        pSpawnX = 200 * T;
+                        pSpawnY = 200 * T;
+                    }
+                    else if (tp === 'void') {
+                        pSpawnX = 200 * T;
+                        pSpawnY = 226 * T;
+                    }
+                }
+            }
+            catch (e) {
+                // Ignore URL parsing errors
+            }
+        }
+        this.player = new Player(this, pSpawnX, pSpawnY);
+        window.__gameScene = this;
         // 6. Dropped Items, Enemies & Projectiles Physics Groups
         this.droppedItems = this.physics.add.group();
         this.enemies = this.physics.add.group();
@@ -85,15 +150,32 @@ export class GameScene extends Phaser.Scene {
         });
     }
     handleBlockDrop(tileX, tileY, blockId) {
+        const T = GAME_CONSTANTS.TILE_SIZE;
+        const dropX = tileX * T + T / 2;
+        const dropY = tileY * T + T / 2;
+        // Special case: Chest opening / destruction drops treasure horde!
+        if (blockId === BlockId.CHEST) {
+            const lootItems = ChestSystem.getLootForChest(tileX, tileY);
+            for (const loot of lootItems) {
+                const offX = (Math.random() - 0.5) * 16;
+                const offY = (Math.random() - 0.5) * 12;
+                const dropped = new DroppedItem(this, dropX + offX, dropY + offY, loot.itemId, loot.count);
+                this.droppedItems.add(dropped);
+            }
+            // Also drop the chest block itself
+            const chestDrop = new DroppedItem(this, dropX, dropY, 'ancient_chest', 1);
+            this.droppedItems.add(chestDrop);
+            this.sounds.play('craft');
+            const biome = BiomeSystem.getBiomeAt(tileX, tileY);
+            this.showWorldFloatingText(dropX, dropY - 20, `Otwarto Skrzynię [${biome.polishName}]!`, '#fbbf24');
+            return;
+        }
         const def = BLOCK_DEFINITIONS[blockId];
         if (!def || !def.dropItemId)
             return;
         const count = Phaser.Math.Between(def.dropMin, def.dropMax);
         if (count <= 0)
             return;
-        const T = GAME_CONSTANTS.TILE_SIZE;
-        const dropX = tileX * T + T / 2;
-        const dropY = tileY * T + T / 2;
         const dropped = new DroppedItem(this, dropX, dropY, def.dropItemId, count);
         this.droppedItems.add(dropped);
     }

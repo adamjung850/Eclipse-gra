@@ -1,4 +1,5 @@
 import { GAME_CONSTANTS, ItemRarity } from '../types/index.js';
+import { BiomeSystem } from '../world/BiomeSystem.js';
 export class HUD {
     scene;
     player;
@@ -199,18 +200,11 @@ export class HUD {
     }
     updateDepthDisplay() {
         const T = GAME_CONSTANTS.TILE_SIZE;
+        const tileX = Math.floor(this.player.x / T);
         const tileY = Math.floor(this.player.y / T);
-        let zone = 'Surface Hills';
-        if (tileY < GAME_CONSTANTS.SURFACE_HEIGHT)
-            zone = 'Surface Canopy';
-        else if (tileY < GAME_CONSTANTS.CAVERN_DEPTH)
-            zone = 'Upper Caverns';
-        else if (tileY < GAME_CONSTANTS.BEDROCK_DEPTH)
-            zone = 'Deep Abyss';
-        else
-            zone = 'Bedrock Mantle';
+        const biome = BiomeSystem.getBiomeAt(tileX, tileY);
         const depthMeters = (tileY - GAME_CONSTANTS.SURFACE_HEIGHT) * 2;
-        this.depthText.setText(`[Depth: ${depthMeters}m] ${zone} | Lv.${this.player.level}`);
+        this.depthText.setText(`[Biom: ${biome.polishName} | Głębokość: ${depthMeters}m] | Poziom ${this.player.level}`);
     }
     showFloatingText(worldX, worldY, text, color = '#44ff88') {
         const floatText = this.scene.add.text(worldX, worldY - 10, text, {

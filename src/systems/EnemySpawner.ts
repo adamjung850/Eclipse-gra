@@ -1,8 +1,10 @@
-import { BlockId, GAME_CONSTANTS } from '../types/index.js';
+import { BiomeId, BlockId, GAME_CONSTANTS } from '../types/index.js';
 import { Player } from '../entities/Player.js';
 import { Enemy, ENEMY_TYPES, SlimeColor, SlimeSize, SlimeVariant } from '../entities/Enemy.js';
 import { WorldManager } from '../world/WorldManager.js';
 import { DayNightSystem } from './DayNightSystem.js';
+import { BiomeSystem } from '../world/BiomeSystem.js';
+import { BLOCK_DEFINITIONS } from '../world/BlockTypes.js';
 
 export class EnemySpawner {
   private scene: Phaser.Scene;
@@ -166,12 +168,7 @@ export class EnemySpawner {
 
       for (let ty = minY; ty <= maxY; ty++) {
         const floorBlock = this.worldManager.getBlock(colX, ty + 1);
-        const isFloorSolid =
-          floorBlock === BlockId.GRASS ||
-          floorBlock === BlockId.DIRT ||
-          floorBlock === BlockId.STONE ||
-          floorBlock === BlockId.BRICK ||
-          floorBlock === BlockId.PLANK;
+        const isFloorSolid = BLOCK_DEFINITIONS[floorBlock]?.isSolid ?? false;
 
         const isAir1 = this.worldManager.getBlock(colX, ty) === BlockId.AIR;
         const isAir2 = this.worldManager.getBlock(colX, ty - 1) === BlockId.AIR;
@@ -211,24 +208,40 @@ export class EnemySpawner {
 
     let variant: SlimeVariant | undefined = undefined;
     if (typeKey === 'slime') {
-      const isDeep = tileY > GAME_CONSTANTS.CAVERN_DEPTH;
-      const isShallowCavern = tileY > GAME_CONSTANTS.SURFACE_HEIGHT;
+      const biome = BiomeSystem.getBiomeAt(tileX, tileY);
       const isNight = this.dayNightSystem?.isNight() ?? false;
 
       let color: SlimeColor = 'green';
-      const cRoll = Math.random();
-      if (isDeep) {
-        if (cRoll < 0.45) color = 'red';
-        else if (cRoll < 0.8) color = 'blue';
-        else color = 'green';
-      } else if (isShallowCavern || isNight) {
-        if (cRoll < 0.45) color = 'blue';
-        else if (cRoll < 0.75) color = 'red';
-        else color = 'green';
-      } else {
-        if (cRoll < 0.70) color = 'green';
-        else if (cRoll < 0.90) color = 'blue';
-        else color = 'red';
+      switch (biome.id) {
+        case BiomeId.DESERT:
+          color = 'sand';
+          break;
+        case BiomeId.FROZEN_PEAKS:
+          color = 'ice';
+          break;
+        case BiomeId.DARK_FOREST:
+          color = 'dark';
+          break;
+        case BiomeId.NETHER:
+          color = 'magma';
+          break;
+        case BiomeId.CRYSTAL_CAVES:
+          color = Math.random() < 0.6 ? 'blue' : 'dark';
+          break;
+        case BiomeId.THE_VOID:
+          color = 'dark';
+          break;
+        case BiomeId.UNDERGROUND:
+          color = Math.random() < 0.5 ? 'blue' : 'red';
+          break;
+        case BiomeId.GREENLANDS:
+        default:
+          if (isNight) {
+            color = Math.random() < 0.6 ? 'blue' : 'green';
+          } else {
+            color = Math.random() < 0.8 ? 'green' : 'blue';
+          }
+          break;
       }
 
       const sRoll = Math.random();

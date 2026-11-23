@@ -30,7 +30,7 @@ export interface CrownPalette {
 }
 
 export const CROWN_PALETTES: CrownPalette[] = [
-  // 0: Lush Emerald (Klasyczny Szmaragd)
+  // 0: Lush Emerald (Klasyczny Szmaragd - Greenlands)
   {
     name: 'emerald',
     outline: '#0c2610',
@@ -43,7 +43,7 @@ export const CROWN_PALETTES: CrownPalette[] = [
     particlePrimary: 0x2d8e3f,
     particleSecondary: 0x77e086,
   },
-  // 1: Warm Olive Forest (Ciepły Dąb / Oliwka)
+  // 1: Warm Olive Forest (Ciepły Dąb / Oliwka - Greenlands)
   {
     name: 'olive',
     outline: '#1a280c',
@@ -69,7 +69,7 @@ export const CROWN_PALETTES: CrownPalette[] = [
     particlePrimary: 0x1f7d67,
     particleSecondary: 0x5bdabc,
   },
-  // 3: Golden Summer Apple (Złocisty Letni Gaj)
+  // 3: Golden Summer Apple (Złocisty Letni Gaj - Greenlands)
   {
     name: 'golden',
     outline: '#1e2808',
@@ -81,6 +81,58 @@ export const CROWN_PALETTES: CrownPalette[] = [
     specular: '#eaf793',
     particlePrimary: 0x658821,
     particleSecondary: 0xb7df4b,
+  },
+  // 4: Alpine Snow Frost (Lodowe Góry / Śnieżny Świerk - Frozen Peaks)
+  {
+    name: 'snow_frost',
+    outline: '#081c17',
+    deepShadow: '#0d2d24',
+    midShadow: '#174a3c',
+    baseLeaf: '#28705e',
+    sunlit: '#6db9a4',
+    highlight: '#d5effa',
+    specular: '#ffffff',
+    particlePrimary: 0x28705e,
+    particleSecondary: 0xffffff,
+  },
+  // 5: Dark Amethyst Gloom (Mroczny Las / Purpurowy Mrok - Dark Forest)
+  {
+    name: 'dark_amethyst',
+    outline: '#0c0714',
+    deepShadow: '#1a0e2c',
+    midShadow: '#30184f',
+    baseLeaf: '#4c2579',
+    sunlit: '#743ca9',
+    highlight: '#a863e4',
+    specular: '#dcbcf7',
+    particlePrimary: 0x4c2579,
+    particleSecondary: 0xa863e4,
+  },
+  // 6: Tropical Palm (Słoneczna Palma Pustynna - Desert)
+  {
+    name: 'palm_tropical',
+    outline: '#142907',
+    deepShadow: '#22480c',
+    midShadow: '#376e14',
+    baseLeaf: '#4f951f',
+    sunlit: '#76c330',
+    highlight: '#afe74b',
+    specular: '#eafc7e',
+    particlePrimary: 0x4f951f,
+    particleSecondary: 0xafe74b,
+  },
+  // 7: Nether Magma (Piekielny Żar i Lawa - Nether)
+  {
+    name: 'nether_magma',
+    outline: '#1a0402',
+    deepShadow: '#3b0a04',
+    midShadow: '#6c1407',
+    baseLeaf: '#ac290d',
+    sunlit: '#e74f12',
+    highlight: '#fca128',
+    specular: '#ffeb73',
+    particlePrimary: 0xac290d,
+    particleSecondary: 0xfca128,
   }
 ];
 
@@ -167,6 +219,100 @@ export const CROWN_DEFS: CrownDef[] = [
       { cx: 66, cy: 42, rx: 15, ry: 15 },
       { cx: 30, cy: 48, rx: 15, ry: 12 },
       { cx: 54, cy: 48, rx: 16, ry: 12 },
+    ]
+  },
+  // Variant 5: Snowy Alpine Conifer (Wysoki, stożkowy świerk alpejski z czapami śniegu - Frozen Peaks)
+  {
+    id: 5,
+    name: 'snowy_conifer',
+    width: 76,
+    height: 84,
+    clusters: [
+      { cx: 38, cy: 15, rx: 11, ry: 13 },
+      { cx: 38, cy: 32, rx: 18, ry: 13 },
+      { cx: 24, cy: 35, rx: 12, ry: 10 },
+      { cx: 52, cy: 35, rx: 12, ry: 10 },
+      { cx: 38, cy: 50, rx: 25, ry: 14 },
+      { cx: 17, cy: 53, rx: 14, ry: 11 },
+      { cx: 59, cy: 53, rx: 14, ry: 11 },
+      { cx: 38, cy: 68, rx: 31, ry: 15 },
+      { cx: 11, cy: 71, rx: 15, ry: 12 },
+      { cx: 65, cy: 71, rx: 15, ry: 12 },
+    ]
+  },
+  // Variant 6: Boreal Pine (Smukła sosna borealna - Frozen Peaks)
+  {
+    id: 6,
+    name: 'boreal_pine',
+    width: 68,
+    height: 78,
+    clusters: [
+      { cx: 34, cy: 14, rx: 9, ry: 12 },
+      { cx: 34, cy: 28, rx: 16, ry: 12 },
+      { cx: 23, cy: 31, rx: 10, ry: 9 },
+      { cx: 45, cy: 31, rx: 10, ry: 9 },
+      { cx: 34, cy: 44, rx: 22, ry: 13 },
+      { cx: 18, cy: 47, rx: 12, ry: 10 },
+      { cx: 50, cy: 47, rx: 12, ry: 10 },
+      { cx: 34, cy: 60, rx: 27, ry: 14 },
+      { cx: 12, cy: 63, rx: 13, ry: 11 },
+      { cx: 56, cy: 63, rx: 13, ry: 11 },
+    ]
+  },
+  // Variant 7: Gloom Willow (Mroczna Wierzba Cmentarna z opadającymi pędami - Dark Forest)
+  {
+    id: 7,
+    name: 'gloom_willow',
+    width: 94,
+    height: 78,
+    clusters: [
+      { cx: 47, cy: 32, rx: 26, ry: 20 },
+      { cx: 47, cy: 16, rx: 18, ry: 14 },
+      { cx: 32, cy: 20, rx: 14, ry: 13 },
+      { cx: 62, cy: 20, rx: 14, ry: 13 },
+      { cx: 18, cy: 40, rx: 15, ry: 18 },
+      { cx: 13, cy: 56, rx: 11, ry: 16 },
+      { cx: 76, cy: 40, rx: 15, ry: 18 },
+      { cx: 81, cy: 56, rx: 11, ry: 16 },
+      { cx: 34, cy: 50, rx: 16, ry: 15 },
+      { cx: 60, cy: 50, rx: 16, ry: 15 },
+    ]
+  },
+  // Variant 8: Desert Palm (Wachlarzowata Palma Pustynna z kokosami - Desert)
+  {
+    id: 8,
+    name: 'desert_palm',
+    width: 92,
+    height: 56,
+    clusters: [
+      { cx: 46, cy: 18, rx: 18, ry: 12 },
+      { cx: 30, cy: 20, rx: 18, ry: 11 },
+      { cx: 16, cy: 28, rx: 16, ry: 11 },
+      { cx: 9, cy: 38, rx: 10, ry: 12 },
+      { cx: 62, cy: 20, rx: 18, ry: 11 },
+      { cx: 76, cy: 28, rx: 16, ry: 11 },
+      { cx: 83, cy: 38, rx: 10, ry: 12 },
+      { cx: 32, cy: 34, rx: 14, ry: 10 },
+      { cx: 60, cy: 34, rx: 14, ry: 10 },
+      { cx: 46, cy: 32, rx: 12, ry: 10 },
+    ]
+  },
+  // Variant 9: Cinder Hellfire (Żarzące się Piekielne Drzewo - Nether)
+  {
+    id: 9,
+    name: 'cinder_hellfire',
+    width: 88,
+    height: 70,
+    clusters: [
+      { cx: 44, cy: 32, rx: 24, ry: 18 },
+      { cx: 24, cy: 22, rx: 16, ry: 14 },
+      { cx: 16, cy: 12, rx: 11, ry: 11 },
+      { cx: 64, cy: 22, rx: 16, ry: 14 },
+      { cx: 72, cy: 12, rx: 11, ry: 11 },
+      { cx: 44, cy: 16, rx: 14, ry: 12 },
+      { cx: 22, cy: 48, rx: 15, ry: 13 },
+      { cx: 66, cy: 48, rx: 15, ry: 13 },
+      { cx: 44, cy: 46, rx: 14, ry: 12 },
     ]
   }
 ];
@@ -335,13 +481,40 @@ export function renderCrownToContext(
     }
   }
 
+  // Desert Palm: Handcraft coconuts nestled in the fronds right above the trunk socket
+  if (crownDef.id === 8 || crownDef.name === 'desert_palm') {
+    const drawCoconut = (ccx: number, ccy: number) => {
+      const cR = 3;
+      for (let cy = ccy - cR; cy <= ccy + cR; cy++) {
+        for (let cx = ccx - cR; cx <= ccx + cR; cx++) {
+          if (cx < 0 || cx >= width || cy < 0 || cy >= height) continue;
+          const d2 = (cx - ccx) * (cx - ccx) + (cy - ccy) * (cy - ccy);
+          if (d2 <= cR * cR) {
+            const idx = (cy * width + cx) * 4;
+            if (d2 > (cR - 1) * (cR - 1)) {
+              pixels[idx] = 0x2e; pixels[idx + 1] = 0x16; pixels[idx + 2] = 0x08; pixels[idx + 3] = 255;
+            } else if (cy < ccy && cx < ccx) {
+              pixels[idx] = 0x8a; pixels[idx + 1] = 0x56; pixels[idx + 2] = 0x30; pixels[idx + 3] = 255;
+            } else {
+              pixels[idx] = 0x5a; pixels[idx + 1] = 0x33; pixels[idx + 2] = 0x18; pixels[idx + 3] = 255;
+            }
+          }
+        }
+      }
+    };
+    drawCoconut(Math.floor(width / 2) - 5, height - 16);
+    drawCoconut(Math.floor(width / 2) + 4, height - 15);
+    drawCoconut(Math.floor(width / 2), height - 12);
+  }
+
   ctx.putImageData(imgData, 0, 0);
 }
 
 export function renderBranchSpriteToContext(
   ctx: CanvasRenderingContext2D,
   side: 'L' | 'R',
-  palette: CrownPalette
+  palette: CrownPalette,
+  isDarkWood: boolean = false
 ): void {
   const W = 48;
   const H = 42;
@@ -349,12 +522,19 @@ export function renderBranchSpriteToContext(
   const imgData = ctx.createImageData(W, H);
   const pixels = imgData.data;
 
-  const WOOD = {
-    hi: hexToRgbaArray('#c28859'),
-    lt: hexToRgbaArray('#9e6c44'),
-    mid: hexToRgbaArray('#7a4f2e'),
-    dk: hexToRgbaArray('#54321c'),
-    out: hexToRgbaArray('#331c0e')
+  // Oak bark colors (or dark gothic gloomwood for Dark Forest)
+  const WOOD = isDarkWood ? {
+    out: hexToRgbaArray('#181120'),
+    dk: hexToRgbaArray('#291e36'),
+    mid: hexToRgbaArray('#48365e'),
+    hi: hexToRgbaArray('#6b528b'),
+    sun: hexToRgbaArray('#9272bd')
+  } : {
+    out: hexToRgbaArray('#382012'), // Dark outline / deep bark crevices
+    dk: hexToRgbaArray('#54321c'),  // Deep shadow bark
+    mid: hexToRgbaArray('#855331'), // Warm oak core wood
+    hi: hexToRgbaArray('#b3774c'),  // Highlight bark grain
+    sun: hexToRgbaArray('#d69e70')  // Sunlit edge
   };
 
   const setPx = (x: number, y: number, col: [number, number, number, number]) => {
@@ -366,20 +546,40 @@ export function renderBranchSpriteToContext(
     pixels[idx + 3] = 255;
   };
 
-  // 1. Draw Organic Curving Wooden Bough (compact, natural 45° angle)
+  // 1. Draw Organic Curving Wooden Bough (40-45° upward sweep matching Terraria reference)
+  // Attachment to trunk: side L is at (47, 35); side R is at (0, 35)
   const p0x = side === 'L' ? 47 : 0;
   const p0y = 35;
-  const p1x = side === 'L' ? 34 : 13;
-  const p1y = 32;
-  const p2x = side === 'L' ? 20 : 27;
-  const p2y = 21;
+  const p1x = side === 'L' ? 36 : 11;
+  const p1y = 26;
+  const p2x = side === 'L' ? 22 : 25;
+  const p2y = 17;
 
-  const tSteps = 100;
+  // Flared root/collar collar into trunk
+  if (side === 'L') {
+    for (let fy = 30; fy <= 38; fy++) {
+      const depth = fy < 33 ? (fy - 30) * 0.7 : (38 - fy) * 0.7;
+      for (let fx = 47; fx >= 47 - depth; fx--) {
+        setPx(fx, fy, WOOD.mid);
+      }
+      setPx(47, fy, WOOD.out);
+    }
+  } else {
+    for (let fy = 30; fy <= 38; fy++) {
+      const depth = fy < 33 ? (fy - 30) * 0.7 : (38 - fy) * 0.7;
+      for (let fx = 0; fx <= depth; fx++) {
+        setPx(fx, fy, WOOD.mid);
+      }
+      setPx(0, fy, WOOD.out);
+    }
+  }
+
+  const tSteps = 120;
   for (let i = 0; i <= tSteps; i++) {
     const t = i / tSteps;
     const cx = (1 - t) * (1 - t) * p0x + 2 * (1 - t) * t * p1x + t * t * p2x;
     const cy = (1 - t) * (1 - t) * p0y + 2 * (1 - t) * t * p1y + t * t * p2y;
-    const thick = 3.8 - t * 1.6;
+    const thick = 3.8 - t * 1.5; // Starts ~7.6px thick at trunk, tapers to ~4.6px into foliage
 
     const dx = -2 * (1 - t) * p0x + 2 * (1 - 2 * t) * p1x + 2 * t * p2x;
     const dy = -2 * (1 - t) * p0y + 2 * (1 - 2 * t) * p1y + 2 * t * p2y;
@@ -387,30 +587,47 @@ export function renderBranchSpriteToContext(
     const nx = -dy / len;
     const ny = dx / len;
 
-    const numSamples = Math.ceil(thick * 4) + 3;
+    const numSamples = Math.ceil(thick * 5) + 4;
     for (let s = 0; s <= numSamples; s++) {
       const d = -thick + (2 * thick * s) / numSamples;
       const px = Math.round(cx + nx * d);
       const py = Math.round(cy + ny * d);
       const normD = d / thick;
       let col = WOOD.mid;
-      if (Math.abs(normD) > 0.8) col = WOOD.out;
-      else if (normD < -0.3) col = normD < -0.6 ? WOOD.hi : WOOD.lt;
-      else if (normD > 0.3) col = WOOD.dk;
+      if (Math.abs(normD) > 0.82) {
+        col = WOOD.out;
+      } else if (normD < -0.38) {
+        col = normD < -0.65 ? WOOD.sun : WOOD.hi;
+      } else if (normD > 0.35) {
+        col = WOOD.dk;
+      }
       setPx(px, py, col);
     }
   }
 
-  // 2. Procedural Scalloped Foliage Crown (LUSH MINI-CANOPY matching main crown!)
-  const fcx = side === 'L' ? 18 : 29;
-  const fcy = 17;
-  const clusters = [
-    { cx: fcx, cy: fcy, rx: 15, ry: 14 },
-    { cx: fcx - 5, cy: fcy - 6, rx: 11, ry: 10 },
-    { cx: fcx + 5, cy: fcy - 5, rx: 11, ry: 10 },
-    { cx: fcx - 7, cy: fcy + 4, rx: 9, ry: 9 },
-    { cx: fcx + 7, cy: fcy + 4, rx: 9, ry: 9 },
-    { cx: fcx, cy: fcy - 8, rx: 10, ry: 8 }
+  // 2. Procedural Volumetric Mini-Canopy (identical high-detail architecture as the main crown)
+  // Multi-lobed cloud clusters creating rich 3D fluffy puffs
+  const clusters = side === 'L' ? [
+    // Main core volume
+    { cx: 18, cy: 14, rx: 14, ry: 12 },
+    // Top puffy crown dome
+    { cx: 17, cy: 7, rx: 11, ry: 8 },
+    // Left outer lobe (reaching outwards)
+    { cx: 9, cy: 13, rx: 9, ry: 9 },
+    // Upper inner lobe
+    { cx: 26, cy: 9, rx: 9, ry: 8 },
+    // Lower outer droplet lobe
+    { cx: 11, cy: 21, rx: 8, ry: 8 },
+    // Lower inner lobe wrapping under the branch
+    { cx: 24, cy: 19, rx: 9, ry: 8 },
+  ] : [
+    // Right mirror
+    { cx: 29, cy: 14, rx: 14, ry: 12 },
+    { cx: 30, cy: 7, rx: 11, ry: 8 },
+    { cx: 38, cy: 13, rx: 9, ry: 9 },
+    { cx: 21, cy: 9, rx: 9, ry: 8 },
+    { cx: 36, cy: 21, rx: 8, ry: 8 },
+    { cx: 23, cy: 19, rx: 9, ry: 8 },
   ];
 
   const mask = new Uint8Array(W * H);
@@ -427,8 +644,9 @@ export function renderBranchSpriteToContext(
         const dy = (y - cl.cy) / cl.ry;
         const baseDist = dx * dx + dy * dy;
 
+        // Leaf scalloping contour (leafy bunches along perimeter)
         const angle = Math.atan2(dy, dx);
-        const scalloping = Math.sin(angle * 6.0) * 0.08 + Math.cos(angle * 3.0) * 0.04;
+        const scalloping = Math.sin(angle * 5.0) * 0.10 + Math.cos(angle * 3.0) * 0.05;
         const effectiveDist = baseDist + scalloping;
 
         if (effectiveDist <= 1.0) {
@@ -447,6 +665,7 @@ export function renderBranchSpriteToContext(
     }
   }
 
+  // Crisp outline calculation
   const isOutline = new Uint8Array(W * H);
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
@@ -482,27 +701,55 @@ export function renderBranchSpriteToContext(
       const nx = (x - cl.cx) / cl.rx;
       const ny = (y - cl.cy) / cl.ry;
 
-      let light = -0.45 * nx - 0.85 * ny;
-      const heightGrad = (1.0 - y / H) * 0.35;
+      // Top-left primary sunlight illumination + height gradient
+      let light = -0.50 * nx - 0.85 * ny;
+      const heightGrad = (1.0 - y / H) * 0.40;
       light += heightGrad;
 
-      // 2x2 retro dapple texture
+      // Soft cluster shadow: if another cluster is above us, cast realistic deep shadow down
+      let castShadow = 0;
+      for (let c = 0; c < clusters.length; c++) {
+        if (c === cId) continue;
+        const other = clusters[c];
+        if (other.cy < cl.cy) {
+          const odx = (x - other.cx) / other.rx;
+          const ody = (y - (other.cy + other.ry * 0.55)) / (other.ry * 0.65);
+          if (odx * odx + ody * ody < 1.0 && y > other.cy) {
+            castShadow = 0.48;
+          }
+        }
+      }
+      light -= castShadow;
+
+      // Contact shadow where leaves sit upon and shelter the wooden branch
+      if (y >= 18 && (side === 'L' ? (x >= 18 && x <= 28) : (x >= 19 && x <= 29))) {
+        light -= 0.35;
+      }
+
+      // Retro 2x2 pixel dapple texture flecks (identical to main crown)
       const gx = Math.floor(x / 2);
       const gy = Math.floor(y / 2);
       const dappleVal = ((gx * 374761393 + gy * 668265263) ^ 0x5bf03635) >>> 0;
       const dapple = (dappleVal % 1000) / 1000;
       let dappleMod = 0;
-      if (dapple > 0.75) dappleMod = +0.26;
-      else if (dapple < 0.22) dappleMod = -0.26;
+      if (dapple > 0.74) dappleMod = +0.28;
+      else if (dapple < 0.22) dappleMod = -0.28;
 
       const totalIllum = light + dappleMod;
-      let col = cBaseLeaf;
-      if (totalIllum < -0.32) col = cDeepShadow;
-      else if (totalIllum < 0.08) col = cMidShadow;
-      else if (totalIllum < 0.58) col = cBaseLeaf;
-      else if (totalIllum < 1.08) col = cSunlit;
-      else if (totalIllum < 1.48) col = cHighlight;
-      else col = cSpecular;
+      let col: [number, number, number, number];
+      if (totalIllum < -0.30) {
+        col = cDeepShadow;
+      } else if (totalIllum < 0.10) {
+        col = cMidShadow;
+      } else if (totalIllum < 0.60) {
+        col = cBaseLeaf;
+      } else if (totalIllum < 1.10) {
+        col = cSunlit;
+      } else if (totalIllum < 1.48) {
+        col = cHighlight;
+      } else {
+        col = cSpecular;
+      }
 
       setPx(x, y, col);
     }

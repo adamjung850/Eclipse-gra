@@ -31,7 +31,38 @@ export enum BlockId {
   SAPLING = 24,
   TREE_ROOT = 25,
   TREE_BRANCH_L = 26,
-  TREE_BRANCH_R = 27
+  TREE_BRANCH_R = 27,
+  // Etap 4: New Biome Blocks
+  SNOW = 28,
+  ICE = 29,
+  SAND = 30,
+  SANDSTONE = 31,
+  DARK_GRASS = 32,
+  DARK_DIRT = 33,
+  DARK_WOOD = 34,
+  DARK_LEAVES = 35,
+  MOSSY_STONE = 36,
+  CACTUS = 37,
+  CRYSTAL_BLOCK = 38,
+  CRYSTAL_WALL = 39,
+  HELLSTONE = 40,
+  ASH_BLOCK = 41,
+  LAVA_ROCK = 42,
+  VOID_STONE = 43,
+  VOID_CRYSTAL = 44,
+  CHEST = 45,
+  PALM_WOOD = 46
+}
+
+export enum BiomeId {
+  GREENLANDS = 'greenlands',
+  DARK_FOREST = 'dark_forest',
+  DESERT = 'desert',
+  FROZEN_PEAKS = 'frozen_peaks',
+  UNDERGROUND = 'underground',
+  CRYSTAL_CAVES = 'crystal_caves',
+  NETHER = 'nether',
+  THE_VOID = 'the_void'
 }
 
 export enum ItemRarity {
@@ -148,8 +179,11 @@ export const GAME_CONSTANTS = {
   WORLD_WIDTH: 500,
   WORLD_HEIGHT: 240,
   SURFACE_HEIGHT: 55,
-  CAVERN_DEPTH: 110,
-  BEDROCK_DEPTH: 232,
+  CAVERN_DEPTH: 105,
+  CRYSTAL_DEPTH: 145,
+  NETHER_DEPTH: 190,
+  VOID_DEPTH: 222,
+  BEDROCK_DEPTH: 234,
   GRAVITY: 980,
   PLAYER_SPEED: 210,
   PLAYER_JUMP_VELOCITY: -370,
