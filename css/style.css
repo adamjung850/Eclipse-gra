@@ -90,27 +90,3 @@ canvas {
   color: #38bdf8;
   margin-right: 4px;
 }
-
-/* Audio Unlock Banner */
-#audio-banner {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid #38bdf8;
-  border-radius: 24px;
-  padding: 8px 20px;
-  font-size: 12px;
-  color: #e0f2fe;
-  cursor: inherit;
-  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.25);
-  transition: all 0.2s ease;
-  z-index: 100;
-}
-
-#audio-banner:hover {
-  background: #0284c7;
-  color: #ffffff;
-  transform: translateX(-50%) scale(1.04);
-}
