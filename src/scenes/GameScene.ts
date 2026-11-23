@@ -158,6 +158,9 @@ export class GameScene extends Phaser.Scene {
     // 1. Update Continuous Day/Night, Celestial Bodies (Sun, Moon, Stars) & Sky
     this.dayNightSystem.update(delta);
 
+    // 1.1 Update World (Sapling growth, falling trees)
+    this.worldManager.update(delta);
+
     // 2. Input & Player update
     this.inputManager.update(delta);
 

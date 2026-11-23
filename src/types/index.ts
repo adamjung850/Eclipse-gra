@@ -27,7 +27,11 @@ export enum BlockId {
   WORKBENCH = 20,
   FURNACE = 21,
   ANVIL = 22,
-  DIAMOND_ORE = 23
+  DIAMOND_ORE = 23,
+  SAPLING = 24,
+  TREE_ROOT = 25,
+  TREE_BRANCH_L = 26,
+  TREE_BRANCH_R = 27
 }
 
 export enum ItemRarity {

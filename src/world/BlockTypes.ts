@@ -322,5 +322,57 @@ export const BLOCK_DEFINITIONS: Record<number, BlockConfig> = {
     color: 0x2b2e36,
     particleColor: 0x5a5e66,
     soundType: 'metal'
+  },
+  [BlockId.SAPLING]: {
+    id: BlockId.SAPLING,
+    name: 'Młoda Sadzonka',
+    hardness: 10,
+    isSolid: false,
+    isTransparent: true,
+    dropItemId: 'sapling',
+    dropMin: 1,
+    dropMax: 1,
+    color: 0x279649,
+    particleColor: 0x3fc867,
+    soundType: 'dirt'
+  },
+  [BlockId.TREE_ROOT]: {
+    id: BlockId.TREE_ROOT,
+    name: 'Korzenie Drzewa',
+    hardness: 35,
+    isSolid: false,
+    isTransparent: true,
+    dropItemId: 'wood',
+    dropMin: 1,
+    dropMax: 1,
+    color: 0x855331,
+    particleColor: 0xb3774c,
+    soundType: 'wood'
+  },
+  [BlockId.TREE_BRANCH_L]: {
+    id: BlockId.TREE_BRANCH_L,
+    name: 'Gałąź Drzewa (Lewa)',
+    hardness: 35,
+    isSolid: false,
+    isTransparent: true,
+    dropItemId: 'wood',
+    dropMin: 1,
+    dropMax: 1,
+    color: 0x855331,
+    particleColor: 0xb3774c,
+    soundType: 'wood'
+  },
+  [BlockId.TREE_BRANCH_R]: {
+    id: BlockId.TREE_BRANCH_R,
+    name: 'Gałąź Drzewa (Prawa)',
+    hardness: 35,
+    isSolid: false,
+    isTransparent: true,
+    dropItemId: 'wood',
+    dropMin: 1,
+    dropMax: 1,
+    color: 0x855331,
+    particleColor: 0xb3774c,
+    soundType: 'wood'
   }
 };

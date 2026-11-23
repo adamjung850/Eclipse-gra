@@ -28,6 +28,10 @@ export var BlockId;
     BlockId[BlockId["FURNACE"] = 21] = "FURNACE";
     BlockId[BlockId["ANVIL"] = 22] = "ANVIL";
     BlockId[BlockId["DIAMOND_ORE"] = 23] = "DIAMOND_ORE";
+    BlockId[BlockId["SAPLING"] = 24] = "SAPLING";
+    BlockId[BlockId["TREE_ROOT"] = 25] = "TREE_ROOT";
+    BlockId[BlockId["TREE_BRANCH_L"] = 26] = "TREE_BRANCH_L";
+    BlockId[BlockId["TREE_BRANCH_R"] = 27] = "TREE_BRANCH_R";
 })(BlockId || (BlockId = {}));
 export var ItemRarity;
 (function (ItemRarity) {

@@ -733,9 +733,11 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     name: 'Młoda Sadzonka',
     category: ItemCategory.MATERIAL,
     rarity: ItemRarity.COMMON,
-    description: 'Młoda sadzonka gotowa do zapuszczenia korzeni w żyznej glebie.',
+    description: 'Młoda sadzonka. Zasadź w ziemi, a z czasem wyrośnie z niej potężne drzewo!',
     iconTexture: 'icon_sapling',
     maxStack: 99,
+    isPlaceable: true,
+    placeBlockId: BlockId.SAPLING,
     value: 2,
     obtainInfo: 'Ścięcie koron drzew'
   }

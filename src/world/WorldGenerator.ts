@@ -1,5 +1,12 @@
 import { BlockId, GAME_CONSTANTS } from '../types/index.js';
 
+export interface TreeRecord {
+  x: number;
+  surfaceY: number;
+  treeTopY: number;
+  trunkHeight: number;
+}
+
 export interface GeneratedWorldData {
   width: number;
   height: number;
@@ -7,6 +14,7 @@ export interface GeneratedWorldData {
   background: number[][]; // [x][y] = BlockId
   spawnX: number; // in world pixel coordinates
   spawnY: number; // in world pixel coordinates
+  trees?: TreeRecord[];
 }
 
 export class WorldGenerator {
@@ -68,7 +76,8 @@ export class WorldGenerator {
     this.spawnOreVeins(width, height, foreground, surfaceHeights);
 
     // 5. Generate Procedural Trees on Surface
-    this.spawnTrees(width, foreground, surfaceHeights);
+    const trees: TreeRecord[] = [];
+    this.spawnTrees(width, foreground, surfaceHeights, trees);
 
     // 6. Find Safe Player Spawn
     const spawnTileX = Math.floor(width / 2);
@@ -82,7 +91,8 @@ export class WorldGenerator {
       foreground,
       background,
       spawnX,
-      spawnY
+      spawnY,
+      trees
     };
   }
 
@@ -351,7 +361,12 @@ export class WorldGenerator {
     seedOrganicVein(BlockId.OBSIDIAN, 14, 130, 176, 4, 6);
   }
 
-  private static spawnTrees(width: number, grid: number[][], surfaceHeights: number[]): void {
+  private static spawnTrees(
+    width: number,
+    grid: number[][],
+    surfaceHeights: number[],
+    trees: TreeRecord[]
+  ): void {
     let lastTreeX = 5;
 
     for (let x = 6; x < width - 6; x++) {
@@ -372,27 +387,35 @@ export class WorldGenerator {
         const trunkHeight = 5 + Math.floor(Math.random() * 4); // 5 to 8 blocks high
         const treeTopY = surfaceY - trunkHeight;
 
-        // Draw Trunk
-        for (let ty = surfaceY - 1; ty >= treeTopY; ty--) {
-          grid[x][ty] = BlockId.WOOD;
+        // 1. Root base resting directly on grass
+        grid[x][surfaceY - 1] = BlockId.TREE_ROOT;
+
+        // 2. Trunk segments with organic branches
+        const branchLY = trunkHeight >= 5 ? surfaceY - 3 : -1;
+        const branchRY = trunkHeight >= 6 ? surfaceY - 5 : -1;
+
+        for (let ty = surfaceY - 2; ty >= treeTopY; ty--) {
+          if (ty === branchLY) {
+            grid[x][ty] = BlockId.TREE_BRANCH_L;
+          } else if (ty === branchRY) {
+            grid[x][ty] = BlockId.TREE_BRANCH_R;
+          } else {
+            grid[x][ty] = BlockId.WOOD;
+          }
         }
 
-        // Draw Leaf Canopy
-        const canopyRadius = 2 + Math.floor(Math.random() * 2); // 2 or 3
-        for (let lx = x - canopyRadius; lx <= x + canopyRadius; lx++) {
-          for (let ly = treeTopY - canopyRadius; ly <= treeTopY + 1; ly++) {
+        // 3. Mark Canopy blocks in grid (3x3 tiles centered on top of tree)
+        for (let lx = x - 1; lx <= x + 1; lx++) {
+          for (let ly = treeTopY - 2; ly <= treeTopY; ly++) {
             if (lx >= 0 && lx < width && ly >= 0) {
-              const distSq = (lx - x) * (lx - x) + (ly - (treeTopY - 1)) * (ly - (treeTopY - 1));
-              if (distSq <= canopyRadius * canopyRadius + 1) {
-                // Don't overwrite trunk
-                if (grid[lx][ly] === BlockId.AIR) {
-                  grid[lx][ly] = BlockId.LEAVES;
-                }
+              if (grid[lx][ly] === BlockId.AIR) {
+                grid[lx][ly] = BlockId.LEAVES;
               }
             }
           }
         }
 
+        trees.push({ x, surfaceY, treeTopY, trunkHeight });
         lastTreeX = x;
       }
     }

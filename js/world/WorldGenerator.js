@@ -52,7 +52,8 @@ export class WorldGenerator {
         // 4. Generate Procedural Ore Veins (Organic, connected clusters with spacing)
         this.spawnOreVeins(width, height, foreground, surfaceHeights);
         // 5. Generate Procedural Trees on Surface
-        this.spawnTrees(width, foreground, surfaceHeights);
+        const trees = [];
+        this.spawnTrees(width, foreground, surfaceHeights, trees);
         // 6. Find Safe Player Spawn
         const spawnTileX = Math.floor(width / 2);
         const spawnTileY = surfaceHeights[spawnTileX] - 2;
@@ -64,7 +65,8 @@ export class WorldGenerator {
             foreground,
             background,
             spawnX,
-            spawnY
+            spawnY,
+            trees
         };
     }
     /**
@@ -270,7 +272,7 @@ export class WorldGenerator {
         // Void Obsidian: Near bedrock layer (14 veins, 4-6 blocks each)
         seedOrganicVein(BlockId.OBSIDIAN, 14, 130, 176, 4, 6);
     }
-    static spawnTrees(width, grid, surfaceHeights) {
+    static spawnTrees(width, grid, surfaceHeights, trees) {
         let lastTreeX = 5;
         for (let x = 6; x < width - 6; x++) {
             // Minimum spacing of 5 tiles between trees
@@ -288,25 +290,33 @@ export class WorldGenerator {
             if (Math.random() < 0.45) {
                 const trunkHeight = 5 + Math.floor(Math.random() * 4); // 5 to 8 blocks high
                 const treeTopY = surfaceY - trunkHeight;
-                // Draw Trunk
-                for (let ty = surfaceY - 1; ty >= treeTopY; ty--) {
-                    grid[x][ty] = BlockId.WOOD;
+                // 1. Root base resting directly on grass
+                grid[x][surfaceY - 1] = BlockId.TREE_ROOT;
+                // 2. Trunk segments with organic branches
+                const branchLY = trunkHeight >= 5 ? surfaceY - 3 : -1;
+                const branchRY = trunkHeight >= 6 ? surfaceY - 5 : -1;
+                for (let ty = surfaceY - 2; ty >= treeTopY; ty--) {
+                    if (ty === branchLY) {
+                        grid[x][ty] = BlockId.TREE_BRANCH_L;
+                    }
+                    else if (ty === branchRY) {
+                        grid[x][ty] = BlockId.TREE_BRANCH_R;
+                    }
+                    else {
+                        grid[x][ty] = BlockId.WOOD;
+                    }
                 }
-                // Draw Leaf Canopy
-                const canopyRadius = 2 + Math.floor(Math.random() * 2); // 2 or 3
-                for (let lx = x - canopyRadius; lx <= x + canopyRadius; lx++) {
-                    for (let ly = treeTopY - canopyRadius; ly <= treeTopY + 1; ly++) {
+                // 3. Mark Canopy blocks in grid (3x3 tiles centered on top of tree)
+                for (let lx = x - 1; lx <= x + 1; lx++) {
+                    for (let ly = treeTopY - 2; ly <= treeTopY; ly++) {
                         if (lx >= 0 && lx < width && ly >= 0) {
-                            const distSq = (lx - x) * (lx - x) + (ly - (treeTopY - 1)) * (ly - (treeTopY - 1));
-                            if (distSq <= canopyRadius * canopyRadius + 1) {
-                                // Don't overwrite trunk
-                                if (grid[lx][ly] === BlockId.AIR) {
-                                    grid[lx][ly] = BlockId.LEAVES;
-                                }
+                            if (grid[lx][ly] === BlockId.AIR) {
+                                grid[lx][ly] = BlockId.LEAVES;
                             }
                         }
                     }
                 }
+                trees.push({ x, surfaceY, treeTopY, trunkHeight });
                 lastTreeX = x;
             }
         }
