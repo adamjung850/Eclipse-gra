@@ -85,88 +85,88 @@ export const CROWN_PALETTES: CrownPalette[] = [
 ];
 
 export const CROWN_DEFS: CrownDef[] = [
-  // Variant 0: Round Oak (Gęsty, okrągły dąb Terraria z opadającymi płatami po bokach)
+  // Variant 0: Round Oak (Gęsty, rozłożysty dąb w stylu Terraria z opadającymi płatami po bokach)
   {
     id: 0,
     name: 'round_oak',
-    width: 76,
-    height: 60,
+    width: 86,
+    height: 68,
     clusters: [
-      { cx: 38, cy: 26, rx: 22, ry: 19 },
-      { cx: 38, cy: 14, rx: 17, ry: 12 },
-      { cx: 20, cy: 26, rx: 16, ry: 16 },
-      { cx: 56, cy: 26, rx: 16, ry: 16 },
-      { cx: 20, cy: 44, rx: 14, ry: 14 },
-      { cx: 56, cy: 44, rx: 14, ry: 14 },
-      { cx: 38, cy: 38, rx: 12, ry: 11 }
+      { cx: 43, cy: 30, rx: 25, ry: 21 },
+      { cx: 43, cy: 16, rx: 19, ry: 14 },
+      { cx: 22, cy: 30, rx: 17, ry: 16 },
+      { cx: 64, cy: 30, rx: 17, ry: 16 },
+      { cx: 18, cy: 48, rx: 16, ry: 15 },
+      { cx: 68, cy: 48, rx: 16, ry: 15 },
+      { cx: 43, cy: 44, rx: 14, ry: 12 },
     ]
   },
-  // Variant 1: Tall Forest (Wysokie smukłe drzewo leśne)
+  // Variant 1: Lush Canopy (Gęsta, wielopiętrowa korona leśna)
   {
     id: 1,
-    name: 'tall_forest',
-    width: 62,
-    height: 78,
+    name: 'lush_canopy',
+    width: 88,
+    height: 72,
     clusters: [
-      { cx: 31, cy: 15, rx: 13, ry: 12 },
-      { cx: 31, cy: 28, rx: 17, ry: 14 },
-      { cx: 22, cy: 42, rx: 15, ry: 14 },
-      { cx: 40, cy: 41, rx: 15, ry: 14 },
-      { cx: 18, cy: 56, rx: 15, ry: 13 },
-      { cx: 44, cy: 55, rx: 15, ry: 13 },
-      { cx: 31, cy: 61, rx: 14, ry: 10 }
+      { cx: 44, cy: 22, rx: 24, ry: 18 },
+      { cx: 44, cy: 38, rx: 28, ry: 20 },
+      { cx: 24, cy: 30, rx: 18, ry: 16 },
+      { cx: 64, cy: 30, rx: 18, ry: 16 },
+      { cx: 18, cy: 52, rx: 16, ry: 15 },
+      { cx: 70, cy: 52, rx: 16, ry: 15 },
+      { cx: 44, cy: 50, rx: 14, ry: 12 },
     ]
   },
   // Variant 2: Wide Ancient (Szerokie, rozłożyste prastare drzewo)
   {
     id: 2,
     name: 'wide_ancient',
-    width: 90,
-    height: 54,
+    width: 96,
+    height: 64,
     clusters: [
-      { cx: 45, cy: 22, rx: 20, ry: 16 },
-      { cx: 33, cy: 15, rx: 14, ry: 11 },
-      { cx: 57, cy: 14, rx: 14, ry: 11 },
-      { cx: 24, cy: 27, rx: 17, ry: 15 },
-      { cx: 66, cy: 26, rx: 17, ry: 15 },
-      { cx: 12, cy: 36, rx: 11, ry: 11 },
-      { cx: 78, cy: 35, rx: 11, ry: 11 },
-      { cx: 32, cy: 38, rx: 15, ry: 10 },
-      { cx: 58, cy: 38, rx: 15, ry: 10 }
+      { cx: 48, cy: 26, rx: 24, ry: 19 },
+      { cx: 34, cy: 17, rx: 17, ry: 13 },
+      { cx: 62, cy: 16, rx: 17, ry: 13 },
+      { cx: 22, cy: 32, rx: 19, ry: 17 },
+      { cx: 74, cy: 32, rx: 19, ry: 17 },
+      { cx: 14, cy: 44, rx: 13, ry: 14 },
+      { cx: 82, cy: 44, rx: 13, ry: 14 },
+      { cx: 32, cy: 46, rx: 16, ry: 12 },
+      { cx: 64, cy: 46, rx: 16, ry: 12 },
     ]
   },
-  // Variant 3: Split Twin (Rozwidlona, podwójna korona)
+  // Variant 3: Split Twin (Rozwidlona, podwójna korona o bogatej strukturze)
   {
     id: 3,
     name: 'split_twin',
-    width: 82,
-    height: 60,
+    width: 92,
+    height: 66,
     clusters: [
-      { cx: 26, cy: 25, rx: 18, ry: 17 },
-      { cx: 24, cy: 14, rx: 13, ry: 11 },
-      { cx: 13, cy: 37, rx: 12, ry: 12 },
-      { cx: 56, cy: 25, rx: 18, ry: 17 },
-      { cx: 58, cy: 14, rx: 13, ry: 11 },
-      { cx: 69, cy: 37, rx: 12, ry: 12 },
-      { cx: 41, cy: 34, rx: 13, ry: 12 },
-      { cx: 29, cy: 43, rx: 12, ry: 9 },
-      { cx: 53, cy: 43, rx: 12, ry: 9 }
+      { cx: 30, cy: 28, rx: 21, ry: 19 },
+      { cx: 28, cy: 15, rx: 15, ry: 12 },
+      { cx: 15, cy: 42, rx: 14, ry: 14 },
+      { cx: 62, cy: 28, rx: 21, ry: 19 },
+      { cx: 64, cy: 15, rx: 15, ry: 12 },
+      { cx: 77, cy: 42, rx: 14, ry: 14 },
+      { cx: 46, cy: 38, rx: 15, ry: 14 },
+      { cx: 33, cy: 48, rx: 14, ry: 11 },
+      { cx: 59, cy: 48, rx: 14, ry: 11 },
     ]
   },
-  // Variant 4: Wild Bushy (Asymetryczna, dzika korona)
+  // Variant 4: Wild Bushy (Asymetryczna, dzika korona puszysta)
   {
     id: 4,
     name: 'wild_bushy',
-    width: 70,
-    height: 56,
+    width: 84,
+    height: 66,
     clusters: [
-      { cx: 39, cy: 24, rx: 19, ry: 17 },
-      { cx: 45, cy: 14, rx: 14, ry: 11 },
-      { cx: 20, cy: 30, rx: 16, ry: 14 },
-      { cx: 10, cy: 37, rx: 9, ry: 9 },
-      { cx: 55, cy: 36, rx: 13, ry: 13 },
-      { cx: 26, cy: 42, rx: 13, ry: 10 },
-      { cx: 46, cy: 42, rx: 14, ry: 10 }
+      { cx: 46, cy: 28, rx: 22, ry: 19 },
+      { cx: 52, cy: 16, rx: 16, ry: 13 },
+      { cx: 24, cy: 34, rx: 18, ry: 16 },
+      { cx: 12, cy: 44, rx: 11, ry: 11 },
+      { cx: 66, cy: 42, rx: 15, ry: 15 },
+      { cx: 30, cy: 48, rx: 15, ry: 12 },
+      { cx: 54, cy: 48, rx: 16, ry: 12 },
     ]
   }
 ];
@@ -341,57 +341,174 @@ export function renderCrownToContext(
 export function renderBranchSpriteToContext(
   ctx: CanvasRenderingContext2D,
   side: 'L' | 'R',
-  pal: CrownPalette
+  palette: CrownPalette
 ): void {
-  const W = 40;
-  const H = 32;
+  const W = 48;
+  const H = 42;
   ctx.clearRect(0, 0, W, H);
+  const imgData = ctx.createImageData(W, H);
+  const pixels = imgData.data;
 
   const WOOD = {
-    hi: '#c28859',
-    lt: '#9e6c44',
-    mid: '#7a4f2e',
-    dk: '#54321c',
-    out: '#331c0e'
+    hi: hexToRgbaArray('#c28859'),
+    lt: hexToRgbaArray('#9e6c44'),
+    mid: hexToRgbaArray('#7a4f2e'),
+    dk: hexToRgbaArray('#54321c'),
+    out: hexToRgbaArray('#331c0e')
   };
 
-  const px = (gx: number, gy: number, hex: string) => {
-    if (gx < 0 || gx >= 10 || gy < 0 || gy >= 8) return;
-    ctx.fillStyle = hex;
-    ctx.fillRect(gx * 4, gy * 4, 4, 4);
+  const setPx = (x: number, y: number, col: [number, number, number, number]) => {
+    if (x < 0 || x >= W || y < 0 || y >= H) return;
+    const idx = (y * W + x) * 4;
+    pixels[idx] = col[0];
+    pixels[idx + 1] = col[1];
+    pixels[idx + 2] = col[2];
+    pixels[idx + 3] = 255;
   };
 
-  if (side === 'L') {
-    // 1. Thick wooden limb branching up-left from trunk (gx=9 connects to trunk at x=6)
-    px(9, 7, WOOD.out); px(9, 6, WOOD.mid); px(9, 5, WOOD.lt);
-    px(8, 6, WOOD.out); px(8, 5, WOOD.mid); px(8, 4, WOOD.lt);
-    px(7, 5, WOOD.out); px(7, 4, WOOD.mid);
-    px(6, 5, WOOD.out); px(6, 4, WOOD.mid);
-    px(5, 4, WOOD.out); px(5, 3, WOOD.mid);
+  // 1. Draw Organic Curving Wooden Bough (compact, natural 45° angle)
+  const p0x = side === 'L' ? 47 : 0;
+  const p0y = 35;
+  const p1x = side === 'L' ? 34 : 13;
+  const p1y = 32;
+  const p2x = side === 'L' ? 20 : 27;
+  const p2y = 21;
 
-    // 2. Large round leaf crown on branch tip (centered at gx=3, gy=3)
-    px(2, 0, pal.outline); px(3, 0, pal.outline); px(4, 0, pal.outline);
-    px(1, 1, pal.outline); px(2, 1, pal.sunlit);  px(3, 1, pal.sunlit);  px(4, 1, pal.baseLeaf); px(5, 1, pal.outline);
-    px(0, 2, pal.outline); px(1, 2, pal.sunlit);  px(2, 2, pal.sunlit);  px(3, 2, pal.baseLeaf); px(4, 2, pal.midShadow); px(5, 2, pal.outline);
-    px(0, 3, pal.outline); px(1, 3, pal.baseLeaf); px(2, 3, pal.baseLeaf); px(3, 3, pal.midShadow); px(4, 3, pal.deepShadow); px(5, 3, pal.outline);
-    px(0, 4, pal.outline); px(1, 4, pal.midShadow); px(2, 4, pal.midShadow); px(3, 4, pal.deepShadow); px(4, 4, pal.outline);
-    px(1, 5, pal.outline); px(2, 5, pal.deepShadow); px(3, 5, pal.outline);
-  } else {
-    // 1. Thick wooden limb branching up-right from trunk (gx=0 connects to trunk at x=18)
-    px(0, 7, WOOD.out); px(0, 6, WOOD.mid); px(0, 5, WOOD.lt);
-    px(1, 6, WOOD.out); px(1, 5, WOOD.mid); px(1, 4, WOOD.lt);
-    px(2, 5, WOOD.out); px(2, 4, WOOD.mid);
-    px(3, 5, WOOD.out); px(3, 4, WOOD.mid);
-    px(4, 4, WOOD.out); px(4, 3, WOOD.mid);
+  const tSteps = 100;
+  for (let i = 0; i <= tSteps; i++) {
+    const t = i / tSteps;
+    const cx = (1 - t) * (1 - t) * p0x + 2 * (1 - t) * t * p1x + t * t * p2x;
+    const cy = (1 - t) * (1 - t) * p0y + 2 * (1 - t) * t * p1y + t * t * p2y;
+    const thick = 3.8 - t * 1.6;
 
-    // 2. Large round leaf crown on branch tip (centered at gx=6, gy=3)
-    px(5, 0, pal.outline); px(6, 0, pal.outline); px(7, 0, pal.outline);
-    px(4, 1, pal.outline); px(5, 1, pal.sunlit);  px(6, 1, pal.sunlit);  px(7, 1, pal.baseLeaf); px(8, 1, pal.outline);
-    px(4, 2, pal.outline); px(5, 2, pal.sunlit);  px(6, 2, pal.baseLeaf); px(7, 2, pal.midShadow); px(8, 2, pal.deepShadow); px(9, 2, pal.outline);
-    px(4, 3, pal.outline); px(5, 3, pal.baseLeaf); px(6, 3, pal.midShadow); px(7, 3, pal.deepShadow); px(8, 3, pal.deepShadow); px(9, 3, pal.outline);
-    px(5, 4, pal.outline); px(6, 4, pal.midShadow); px(7, 4, pal.deepShadow); px(8, 4, pal.deepShadow); px(9, 4, pal.outline);
-    px(6, 5, pal.outline); px(7, 5, pal.deepShadow); px(8, 5, pal.outline);
+    const dx = -2 * (1 - t) * p0x + 2 * (1 - 2 * t) * p1x + 2 * t * p2x;
+    const dy = -2 * (1 - t) * p0y + 2 * (1 - 2 * t) * p1y + 2 * t * p2y;
+    const len = Math.hypot(dx, dy);
+    const nx = -dy / len;
+    const ny = dx / len;
+
+    const numSamples = Math.ceil(thick * 4) + 3;
+    for (let s = 0; s <= numSamples; s++) {
+      const d = -thick + (2 * thick * s) / numSamples;
+      const px = Math.round(cx + nx * d);
+      const py = Math.round(cy + ny * d);
+      const normD = d / thick;
+      let col = WOOD.mid;
+      if (Math.abs(normD) > 0.8) col = WOOD.out;
+      else if (normD < -0.3) col = normD < -0.6 ? WOOD.hi : WOOD.lt;
+      else if (normD > 0.3) col = WOOD.dk;
+      setPx(px, py, col);
+    }
   }
+
+  // 2. Procedural Scalloped Foliage Crown (LUSH MINI-CANOPY matching main crown!)
+  const fcx = side === 'L' ? 18 : 29;
+  const fcy = 17;
+  const clusters = [
+    { cx: fcx, cy: fcy, rx: 15, ry: 14 },
+    { cx: fcx - 5, cy: fcy - 6, rx: 11, ry: 10 },
+    { cx: fcx + 5, cy: fcy - 5, rx: 11, ry: 10 },
+    { cx: fcx - 7, cy: fcy + 4, rx: 9, ry: 9 },
+    { cx: fcx + 7, cy: fcy + 4, rx: 9, ry: 9 },
+    { cx: fcx, cy: fcy - 8, rx: 10, ry: 8 }
+  ];
+
+  const mask = new Uint8Array(W * H);
+  const clusterMap = new Int16Array(W * H);
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      let minDist = 999;
+      let bestCluster = -1;
+
+      for (let c = 0; c < clusters.length; c++) {
+        const cl = clusters[c];
+        const dx = (x - cl.cx) / cl.rx;
+        const dy = (y - cl.cy) / cl.ry;
+        const baseDist = dx * dx + dy * dy;
+
+        const angle = Math.atan2(dy, dx);
+        const scalloping = Math.sin(angle * 6.0) * 0.08 + Math.cos(angle * 3.0) * 0.04;
+        const effectiveDist = baseDist + scalloping;
+
+        if (effectiveDist <= 1.0) {
+          if (effectiveDist < minDist) {
+            minDist = effectiveDist;
+            bestCluster = c;
+          }
+        }
+      }
+
+      const idx = y * W + x;
+      if (bestCluster !== -1) {
+        mask[idx] = 1;
+        clusterMap[idx] = bestCluster;
+      }
+    }
+  }
+
+  const isOutline = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = y * W + x;
+      if (!mask[idx]) continue;
+      let edge = false;
+      if (x === 0 || x === W - 1 || y === 0 || y === H - 1) edge = true;
+      else if (!mask[idx - 1] || !mask[idx + 1] || !mask[idx - W] || !mask[idx + W]) edge = true;
+      if (edge) isOutline[idx] = 1;
+    }
+  }
+
+  const cOutline = hexToRgbaArray(palette.outline);
+  const cDeepShadow = hexToRgbaArray(palette.deepShadow);
+  const cMidShadow = hexToRgbaArray(palette.midShadow);
+  const cBaseLeaf = hexToRgbaArray(palette.baseLeaf);
+  const cSunlit = hexToRgbaArray(palette.sunlit);
+  const cHighlight = hexToRgbaArray(palette.highlight);
+  const cSpecular = hexToRgbaArray(palette.specular);
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = y * W + x;
+      if (!mask[idx]) continue;
+
+      if (isOutline[idx]) {
+        setPx(x, y, cOutline);
+        continue;
+      }
+
+      const cId = clusterMap[idx];
+      const cl = clusters[cId];
+      const nx = (x - cl.cx) / cl.rx;
+      const ny = (y - cl.cy) / cl.ry;
+
+      let light = -0.45 * nx - 0.85 * ny;
+      const heightGrad = (1.0 - y / H) * 0.35;
+      light += heightGrad;
+
+      // 2x2 retro dapple texture
+      const gx = Math.floor(x / 2);
+      const gy = Math.floor(y / 2);
+      const dappleVal = ((gx * 374761393 + gy * 668265263) ^ 0x5bf03635) >>> 0;
+      const dapple = (dappleVal % 1000) / 1000;
+      let dappleMod = 0;
+      if (dapple > 0.75) dappleMod = +0.26;
+      else if (dapple < 0.22) dappleMod = -0.26;
+
+      const totalIllum = light + dappleMod;
+      let col = cBaseLeaf;
+      if (totalIllum < -0.32) col = cDeepShadow;
+      else if (totalIllum < 0.08) col = cMidShadow;
+      else if (totalIllum < 0.58) col = cBaseLeaf;
+      else if (totalIllum < 1.08) col = cSunlit;
+      else if (totalIllum < 1.48) col = cHighlight;
+      else col = cSpecular;
+
+      setPx(x, y, col);
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
 }
 
 export function drawTreeTrunk(ctx: CanvasRenderingContext2D, T: number): void {

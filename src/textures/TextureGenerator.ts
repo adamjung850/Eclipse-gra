@@ -68,7 +68,7 @@ export class TextureGenerator {
     for (let p = 0; p < CROWN_PALETTES.length; p++) {
       const leftKey = `tree_branch_left_${p}`;
       if (!scene.textures.exists(leftKey)) {
-        const canvas = scene.textures.createCanvas(leftKey, 40, 32);
+        const canvas = scene.textures.createCanvas(leftKey, 48, 42);
         if (canvas) {
           const ctx = canvas.context;
           ctx.imageSmoothingEnabled = false;
@@ -78,7 +78,7 @@ export class TextureGenerator {
       }
       const rightKey = `tree_branch_right_${p}`;
       if (!scene.textures.exists(rightKey)) {
-        const canvas = scene.textures.createCanvas(rightKey, 40, 32);
+        const canvas = scene.textures.createCanvas(rightKey, 48, 42);
         if (canvas) {
           const ctx = canvas.context;
           ctx.imageSmoothingEnabled = false;

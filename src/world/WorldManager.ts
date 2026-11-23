@@ -143,14 +143,14 @@ export class WorldManager {
     for (const tree of this.activeTrees) {
       if (!tree.branchSprites) tree.branchSprites = [];
 
-      // 1. Crown Sprite: overlaps top of trunk by 14px for seamless socket integration
+      // 1. Crown Sprite: overlaps top of trunk by 18px for seamless socket integration
       const texKey = `tree_crown_${tree.crownVariant}_${tree.colorVariant}`;
       const crown = this.scene.add.image(
         tree.x * T + T / 2,
-        tree.treeTopY * T + 14,
+        tree.treeTopY * T + 18,
         this.scene.textures.exists(texKey) ? texKey : 'tree_crown'
       );
-      crown.setDepth(0);
+      crown.setDepth(2);
       crown.setOrigin(0.5, 1.0);
       tree.crownSprite = crown;
 
@@ -159,21 +159,21 @@ export class WorldManager {
         for (const b of tree.branchSpots) {
           if (b.side === 'L') {
             const bSprite = this.scene.add.image(
-              tree.x * T + 6,
-              b.y * T + 14,
+              tree.x * T + 5,
+              b.y * T + 12,
               `tree_branch_left_${tree.colorVariant}`
             );
-            bSprite.setOrigin(1.0, 0.5);
-            bSprite.setDepth(0);
+            bSprite.setOrigin(47 / 48, 35 / 42);
+            bSprite.setDepth(1);
             tree.branchSprites.push(bSprite);
           } else {
             const bSprite = this.scene.add.image(
-              tree.x * T + 18,
-              b.y * T + 14,
+              tree.x * T + 19,
+              b.y * T + 12,
               `tree_branch_right_${tree.colorVariant}`
             );
-            bSprite.setOrigin(0.0, 0.5);
-            bSprite.setDepth(0);
+            bSprite.setOrigin(0, 35 / 42);
+            bSprite.setDepth(1);
             tree.branchSprites.push(bSprite);
           }
         }
@@ -507,31 +507,31 @@ export class WorldManager {
     const crownKey = `tree_crown_${crownVariant}_${colorVariant}`;
     const crown = this.scene.add.image(
       tileX * T + T / 2,
-      treeTopY * T + 14,
+      treeTopY * T + 18,
       this.scene.textures.exists(crownKey) ? crownKey : 'tree_crown'
     );
-    crown.setDepth(0);
+    crown.setDepth(2);
     crown.setOrigin(0.5, 1.0);
 
     const branchSprites: Phaser.GameObjects.Image[] = [];
     for (const b of branchSpots) {
       if (b.side === 'L') {
         const bSprite = this.scene.add.image(
-          tileX * T + 6,
-          b.y * T + 14,
+          tileX * T + 5,
+          b.y * T + 12,
           `tree_branch_left_${colorVariant}`
         );
-        bSprite.setOrigin(1.0, 0.5);
-        bSprite.setDepth(0);
+        bSprite.setOrigin(47 / 48, 35 / 42);
+        bSprite.setDepth(1);
         branchSprites.push(bSprite);
       } else {
         const bSprite = this.scene.add.image(
-          tileX * T + 18,
-          b.y * T + 14,
+          tileX * T + 19,
+          b.y * T + 12,
           `tree_branch_right_${colorVariant}`
         );
-        bSprite.setOrigin(0.0, 0.5);
-        bSprite.setDepth(0);
+        bSprite.setOrigin(0, 35 / 42);
+        bSprite.setDepth(1);
         branchSprites.push(bSprite);
       }
     }
