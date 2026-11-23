@@ -1643,107 +1643,218 @@ export class TextureGenerator {
         }
     }
     static createCelestialTextures(scene) {
-        // 1. Radiant Pixel Art Sun - 48x48
+        // 1. Radiant Pixel Art Sun - 72x72 (large, glorious retro pixel art with tapered flames)
         if (!scene.textures.exists('celestial_sun')) {
-            const canvas = scene.textures.createCanvas('celestial_sun', 48, 48);
+            const size = 72;
+            const canvas = scene.textures.createCanvas('celestial_sun', size, size);
             if (canvas) {
                 const ctx = canvas.context;
                 ctx.imageSmoothingEnabled = false;
-                // Outer warm glow rings
-                for (let r = 22; r >= 13; r--) {
-                    const alpha = 0.04 + (0.28 * (1.0 - (r - 13) / 9.0));
-                    ctx.fillStyle = `rgba(255, 170, 0, ${alpha.toFixed(3)})`;
-                    ctx.beginPath();
-                    ctx.arc(24, 24, r, 0, Math.PI * 2);
-                    ctx.fill();
+                const imgData = ctx.createImageData(size, size);
+                const data = imgData.data;
+                const cx = (size - 1) / 2.0;
+                const cy = (size - 1) / 2.0;
+                for (let y = 0; y < size; y++) {
+                    for (let x = 0; x < size; x++) {
+                        const dx = x - cx;
+                        const dy = y - cy;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const angle = Math.atan2(dy, dx);
+                        const wave = Math.cos(8 * angle);
+                        const rayR = 22.5 + Math.pow(Math.max(0, wave), 1.5) * 8.5;
+                        let r = 0, g = 0, b = 0, a = 0;
+                        if (dist <= rayR) {
+                            if (dist <= 6.5) {
+                                // Pure white hot core
+                                r = 255;
+                                g = 255;
+                                b = 255;
+                                a = 255;
+                            }
+                            else if (dist <= 12.5) {
+                                // Bright lemon-yellow inner ring (#fef08a)
+                                r = 254;
+                                g = 240;
+                                b = 138;
+                                a = 255;
+                            }
+                            else if (dist <= 18.0) {
+                                // Radiant golden yellow (#fbbf24)
+                                r = 251;
+                                g = 191;
+                                b = 36;
+                                a = 255;
+                            }
+                            else if (dist <= 22.0) {
+                                // Warm amber body (#f59e0b)
+                                r = 245;
+                                g = 158;
+                                b = 11;
+                                a = 255;
+                            }
+                            else if (dist <= 24.0 && wave < 0.2) {
+                                // Fiery outline between rays (#c2410c)
+                                r = 194;
+                                g = 65;
+                                b = 12;
+                                a = 255;
+                            }
+                            else {
+                                // Tapered triangular flame tips
+                                const flameT = (dist - 22.0) / (rayR - 22.0 + 0.001);
+                                if (flameT < 0.5) {
+                                    r = 251;
+                                    g = 191;
+                                    b = 36;
+                                    a = 255;
+                                }
+                                else if (flameT < 0.85) {
+                                    r = 245;
+                                    g = 158;
+                                    b = 11;
+                                    a = 240;
+                                }
+                                else {
+                                    r = 217;
+                                    g = 119;
+                                    b = 6;
+                                    a = 200;
+                                }
+                            }
+                        }
+                        else if (dist <= 33.0) {
+                            // Soft warm ambient pixel aura
+                            const alpha = Math.floor(52 * (1.0 - (dist - 22.5) / 10.5));
+                            if (alpha > 0) {
+                                r = 245;
+                                g = 158;
+                                b = 11;
+                                a = alpha;
+                            }
+                        }
+                        const idx = (y * size + x) * 4;
+                        data[idx] = r;
+                        data[idx + 1] = g;
+                        data[idx + 2] = b;
+                        data[idx + 3] = a;
+                    }
                 }
-                // Solar rays (8 cardinal & diagonal beams)
-                const rays = [
-                    [24, 2, 24, 8],
-                    [24, 40, 24, 46],
-                    [2, 24, 8, 24],
-                    [40, 24, 46, 24],
-                    [8, 8, 13, 13],
-                    [35, 8, 40, 13],
-                    [8, 35, 13, 40],
-                    [35, 35, 40, 40]
-                ];
-                ctx.strokeStyle = '#f59e0b';
-                ctx.lineWidth = 2;
-                for (const [x1, y1, x2, y2] of rays) {
-                    ctx.beginPath();
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
-                    ctx.stroke();
-                }
-                // Sun body
-                ctx.fillStyle = '#ea580c'; // Fiery outer rim
-                ctx.beginPath();
-                ctx.arc(24, 24, 12, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#f59e0b'; // Amber rim
-                ctx.beginPath();
-                ctx.arc(24, 24, 11, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#facc15'; // Golden yellow body
-                ctx.beginPath();
-                ctx.arc(24, 24, 9, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#fef08a'; // Bright core
-                ctx.beginPath();
-                ctx.arc(24, 24, 6, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#ffffff'; // White center flare
-                ctx.beginPath();
-                ctx.arc(23, 23, 3, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.putImageData(imgData, 0, 0);
                 canvas.refresh();
             }
         }
-        // 2. Mystic Pixel Art Moon - 40x40
+        // 2. Mystic Pixel Art Moon - 72x72 (large authentic moon with lunar craters and crescent rim)
         if (!scene.textures.exists('celestial_moon')) {
-            const canvas = scene.textures.createCanvas('celestial_moon', 40, 40);
+            const size = 72;
+            const canvas = scene.textures.createCanvas('celestial_moon', size, size);
             if (canvas) {
                 const ctx = canvas.context;
                 ctx.imageSmoothingEnabled = false;
-                // Soft lunar aura
-                for (let r = 18; r >= 11; r--) {
-                    const alpha = 0.03 + (0.22 * (1.0 - (r - 11) / 7.0));
-                    ctx.fillStyle = `rgba(160, 210, 255, ${alpha.toFixed(3)})`;
-                    ctx.beginPath();
-                    ctx.arc(20, 20, r, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                // Moon body
-                ctx.fillStyle = '#94a3b8'; // Slate rim
-                ctx.beginPath();
-                ctx.arc(20, 20, 11, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#cbd5e1'; // Silver base
-                ctx.beginPath();
-                ctx.arc(20, 20, 10, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#f1f5f9'; // Pale moon face
-                ctx.beginPath();
-                ctx.arc(19, 19, 9, 0, Math.PI * 2);
-                ctx.fill();
-                // Craters
+                const imgData = ctx.createImageData(size, size);
+                const data = imgData.data;
+                const cx = (size - 1) / 2.0;
+                const cy = (size - 1) / 2.0;
+                const rBody = 25.5;
                 const craters = [
-                    [15, 16, 2],
-                    [23, 15, 2.5],
-                    [17, 24, 2.5],
-                    [25, 23, 1.8]
+                    [-9.0, -8.0, 7.2],
+                    [8.0, -10.0, 5.6],
+                    [-4.5, 9.0, 8.4],
+                    [10.0, 7.0, 5.2],
+                    [2.5, 0.0, 4.0],
+                    [-13.0, 1.0, 3.5],
+                    [14.0, -2.0, 3.2]
                 ];
-                for (const [cx, cy, cr] of craters) {
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#64748b';
-                    ctx.beginPath();
-                    ctx.arc(cx + 0.5, cy + 0.5, cr * 0.6, 0, Math.PI * 2);
-                    ctx.fill();
+                for (let y = 0; y < size; y++) {
+                    for (let x = 0; x < size; x++) {
+                        const dx = x - cx;
+                        const dy = y - cy;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        let r = 0, g = 0, b = 0, a = 0;
+                        if (dist <= rBody) {
+                            let inCrater = false;
+                            let craterShade = 0;
+                            for (let c = 0; c < craters.length; c++) {
+                                const [cxRel, cyRel, cR] = craters[c];
+                                const cDist = Math.sqrt((dx - cxRel) * (dx - cxRel) + (dy - cyRel) * (dy - cyRel));
+                                if (cDist <= cR) {
+                                    inCrater = true;
+                                    craterShade = cDist <= cR * 0.58 ? 1 : 2;
+                                    break;
+                                }
+                            }
+                            if (inCrater) {
+                                if (craterShade === 1) {
+                                    // Dark crater depth (#475569)
+                                    r = 71;
+                                    g = 85;
+                                    b = 105;
+                                    a = 255;
+                                }
+                                else {
+                                    // Mid crater rim (#64748b)
+                                    r = 100;
+                                    g = 116;
+                                    b = 139;
+                                    a = 255;
+                                }
+                            }
+                            else {
+                                const lightFactor = (-dx * 0.6 - dy * 0.8) / rBody;
+                                if (dist >= rBody - 1.8) {
+                                    // Outer crisp dark slate rim (#334155)
+                                    r = 51;
+                                    g = 65;
+                                    b = 85;
+                                    a = 255;
+                                }
+                                else if (lightFactor > 0.45) {
+                                    // Illuminated crescent crest (#ffffff)
+                                    r = 255;
+                                    g = 255;
+                                    b = 255;
+                                    a = 255;
+                                }
+                                else if (lightFactor > 0.05) {
+                                    // Bright silver surface (#f1f5f9)
+                                    r = 241;
+                                    g = 245;
+                                    b = 249;
+                                    a = 255;
+                                }
+                                else if (lightFactor > -0.35) {
+                                    // Main lunar surface (#cbd5e1)
+                                    r = 203;
+                                    g = 213;
+                                    b = 225;
+                                    a = 255;
+                                }
+                                else {
+                                    // Lunar shadowed side (#94a3b8)
+                                    r = 148;
+                                    g = 163;
+                                    b = 184;
+                                    a = 255;
+                                }
+                            }
+                        }
+                        else if (dist <= rBody + 4.5) {
+                            // Soft pale atmospheric blue glow
+                            const alpha = Math.floor(75 * (1.0 - (dist - rBody) / 4.5));
+                            if (alpha > 0) {
+                                r = 186;
+                                g = 230;
+                                b = 253;
+                                a = alpha;
+                            }
+                        }
+                        const idx = (y * size + x) * 4;
+                        data[idx] = r;
+                        data[idx + 1] = g;
+                        data[idx + 2] = b;
+                        data[idx + 3] = a;
+                    }
                 }
+                ctx.putImageData(imgData, 0, 0);
                 canvas.refresh();
             }
         }

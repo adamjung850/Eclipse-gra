@@ -21,25 +21,25 @@ export class EnemySpawner {
     }
     getMaxAliveEnemies() {
         const isNight = this.dayNightSystem?.isNight() ?? false;
-        return isNight ? 20 : 14;
+        return isNight ? 9 : 5;
     }
     initialWorldSpawn() {
         const playerTile = this.worldManager.worldToTile(this.player.x, this.player.y);
-        // Spawn 8 initial enemies distributed in safe off-screen distances (18 to 40 tiles away)
-        const offsets = [-36, -28, -22, -18, 18, 22, 28, 36];
+        // Spawn only 2 initial enemies safely distributed far off-screen (36 tiles away)
+        const offsets = [-36, 36];
         for (const offset of offsets) {
             const targetX = Math.max(6, Math.min(this.worldManager.width - 7, playerTile.x + offset));
             this.spawnGroundEnemyNear(targetX, playerTile.y, 'slime');
         }
     }
     update(delta) {
-        // 1. Despawn distant enemies (> 1300px away from player)
+        // 1. Despawn distant enemies (> 1050px away from player)
         const enemyList = this.enemies.getChildren();
         for (let i = enemyList.length - 1; i >= 0; i--) {
             const e = enemyList[i];
             if (e && e.active) {
                 const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
-                if (dist > 1300) {
+                if (dist > 1050) {
                     e.die();
                 }
             }
@@ -50,18 +50,14 @@ export class EnemySpawner {
             const isNight = this.dayNightSystem?.isNight() ?? false;
             const maxEnemies = this.getMaxAliveEnemies();
             const activeCount = this.enemies.countActive(true);
-            // Fast, dynamic spawn intervals:
-            // Day: 1.5s - 2.5s
-            // Night: 0.9s - 1.8s (higher danger at night)
-            const baseCooldown = isNight ? 1000 : 1600;
-            const varCooldown = isNight ? 800 : 900;
+            // Balanced spawn intervals so the player is never swarmed:
+            // Day: 4.5s - 7.0s
+            // Night: 2.8s - 4.5s
+            const baseCooldown = isNight ? 2800 : 4500;
+            const varCooldown = isNight ? 1700 : 2500;
             this.spawnCooldownTimer = baseCooldown + Math.random() * varCooldown;
             if (activeCount < maxEnemies) {
-                // If density is low, spawn 1 or 2 mobs
-                const countToSpawn = (maxEnemies - activeCount > 6) ? 2 : 1;
-                for (let i = 0; i < countToSpawn; i++) {
-                    this.attemptProceduralSpawn();
-                }
+                this.attemptProceduralSpawn();
             }
         }
     }
@@ -83,8 +79,8 @@ export class EnemySpawner {
         const playerTile = this.worldManager.worldToTile(this.player.x, this.player.y);
         // Choose spawn side: left or right outside the current camera view
         const side = Math.random() > 0.5 ? 1 : -1;
-        // Spawns 80px to 220px past the camera viewport boundary
-        const extraMarginPx = 80 + Math.random() * 140;
+        // Spawns comfortably off-screen (160px to 320px past the camera viewport boundary)
+        const extraMarginPx = 160 + Math.random() * 160;
         const targetWorldX = side > 0 ? (view.right + extraMarginPx) : (view.left - extraMarginPx);
         const targetTileX = Math.max(6, Math.min(this.worldManager.width - 7, Math.floor(targetWorldX / T)));
         const depth = playerTile.y;

@@ -397,43 +397,44 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
                     // If time to hop:
                     if (this.hopCooldown <= 0) {
                         const isAggro = this.slimeAggroTimer > 0;
-                        const chaseDist = isAggro ? 550 : 420;
+                        // Peaceful wandering unless attacked or player gets within close proximity (160px ~ 6.5 blocks)
+                        const chaseDist = isAggro ? 450 : 160;
                         // Target velocity calculated for 24px block height:
                         // -285 px/s achieves ~41.5px apex height (comfortably clears 1 full 24px block by 17.5px)
                         // -325 px/s achieves ~54px apex height for obstacles and multi-block climbs
-                        let baseHopX = 72;
+                        let baseHopX = 62;
                         let baseHopY = isBlockedAhead ? -325 : -285;
-                        let cooldownBase = 750;
-                        let cooldownVar = 250;
+                        let cooldownBase = 900;
+                        let cooldownVar = 350;
                         if (this.slimeVariant?.size === 'small') {
-                            baseHopX = 80;
+                            baseHopX = 68;
                             baseHopY = isBlockedAhead ? -310 : -275;
-                            cooldownBase = 600;
-                            cooldownVar = 200;
+                            cooldownBase = 750;
+                            cooldownVar = 250;
                         }
                         else if (this.slimeVariant?.size === 'large') {
-                            baseHopX = 64;
+                            baseHopX = 54;
                             baseHopY = isBlockedAhead ? -340 : -305;
-                            cooldownBase = 900;
-                            cooldownVar = 300;
+                            cooldownBase = 1100;
+                            cooldownVar = 400;
                         }
                         if (distToPlayer < chaseDist) {
                             // Active pursuit towards player
                             this.hopCooldown = cooldownBase + Math.random() * cooldownVar;
                             if (isAggro) {
-                                this.hopCooldown *= 0.80;
-                                baseHopX += 10;
+                                this.hopCooldown *= 0.75;
+                                baseHopX += 12;
                             }
                             this.currentHopDir = dirToPlayer;
-                            this.currentHopSpeedX = baseHopX + Math.random() * 6;
+                            this.currentHopSpeedX = baseHopX + Math.random() * 5;
                             body.setVelocityX(this.currentHopDir * this.currentHopSpeedX);
                             body.setVelocityY(baseHopY);
                             this.setFlipX(dirToPlayer < 0);
                             this.triggerJumpStretch();
                         }
                         else {
-                            // Idle wandering: rhythmic slow hops
-                            this.hopCooldown = cooldownBase * 1.3 + Math.random() * (cooldownVar * 1.4);
+                            // Idle wandering: peaceful rhythmic hops with breathing room
+                            this.hopCooldown = cooldownBase * 1.5 + Math.random() * (cooldownVar * 1.6);
                             // Change wander direction if blocked by a wall or periodically
                             if ((this.wanderDirection > 0 && body.blocked.right) || (this.wanderDirection < 0 && body.blocked.left)) {
                                 this.wanderDirection = -this.wanderDirection;
@@ -442,7 +443,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
                                 this.wanderDirection = Math.random() > 0.5 ? 1 : -1;
                             }
                             this.currentHopDir = this.wanderDirection;
-                            this.currentHopSpeedX = (baseHopX * 0.78) + Math.random() * 5;
+                            this.currentHopSpeedX = (baseHopX * 0.72) + Math.random() * 4;
                             body.setVelocityX(this.currentHopDir * this.currentHopSpeedX);
                             body.setVelocityY(baseHopY);
                             this.setFlipX(this.wanderDirection < 0);

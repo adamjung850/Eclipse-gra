@@ -86,14 +86,37 @@ export class DayNightSystem {
         this.sunSprite.setScrollFactor(0);
         this.sunSprite.setDepth(-8);
         this.sunSprite.setOrigin(0.5, 0.5);
+        this.sunSprite.setScale(1.15);
         // 4. Moon Sprite (depth -8)
         this.moonSprite = scene.add.image(0, 0, 'celestial_moon');
         this.moonSprite.setScrollFactor(0);
         this.moonSprite.setDepth(-8);
         this.moonSprite.setOrigin(0.5, 0.5);
+        this.moonSprite.setScale(1.15);
         // 5. Initialize Starfield
         this.initStars();
+        // Attach to window for debug / testing
+        window.__dayNight = this;
+        // Check URL parameters (e.g. ?cycle=0.25 for noon, ?cycle=0.75 for midnight)
+        if (typeof window !== 'undefined') {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                if (params.has('cycle')) {
+                    const c = parseFloat(params.get('cycle') || '0');
+                    if (!isNaN(c)) {
+                        this.cycleTimeMs = (((c % 1.0) + 1.0) % 1.0) * DayNightSystem.TOTAL_CYCLE_MS;
+                    }
+                }
+            }
+            catch (e) {
+                // Ignore URL parsing errors
+            }
+        }
         // Initial render
+        this.update(0);
+    }
+    setCycleProgress(progress) {
+        this.cycleTimeMs = ((progress % 1.0) + 1.0) % 1.0 * DayNightSystem.TOTAL_CYCLE_MS;
         this.update(0);
     }
     initStars() {
@@ -198,8 +221,8 @@ export class DayNightSystem {
         }
     }
     updateCelestialPositions(progress, visLeft, visRight, visTop, visBottom) {
-        const startX = visLeft - 25;
-        const endX = visRight + 25;
+        const startX = visLeft - 55;
+        const endX = visRight + 55;
         const horizonY = visTop + (visBottom - visTop) * 0.74; // Rises and sets at 74% visible height
         const peakY = visTop + (visBottom - visTop) * 0.16; // Peaks high in the sky at 16% visible height
         const arcHeight = horizonY - peakY;
@@ -214,7 +237,7 @@ export class DayNightSystem {
             // Smooth sinusoidal parabolic elevation
             const sunY = horizonY - arcHeight * Math.sin(dayProgress * Math.PI);
             this.sunSprite.setPosition(Math.round(sunX), Math.round(sunY));
-            this.sunSprite.setAngle(dayProgress * 60);
+            this.sunSprite.setAngle(0);
             // Smooth fade at horizon edges
             let sunAlpha = 1.0;
             if (dayProgress < 0.06) {
@@ -235,7 +258,7 @@ export class DayNightSystem {
             const moonX = startX + (endX - startX) * nightProgress;
             const moonY = horizonY - arcHeight * Math.sin(nightProgress * Math.PI);
             this.moonSprite.setPosition(Math.round(moonX), Math.round(moonY));
-            this.moonSprite.setAngle(-12 + nightProgress * 24);
+            this.moonSprite.setAngle(0);
             // Smooth fade at horizon edges
             let moonAlpha = 1.0;
             if (nightProgress < 0.06) {
