@@ -135,6 +135,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private aiTimer: number = 0;
   private hopCooldown: number = 1000; // ms
   private wanderDirection: number = 1;
+  private currentHopDir: number = 0;
+  private currentHopSpeedX: number = 0;
   private flashTimer: number = 0;
   private stunTimer: number = 0; // Hitstun during knockback
   public isInvulnerable: boolean = false;
@@ -456,70 +458,84 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.hopCooldown -= delta;
 
         if (isGrounded) {
-          // Natural deceleration on ground between hops
-          body.setVelocityX(body.velocity.x * 0.90);
+          // Landing reset: clear hop momentum and gently decelerate on ground
+          if (this.currentHopDir !== 0) {
+            this.currentHopDir = 0;
+            this.currentHopSpeedX = 0;
+          }
+          body.setVelocityX(body.velocity.x * 0.85);
+
+          const isBlockedAhead = body.blocked.left || body.blocked.right;
+          // React quickly if blocked right against a step
+          if (isBlockedAhead && this.hopCooldown > 280) {
+            this.hopCooldown = 280;
+          }
 
           // If time to hop:
           if (this.hopCooldown <= 0) {
             const isAggro = this.slimeAggroTimer > 0;
             const chaseDist = isAggro ? 550 : 420;
 
-            // Determine hop parameters based on slime size
-            let baseHopX = 75;
-            let baseHopY = -245;
+            // Target velocity calculated for 24px block height:
+            // -285 px/s achieves ~41.5px apex height (comfortably clears 1 full 24px block by 17.5px)
+            // -325 px/s achieves ~54px apex height for obstacles and multi-block climbs
+            let baseHopX = 72;
+            let baseHopY = isBlockedAhead ? -325 : -285;
             let cooldownBase = 750;
-            let cooldownVar = 300;
+            let cooldownVar = 250;
 
             if (this.slimeVariant?.size === 'small') {
-              baseHopX = 85;
-              baseHopY = -230;
+              baseHopX = 80;
+              baseHopY = isBlockedAhead ? -310 : -275;
               cooldownBase = 600;
-              cooldownVar = 250;
+              cooldownVar = 200;
             } else if (this.slimeVariant?.size === 'large') {
-              baseHopX = 65;
-              baseHopY = -270;
-              cooldownBase = 950;
-              cooldownVar = 350;
-            }
-
-            // Obstacle boost: if blocked by terrain in front, jump higher to climb blocks
-            const isBlocked = (dirToPlayer > 0 && body.blocked.right) || (dirToPlayer < 0 && body.blocked.left);
-            if (isBlocked) {
-              baseHopY = Math.min(baseHopY, -295);
-              baseHopX += 12;
+              baseHopX = 64;
+              baseHopY = isBlockedAhead ? -340 : -305;
+              cooldownBase = 900;
+              cooldownVar = 300;
             }
 
             if (distToPlayer < chaseDist) {
-              // Active pursuit towards player: steady, rhythmic hops at ~35% of player speed
+              // Active pursuit towards player
               this.hopCooldown = cooldownBase + Math.random() * cooldownVar;
               if (isAggro) {
-                this.hopCooldown *= 0.82;
-                baseHopX += 12;
+                this.hopCooldown *= 0.80;
+                baseHopX += 10;
               }
 
-              body.setVelocityX(dirToPlayer * (baseHopX + Math.random() * 8));
+              this.currentHopDir = dirToPlayer;
+              this.currentHopSpeedX = baseHopX + Math.random() * 6;
+
+              body.setVelocityX(this.currentHopDir * this.currentHopSpeedX);
               body.setVelocityY(baseHopY);
               this.setFlipX(dirToPlayer < 0);
               this.triggerJumpStretch();
             } else {
               // Idle wandering: rhythmic slow hops
-              this.hopCooldown = cooldownBase * 1.35 + Math.random() * (cooldownVar * 1.5);
+              this.hopCooldown = cooldownBase * 1.3 + Math.random() * (cooldownVar * 1.4);
 
-              // Change wander direction periodically or when hitting a wall
+              // Change wander direction if blocked by a wall or periodically
               if ((this.wanderDirection > 0 && body.blocked.right) || (this.wanderDirection < 0 && body.blocked.left)) {
                 this.wanderDirection = -this.wanderDirection;
               } else if (Math.random() < 0.25) {
                 this.wanderDirection = Math.random() > 0.5 ? 1 : -1;
               }
 
-              const idleHopX = (baseHopX * 0.75) + Math.random() * 6;
-              const idleHopY = (body.blocked.left || body.blocked.right) ? -280 : baseHopY * 0.92;
+              this.currentHopDir = this.wanderDirection;
+              this.currentHopSpeedX = (baseHopX * 0.78) + Math.random() * 5;
 
-              body.setVelocityX(this.wanderDirection * idleHopX);
-              body.setVelocityY(idleHopY);
+              body.setVelocityX(this.currentHopDir * this.currentHopSpeedX);
+              body.setVelocityY(baseHopY);
               this.setFlipX(this.wanderDirection < 0);
               this.triggerJumpStretch();
             }
+          }
+        } else {
+          // Continuous airborne drive: maintain forward velocity in mid-air
+          // Ensures that as soon as feet rise above the 24px step edge, it pushes onto the block surface!
+          if (this.currentHopDir !== 0) {
+            body.setVelocityX(this.currentHopDir * this.currentHopSpeedX);
           }
         }
         break;
@@ -535,13 +551,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
           body.setVelocityX(dirToPlayer * this.config.speed);
           this.setFlipX(dirToPlayer < 0);
 
-          // Obstacle avoidance: ONLY hop once if grounded and moving down/flat
-          // Strict rate-limiting prevents infinite flying bug
+          // Obstacle avoidance: hop up to climb 24px block ledge
           if (isGrounded && this.jumpCooldown <= 0 && body.velocity.y >= 0) {
             if (body.blocked.left || body.blocked.right) {
-              this.jumpCooldown = 750; // Cannot jump again for 750ms!
-              body.setVelocityY(-240); // Gentle single hop to climb 1-tile ledge
-              body.setVelocityX(dirToPlayer * (this.config.speed + 10));
+              this.jumpCooldown = 750;
+              body.setVelocityY(-295); // Clears 24px block
+              body.setVelocityX(dirToPlayer * (this.config.speed + 12));
             }
           }
         } else {
@@ -570,11 +585,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
           body.setVelocityX(dirToPlayer * this.config.speed);
           this.setFlipX(dirToPlayer < 0);
 
-          // Jump up if obstacle ahead or player above - strictly rate-limited
+          // Jump up if obstacle ahead or player above
           if (isGrounded && this.jumpCooldown <= 0 && body.velocity.y >= 0) {
             if (body.blocked.left || body.blocked.right || (dy < -35 && Math.abs(dx) < 90)) {
-              this.jumpCooldown = 800; // Cannot jump again for 800ms!
-              body.setVelocityY(-260);
+              this.jumpCooldown = 800;
+              body.setVelocityY(-305); // Clears 24px block
               body.setVelocityX(dirToPlayer * (this.config.speed + 10));
             }
           }
