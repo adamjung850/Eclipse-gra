@@ -1,5 +1,5 @@
 import { BlockId, GAME_CONSTANTS } from '../types/index.js';
-import { CROWN_DEFS, CROWN_PALETTES, renderCrownToContext, drawTreeTrunk, drawTreeRoot, drawTreeBranchL, drawTreeBranchR, drawTreeSapling, drawLushLeaves } from './TreeSprites.js';
+import { CROWN_DEFS, CROWN_PALETTES, renderCrownToContext, renderBranchSpriteToContext, drawTreeTrunk, drawTreeRoot, drawTreeBranchL, drawTreeBranchR, drawTreeSapling, drawLushLeaves } from './TreeSprites.js';
 // Pre-encoded RGBA fallback data (24x24 and 16x16) for dirt and grass block
 const DIRT_24_RGBA = 'imI+/3hSLv+YcUb/c08t/25KKv+BWTX/iGI+/21JJ/9tSyj/l29L/29MLP+VbkX/f1k0/4BZMv+FXzr/dE0s/2pGJP9+WDP/eVIx/3xWMf95Uy7/fVo8/4RgPv9vSyv/gVs0/5pvRf+JYT3/dVMw/5tuRP9sTS7/lGpC/2lMLv93VC7/e1Uw/5pzSv+WbEL/a0go/59wQv92UjD/m3FH/5NmPf98WDT/e1c1/5tuRP97VzP/Zkcq/3dTMf99VzL/cVAx/4RcOP9tTC3/pHVJ/25NLv9jSCv/j2M8/3JUMv9/WDH/gV07/21LKP96VjL/bE0u/4BaNf+YbUP/g105/5xwQf+neEz/a0kt/2hHJv+BWTb/kGQ9/4ZfOP92Ui7/e1Mv/3taOf93YE7/flo4/5JqRv+GYj7/c08r/5txSf9sSyz/bUwr/3VSMv+QZD3/flo4/3ZQK/92UjD/cUot/4FZNf9gSjX/glw3/45oRP93VDT/dlAs/3BNLf9lSCr/imM8/6J2Sf+XbEH/hF02/3BPLv9/VzP/c1Ay/25LK/9+VzD/c1Aq/3ZVMv9hQiX/ZkUm/3lVM/9/VzT/nXBG/49lP/90UTH/bUso/2dGJf99WTX/a0ww/6BzSf+kd03/kGpD/4dhPP93UzH/j2U9/39zZ/+ec0n/Wk5C/2lKK/9sSyz/h103/29OL/+dckj/bEss/3lVM/9mSSn/nnFH/4heOP+XbUX/Y1ZG/4FzZv+YbkT/WVFE/39bN/+idUv/ck4s/15BI/+OZ0D/dFEz/2JDJ/9sSSn/akcn/6h9U/9/WC//gFw6/4NtVv9jTTj/dFEr/5lvSf+KYzr/ck4q/25KKP96WDX/eFU1/2NFKf9pSyn/dVIy/4JbNP99VjX/fFg2/51wR/+DWzf/jWM9/2lKLf+ZbkT/g1s3/5twRf9rSin/gVwy/4VfOv9qRyf/k2dA/5tuRP+abkH/aUot/3VSMv9rTC3/mGxF/2hJLP+RZjz/b04v/3VTMP9tTC3/eFYz/5dsQv9wTS3/hF43/2dIK/+QaUL/akkq/35aOP91Tyr/bUwr/5FnP/90TCj/Z0Qk/5BmPv9+WzX/imM8/3hWM/9oSij/a0go/2pHJ/+VakD/aEkq/3BOK/9tSSX/h2A5/2xNMf+cckr/elY2/21LKP96WDP/oHZO/4JcNf98WDb/iGRA/21KKv+helH/hFw4/25PMv9qSy7/a0kk/5VqQP+KZkT/b0sr/3xVLv94VzT/g1kx/5pwSP9vSST/f1w2/2pLLv9vXEv/cE0t/4RcOP+OZ0D/nHFH/5dqQf97WDL/c1Eu/2ZJK/+RakP/akcn/5ltQP+VaD//nnFI/2VHK/9dU0n/f1s5/35aNv+FXjf/eFYz/4NdOP+ccUb/bk0s/2VHK/+fcET/iGA8/4tjP/9uTSz/mnBI/4dgN/9jQiH/Y0Ql/3pTLP+IYTr/akgl/5lvRf9vTi//k2k//3lVMf94UCz/fFYx/49sRv+HYTz/lmxG/2pLLP9xTyz/g1s4/21OL/+IYTr/elYy/2xNMP+Zb0n/hF45/41hPP+MZkL/nXNN/4liQf9zYlD/kmpG/3VSNP+LYTv/f1cz/4ZcNv+ZbUj/lG1G/2RJLP99WTX/fFg0/55xSP9lRCX/flo2/39ZNf9nSS3/jWM7/21OL/9lRyv/p3pQ/5tuRP95VTH/aUgp/4lfN/9oRyb/o3dQ/4dfO/+SZj//b0ws/3tXNf+RZz//gFo1/21MLf9qSy//o3ZM/2VIKv+Qa0H/hV87/3hXNv+QZTv/dVIy/2JBIP+LYz//cE0t/3FLJ/92UzP/onhQ/2VGKf+Zb0f/aUYm/3tXM/90UTH/bUkl/2lKLf94VTX/akkq/2VBIf9vTCz/bEkr/59zTP+XcEn/gVs2/5JoQv9wTS3/jmQ8/3xYNP+HYDn/aEUn/5JoQP9sSif/a0or/49nQ/98Wjf/mW1I/59ySP+OZDz/nXBG/6BxRf+JXzf/aUYm/41nQv+VaUT/flg0/3RRMf9uTS7/fFg4/5VrQ/+jd0r/cE0x/2dIK/+QZUL/bEkp/4RcOP+DXzv/e1g6/4VnTf+qf1X/Z0gp/3RRM/91US//Z0gr/2hJLP9rSS3/hV05/2lIJ/+XbUP/imA6/2RFKP9yUTL/h2A5/25LK/9sVj//hlw0/4pkQP+JZUP/eFQw/512Tf9tSyj/h2A5/3NRLv+OaEP/elc3/3BOK/+MYjj/a0op/31VMf9iSC//iGI9/4ZkQf+AWjb/hVs1/3FNK/9uSyv/kGlC/3xYNP+leE7/cVAx/3ZTM/9tTC3/jGRA/3xaNP9vTi//clEy/2dIKf+IYTj/clEw/5pvRf95VTP/il43/2tOMP90UC7/hV87/3pWNP90UTH/jmQ+/3VSMv9nTC//fFg2/3pWMv9pSiv/aUot/6F0Sv95VTP/glo2/6Z6S/+QZj7/imQ//5JoQP+CXjr/hF02/2pLL/+Wa0H/bEou/4thO/9jRCf/hmA8/6J4Tv+GXDb/hV05/3xYNP+UakL/eFQw/19CJP+MYjz/dFAu/1U/KP9iQB3/jGtM/6l/Wf+AWjb/dlAr/4ZuVv9pTC7/dlIw/5lvRf+LYz//dFAs/2pJKv92Tir/cFQ8/19GMP9tSir/YUsz/4pkQP+AVC3/hV05/3FQL/90Ui//c1A0/3tXM/+DXTn/g105/5FmO/+NZj//hWE9/3xUMP93VDT/o3lR/2FGKf+OZDz/oHRH/3xYNv9uSy3/aEks/4ZgPP+DWzf/e1k2/6J1S/9xTzP/hF45/2pLLv+NYzv/Z0gr/51wRv+TbEP/akko/4lfN/9yUTD/o3ZM/3tXM/+gdUv/YkMm/2pMMP90UTH/mW5E/29NMf9/Wzf/jGRA/5txR/+SaED/ZEYq/2VHK/+leE7/flg0/5t0Tf95Uy7/d1Mx/3NRNf+KYj7/c08v/4NfPf98WDT/hl84/4FdOf+HYTz/c00p/4tlQP92UzP/lW5H/4VeN/9rRyX/hV06/25LK/+QaUL/a0go/3ROKv93UzP/';
 const GRASS_24_RGBA = 'EEYW/5HNS/+RzUv/kc1L/26+PP+RzUv/kc1L/26+PP+RzUv/kc1L/5HNS/9uvjz/kc1L/5HNS/+RzUv/br48/5HNS/+RzUv/kc1L/26+PP+RzUv/kc1L/5HNS/+RzUv/Tq80/06vNP8QRhb/Tq80/06vNP9OrzT/Tq80/06vNP9OrzT/Tq80/xRaHP9OrzT/Tq80/06vNP9OrzT/EEYW/06vNP9OrzT/Tq80/06vNP8UWhz/Tq80/06vNP9OrzT/Tq80/06vNP9OrzT/Tq80/06vNP9OrzT/FFoc/06vNP9OrzT/Tq80/06vNP9OrzT/Tq80/06vNP9OrzT/Tq80/xRaHP9OrzT/Tq80/06vNP9OrzT/Tq80/06vNP9OrzT/Tq80/xRaHP9OrzT/Tq80/06vNP9OrzT/Tq80/06vNP9OrzT/Tq80/06vNP8UWhz/Tq80/06vNP9OrzT/Tq80/06vNP8QRhb/Tq80/06vNP9OrzT/FFoc/06vNP9OrzT/NJYs/zSWLP80liz/NJYs/zSWLP80liz/NJYs/zSWLP9OrzT/NJYs/zSWLP80liz/EEYW/zSWLP80liz/NJYs/zSWLP80liz/NJYs/zSWLP80liz/NJYs/zSWLP80liz/NJYs/xBGFv80liz/NJYs/zSWLP80liz/NJYs/xRaHP80liz/NJYs/zSWLP80liz/NJYs/zSWLP8QRhb/NJYs/zSWLP8UWhz/NJYs/zSWLP80liz/NJYs/zSWLP80liz/NJYs/zSWLP80liz/FFoc/zSWLP80liz/Ingk/zSWLP80liz/EEYW/zSWLP80liz/NJYs/zSWLP80liz/NJYs/yJ4JP80liz/NJYs/yJ4JP80liz/NJYs/xBGFv80liz/Ingk/yJ4JP8ieCT/Ingk/xRaHP8ieCT/Ingk/yJ4JP8ieCT/Ingk/yJ4JP8QRhb/Ingk/xRaHP8ieCT/Ingk/yJ4JP8ieCT/Ingk/yJ4JP8ieCT/Ingk/yJ4JP8UWhz/Ingk/yJ4JP8ieCT/RioU/yJ4JP8ieCT/RioU/yJ4JP8ieCT/FFoc/yJ4JP8ieCT/Ingk/yJ4JP8ieCT/Ingk/0YqFP8ieCT/Ingk/0YqFP8ieCT/Ingk/3BOK/8ieCT/RioU/2xNMf9GKhT/elY2/0YqFP96WDP/oHZO/4JcNf8ieCT/RioU/21KKv9GKhT/hFw4/0YqFP9qSy7/RioU/5VqQP9GKhT/RioU/3xVLv94VzT/g1kx/5pwSP9GKhT/f1w2/2pLLv9vXEv/cE0t/4RcOP+OZ0D/nHFH/5dqQf97WDL/c1Eu/2ZJK/+RakP/akcn/5ltQP+VaD//nnFI/2VHK/9dU0n/f1s5/35aNv+FXjf/eFYz/4NdOP+ccUb/bk0s/2VHK/+fcET/iGA8/4tjP/9uTSz/mnBI/4dgN/9jQiH/Y0Ql/3pTLP+IYTr/akgl/5lvRf9vTi//k2k//3lVMf94UCz/fFYx/49sRv+HYTz/lmxG/2pLLP9xTyz/g1s4/21OL/+IYTr/elYy/2xNMP+Zb0n/hF45/41hPP+MZkL/nXNN/4liQf9zYlD/kmpG/3VSNP+LYTv/f1cz/4ZcNv+ZbUj/lG1G/2RJLP99WTX/fFg0/55xSP9lRCX/flo2/39ZNf9nSS3/jWM7/21OL/9lRyv/p3pQ/5tuRP95VTH/aUgp/4lfN/9oRyb/o3dQ/4dfO/+SZj//b0ws/3tXNf+RZz//gFo1/21MLf9qSy//o3ZM/2VIKv+Qa0H/hV87/3hXNv+QZTv/dVIy/2JBIP+LYz//cE0t/3FLJ/92UzP/onhQ/2VGKf+Zb0f/aUYm/3tXM/90UTH/bUkl/2lKLf94VTX/akkq/2VBIf9vTCz/bEkr/59zTP+XcEn/gVs2/5JoQv9wTS3/jmQ8/3xYNP+HYDn/aEUn/5JoQP9sSif/a0or/49nQ/98Wjf/mW1I/59ySP+OZDz/nXBG/6BxRf+JXzf/aUYm/41nQv+VaUT/flg0/3RRMf9uTS7/fFg4/5VrQ/+jd0r/cE0x/2dIK/+QZUL/bEkp/4RcOP+DXzv/e1g6/4VnTf+qf1X/Z0gp/3RRM/91US//Z0gr/2hJLP9rSS3/hV05/2lIJ/+XbUP/imA6/2RFKP9yUTL/h2A5/25LK/9sVj//hlw0/4pkQP+JZUP/eFQw/512Tf9tSyj/h2A5/3NRLv+OaEP/elc3/3BOK/+MYjj/a0op/31VMf9iSC//iGI9/4ZkQf+AWjb/hVs1/3FNK/9uSyv/kGlC/3xYNP+leE7/cVAx/3ZTM/9tTC3/jGRA/3xaNP9vTi//clEy/2dIKf+IYTj/clEw/5pvRf95VTP/il43/2tOMP90UC7/hV87/3pWNP90UTH/jmQ+/3VSMv9nTC//fFg2/3pWMv9pSiv/aUot/6F0Sv95VTP/glo2/6Z6S/+QZj7/imQ//5JoQP+CXjr/hF02/2pLL/+Wa0H/bEou/4thO/9jRCf/hmA8/6J4Tv+GXDb/hV05/3xYNP+UakL/eFQw/19CJP+MYjz/dFAu/1U/KP9iQB3/jGtM/6l/Wf+AWjb/dlAr/4ZuVv9pTC7/dlIw/5lvRf+LYz//dFAs/2pJKv92Tir/cFQ8/19GMP9tSir/YUsz/4pkQP+AVC3/hV05/3FQL/90Ui//c1A0/3tXM/+DXTn/g105/5FmO/+NZj//hWE9/3xUMP93VDT/o3lR/2FGKf+OZDz/oHRH/3xYNv9uSy3/aEks/4ZgPP+DWzf/e1k2/6J1S/9xTzP/hF45/2pLLv+NYzv/Z0gr/51wRv+TbEP/akko/4lfN/9yUTD/o3ZM/3tXM/+gdUv/YkMm/2pMMP90UTH/mW5E/29NMf9/Wzf/jGRA/5txR/+SaED/ZEYq/2VHK/+leE7/flg0/5t0Tf95Uy7/d1Mx/3NRNf+KYj7/c08v/4NfPf98WDT/hl84/4FdOf+HYTz/c00p/4tlQP92UzP/lW5H/4VeN/9rRyX/hV06/25LK/+QaUL/a0go/3ROKv93UzP/';
@@ -37,6 +37,29 @@ export class TextureGenerator {
                         renderCrownToContext(ctx, cDef, CROWN_PALETTES[p]);
                         canvas.refresh();
                     }
+                }
+            }
+        }
+        // 9. Generate Large Pixel Art Branch Textures (Left & Right x 4 palettes)
+        for (let p = 0; p < CROWN_PALETTES.length; p++) {
+            const leftKey = `tree_branch_left_${p}`;
+            if (!scene.textures.exists(leftKey)) {
+                const canvas = scene.textures.createCanvas(leftKey, 40, 32);
+                if (canvas) {
+                    const ctx = canvas.context;
+                    ctx.imageSmoothingEnabled = false;
+                    renderBranchSpriteToContext(ctx, 'L', CROWN_PALETTES[p]);
+                    canvas.refresh();
+                }
+            }
+            const rightKey = `tree_branch_right_${p}`;
+            if (!scene.textures.exists(rightKey)) {
+                const canvas = scene.textures.createCanvas(rightKey, 40, 32);
+                if (canvas) {
+                    const ctx = canvas.context;
+                    ctx.imageSmoothingEnabled = false;
+                    renderBranchSpriteToContext(ctx, 'R', CROWN_PALETTES[p]);
+                    canvas.refresh();
                 }
             }
         }
@@ -1771,7 +1794,7 @@ export class TextureGenerator {
                 canvas.refresh();
             }
         }
-        // 2. Mystic Pixel Art Moon - 72x72 (large authentic moon with lunar craters and crescent rim)
+        // 2. Mystic Pixel Art Crescent Moon - 72x72 (ethereal glowing crescent with lunar craters)
         if (!scene.textures.exists('celestial_moon')) {
             const size = 72;
             const canvas = scene.textures.createCanvas('celestial_moon', size, size);
@@ -1780,106 +1803,126 @@ export class TextureGenerator {
                 ctx.imageSmoothingEnabled = false;
                 const imgData = ctx.createImageData(size, size);
                 const data = imgData.data;
-                const cx = (size - 1) / 2.0;
-                const cy = (size - 1) / 2.0;
-                const rBody = 25.5;
+                const cx = 35;
+                const cy = 35;
+                const R = 25.0;
+                // Cutout circle for crescent (offset up-right to illuminate crescent facing left / bottom-left)
+                const cutX = cx + 11.5;
+                const cutY = cy - 4.5;
+                const cutR = 23.0;
+                // Soft craters on the illuminated crescent
                 const craters = [
-                    [-9.0, -8.0, 7.2],
-                    [8.0, -10.0, 5.6],
-                    [-4.5, 9.0, 8.4],
-                    [10.0, 7.0, 5.2],
-                    [2.5, 0.0, 4.0],
-                    [-13.0, 1.0, 3.5],
-                    [14.0, -2.0, 3.2]
+                    [-10, 5, 4.0],
+                    [-4, 14, 3.5],
+                    [-13, -6, 3.2],
+                    [-5, -14, 2.5]
                 ];
                 for (let y = 0; y < size; y++) {
                     for (let x = 0; x < size; x++) {
                         const dx = x - cx;
                         const dy = y - cy;
                         const dist = Math.sqrt(dx * dx + dy * dy);
+                        const cutDx = x - cutX;
+                        const cutDy = y - cutY;
+                        const cutDist = Math.sqrt(cutDx * cutDx + cutDy * cutDy);
+                        const pIdx = (y * size + x) * 4;
+                        const inMain = dist <= R;
+                        const inCut = cutDist <= cutR;
                         let r = 0, g = 0, b = 0, a = 0;
-                        if (dist <= rBody) {
+                        if (inMain && !inCut) {
+                            // Inside the illuminated crescent
+                            const edgeDist = Math.min(R - dist, cutDist - cutR);
                             let inCrater = false;
-                            let craterShade = 0;
-                            for (let c = 0; c < craters.length; c++) {
-                                const [cxRel, cyRel, cR] = craters[c];
-                                const cDist = Math.sqrt((dx - cxRel) * (dx - cxRel) + (dy - cyRel) * (dy - cyRel));
-                                if (cDist <= cR) {
+                            let cDepth = 0;
+                            for (const [crX, crY, crR] of craters) {
+                                const cdx = dx - crX;
+                                const cdy = dy - crY;
+                                const cDist = Math.sqrt(cdx * cdx + cdy * cdy);
+                                if (cDist <= crR) {
                                     inCrater = true;
-                                    craterShade = cDist <= cR * 0.58 ? 1 : 2;
+                                    cDepth = 1.0 - cDist / crR;
                                     break;
                                 }
                             }
-                            if (inCrater) {
-                                if (craterShade === 1) {
-                                    // Dark crater depth (#475569)
-                                    r = 71;
-                                    g = 85;
-                                    b = 105;
+                            if (edgeDist < 1.2) {
+                                // Celestial edge silhouette
+                                r = 75;
+                                g = 85;
+                                b = 115;
+                                a = 255;
+                            }
+                            else if (inCrater) {
+                                // Lunar mare crater shading (soft silver-slate)
+                                if (cDepth > 0.5) {
+                                    r = 160;
+                                    g = 175;
+                                    b = 205;
                                     a = 255;
                                 }
                                 else {
-                                    // Mid crater rim (#64748b)
-                                    r = 100;
-                                    g = 116;
-                                    b = 139;
+                                    r = 195;
+                                    g = 210;
+                                    b = 230;
                                     a = 255;
                                 }
                             }
                             else {
-                                const lightFactor = (-dx * 0.6 - dy * 0.8) / rBody;
-                                if (dist >= rBody - 1.8) {
-                                    // Outer crisp dark slate rim (#334155)
-                                    r = 51;
-                                    g = 65;
-                                    b = 85;
-                                    a = 255;
-                                }
-                                else if (lightFactor > 0.45) {
-                                    // Illuminated crescent crest (#ffffff)
+                                // Pearlescent luminous crest gradient
+                                const outerFactor = (-dx * 0.7 - dy * 0.5) / R;
+                                if (outerFactor > 0.35) {
+                                    // Pure glowing white crest
                                     r = 255;
                                     g = 255;
                                     b = 255;
                                     a = 255;
                                 }
-                                else if (lightFactor > 0.05) {
-                                    // Bright silver surface (#f1f5f9)
-                                    r = 241;
-                                    g = 245;
-                                    b = 249;
+                                else if (outerFactor > -0.1) {
+                                    // Warm pale pearl / cream
+                                    r = 245;
+                                    g = 248;
+                                    b = 255;
                                     a = 255;
                                 }
-                                else if (lightFactor > -0.35) {
-                                    // Main lunar surface (#cbd5e1)
-                                    r = 203;
-                                    g = 213;
-                                    b = 225;
+                                else if (outerFactor > -0.5) {
+                                    // Soft silver
+                                    r = 220;
+                                    g = 230;
+                                    b = 248;
                                     a = 255;
                                 }
                                 else {
-                                    // Lunar shadowed side (#94a3b8)
-                                    r = 148;
-                                    g = 163;
-                                    b = 184;
+                                    // Twilight crescent rim
+                                    r = 185;
+                                    g = 200;
+                                    b = 225;
                                     a = 255;
                                 }
                             }
                         }
-                        else if (dist <= rBody + 4.5) {
-                            // Soft pale atmospheric blue glow
-                            const alpha = Math.floor(75 * (1.0 - (dist - rBody) / 4.5));
+                        else if (inMain && inCut) {
+                            // Earthshine silhouette: faint magical outline of the dark hemisphere of the moon
+                            const shade = Math.floor(18 + (1.0 - dist / R) * 14);
+                            r = 40;
+                            g = 48;
+                            b = 75;
+                            a = shade;
+                        }
+                        else if (dist <= R + 6.0) {
+                            // Ethereal celestial lunar halo
+                            const haloDist = dist - R;
+                            const angleFactor = Math.max(0, (-dx * 0.7 - dy * 0.5) / dist);
+                            const alpha = Math.floor((1.0 - haloDist / 6.0) * (45 + angleFactor * 55));
                             if (alpha > 0) {
-                                r = 186;
-                                g = 230;
-                                b = 253;
+                                r = 210;
+                                g = 225;
+                                b = 255;
                                 a = alpha;
                             }
                         }
-                        const idx = (y * size + x) * 4;
-                        data[idx] = r;
-                        data[idx + 1] = g;
-                        data[idx + 2] = b;
-                        data[idx + 3] = a;
+                        data[pIdx] = r;
+                        data[pIdx + 1] = g;
+                        data[pIdx + 2] = b;
+                        data[pIdx + 3] = a;
                     }
                 }
                 ctx.putImageData(imgData, 0, 0);

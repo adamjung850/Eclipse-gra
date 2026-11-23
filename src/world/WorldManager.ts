@@ -1,6 +1,6 @@
 import { BlockId, GAME_CONSTANTS } from '../types/index.js';
 import { BLOCK_DEFINITIONS } from './BlockTypes.js';
-import { GeneratedWorldData, TreeRecord } from './WorldGenerator.js';
+import { GeneratedWorldData, TreeRecord, BranchSpot } from './WorldGenerator.js';
 import { CROWN_PALETTES, CROWN_DEFS } from '../textures/TreeSprites.js';
 
 export interface ActiveTree {
@@ -11,6 +11,8 @@ export interface ActiveTree {
   crownVariant: number;
   colorVariant: number;
   crownSprite?: Phaser.GameObjects.Image;
+  branchSprites: Phaser.GameObjects.Image[];
+  branchSpots?: BranchSpot[];
 }
 
 export interface PlantedSapling {
@@ -56,7 +58,9 @@ export class WorldManager {
           treeTopY: t.treeTopY,
           trunkHeight: t.trunkHeight,
           crownVariant: t.crownVariant ?? 0,
-          colorVariant: t.colorVariant ?? 0
+          colorVariant: t.colorVariant ?? 0,
+          branchSprites: [],
+          branchSpots: t.branchSpots ?? []
         });
       }
     }
@@ -137,15 +141,43 @@ export class WorldManager {
   private spawnInitialTreeCrowns(): void {
     const T = GAME_CONSTANTS.TILE_SIZE;
     for (const tree of this.activeTrees) {
+      if (!tree.branchSprites) tree.branchSprites = [];
+
+      // 1. Crown Sprite: overlaps top of trunk by 14px for seamless socket integration
       const texKey = `tree_crown_${tree.crownVariant}_${tree.colorVariant}`;
       const crown = this.scene.add.image(
         tree.x * T + T / 2,
-        tree.treeTopY * T + 7,
+        tree.treeTopY * T + 14,
         this.scene.textures.exists(texKey) ? texKey : 'tree_crown'
       );
       crown.setDepth(0);
       crown.setOrigin(0.5, 1.0);
       tree.crownSprite = crown;
+
+      // 2. Large Pixel Art Branches
+      if (tree.branchSpots) {
+        for (const b of tree.branchSpots) {
+          if (b.side === 'L') {
+            const bSprite = this.scene.add.image(
+              tree.x * T + 6,
+              b.y * T + 14,
+              `tree_branch_left_${tree.colorVariant}`
+            );
+            bSprite.setOrigin(1.0, 0.5);
+            bSprite.setDepth(0);
+            tree.branchSprites.push(bSprite);
+          } else {
+            const bSprite = this.scene.add.image(
+              tree.x * T + 18,
+              b.y * T + 14,
+              `tree_branch_right_${tree.colorVariant}`
+            );
+            bSprite.setOrigin(0.0, 0.5);
+            bSprite.setDepth(0);
+            tree.branchSprites.push(bSprite);
+          }
+        }
+      }
     }
   }
 
@@ -333,15 +365,24 @@ export class WorldManager {
     }
 
     // 3. Find and destroy tree crown
-    const treeIdx = this.activeTrees.findIndex(t => t.x === tileX && t.surfaceY >= startY && t.treeTopY <= startY + 2);
+    const treeIdx = this.activeTrees.findIndex(t => t.x === tileX && startY >= t.treeTopY - 1 && startY <= t.surfaceY);
     if (treeIdx !== -1) {
       const tree = this.activeTrees[treeIdx];
       if (tree.crownSprite) {
         this.emitLeafBurst(tree.x * GAME_CONSTANTS.TILE_SIZE + 12, tree.treeTopY * GAME_CONSTANTS.TILE_SIZE - 20, tree.colorVariant);
         tree.crownSprite.destroy();
+        tree.crownSprite = undefined;
       }
 
-      // Clear canopy blocks and drop saplings
+      if (tree.branchSprites) {
+        for (const b of tree.branchSprites) {
+          this.emitLeafBurst(b.x, b.y, tree.colorVariant);
+          b.destroy();
+        }
+        tree.branchSprites = [];
+      }
+
+      // Clear canopy proxy blocks from foreground
       const halfW = (tree.crownVariant === 2 || tree.crownVariant === 3) ? 2 : 1;
       const topY = tree.crownVariant === 1 ? tree.treeTopY - 3 : tree.treeTopY - 2;
 
@@ -352,11 +393,16 @@ export class WorldManager {
               this.foreground[lx][ly] = BlockId.AIR;
               this.foregroundLayer.removeTileAt(lx, ly);
               this.clearDamage(lx, ly);
-              if (this.onBlockBroken) {
-                this.onBlockBroken(lx, ly, BlockId.LEAVES);
-              }
             }
           }
+        }
+      }
+
+      // Drop strictly 1, 2, or 3 saplings per felled tree (not 10+)
+      const saplingsToDrop = 1 + Math.floor(Math.random() * 3);
+      for (let s = 0; s < saplingsToDrop; s++) {
+        if (this.onBlockBroken) {
+          this.onBlockBroken(tree.x, tree.treeTopY, BlockId.SAPLING);
         }
       }
 
@@ -388,15 +434,15 @@ export class WorldManager {
   public growTreeAt(tileX: number, surfaceY: number): void {
     if (this.getBlock(tileX, surfaceY) !== BlockId.SAPLING) return;
 
-    // Pick diverse height for grown saplings:
+    // Pick sturdy height for grown saplings (4-7 blocks high, rare 8)
     const roll = Math.random();
     let trunkHeight: number;
-    if (roll < 0.3) {
+    if (roll < 0.40) {
       trunkHeight = 4 + Math.floor(Math.random() * 2);
-    } else if (roll < 0.75) {
-      trunkHeight = 6 + Math.floor(Math.random() * 3);
+    } else if (roll < 0.85) {
+      trunkHeight = 6 + Math.floor(Math.random() * 2);
     } else {
-      trunkHeight = 9 + Math.floor(Math.random() * 2);
+      trunkHeight = 8;
     }
     const treeTopY = surfaceY - trunkHeight + 1;
 
@@ -419,30 +465,30 @@ export class WorldManager {
     this.foreground[tileX][surfaceY] = BlockId.TREE_ROOT;
     this.foregroundLayer.putTileAt(BlockId.TREE_ROOT, tileX, surfaceY);
 
-    // 2. Trunk with dynamic branches
+    // 2. Trunk with dynamic leafy branches
     const branchSpots: { y: number; side: 'L' | 'R' }[] = [];
-    if (trunkHeight >= 5) {
+    if (trunkHeight >= 4) {
       const bRoll = Math.random();
-      if (bRoll < 0.35) {
-        branchSpots.push({ y: surfaceY - 2, side: 'L' });
-        if (trunkHeight >= 7) branchSpots.push({ y: surfaceY - 4, side: 'R' });
-      } else if (bRoll < 0.70) {
-        branchSpots.push({ y: surfaceY - 2, side: 'R' });
-        if (trunkHeight >= 7) branchSpots.push({ y: surfaceY - 4, side: 'L' });
-      } else if (bRoll < 0.90) {
-        branchSpots.push({ y: surfaceY - 3, side: 'L' });
-        branchSpots.push({ y: surfaceY - 5, side: 'R' });
+      if (trunkHeight >= 6) {
+        if (bRoll < 0.55) {
+          branchSpots.push({ y: surfaceY - 2, side: 'L' });
+          branchSpots.push({ y: surfaceY - 4, side: 'R' });
+        } else if (bRoll < 0.85) {
+          branchSpots.push({ y: surfaceY - 3, side: 'R' });
+          branchSpots.push({ y: surfaceY - 5, side: 'L' });
+        } else {
+          branchSpots.push({ y: surfaceY - 3, side: Math.random() < 0.5 ? 'L' : 'R' });
+        }
+      } else {
+        if (bRoll < 0.85) {
+          branchSpots.push({ y: surfaceY - 2, side: Math.random() < 0.5 ? 'L' : 'R' });
+        }
       }
     }
 
     for (let ty = surfaceY - 1; ty >= treeTopY; ty--) {
-      const branch = branchSpots.find(b => b.y === ty);
-      let bId = BlockId.WOOD;
-      if (branch) {
-        bId = branch.side === 'L' ? BlockId.TREE_BRANCH_L : BlockId.TREE_BRANCH_R;
-      }
-      this.foreground[tileX][ty] = bId;
-      this.foregroundLayer.putTileAt(bId, tileX, ty);
+      this.foreground[tileX][ty] = BlockId.WOOD;
+      this.foregroundLayer.putTileAt(BlockId.WOOD, tileX, ty);
     }
 
     // 3. Mark canopy
@@ -456,16 +502,39 @@ export class WorldManager {
       }
     }
 
-    // 4. Create Crown Sprite
+    // 4. Create Crown Sprite & Large Branch Sprites
     const T = GAME_CONSTANTS.TILE_SIZE;
-    const texKey = `tree_crown_${crownVariant}_${colorVariant}`;
+    const crownKey = `tree_crown_${crownVariant}_${colorVariant}`;
     const crown = this.scene.add.image(
       tileX * T + T / 2,
-      treeTopY * T + 7,
-      this.scene.textures.exists(texKey) ? texKey : 'tree_crown'
+      treeTopY * T + 14,
+      this.scene.textures.exists(crownKey) ? crownKey : 'tree_crown'
     );
     crown.setDepth(0);
     crown.setOrigin(0.5, 1.0);
+
+    const branchSprites: Phaser.GameObjects.Image[] = [];
+    for (const b of branchSpots) {
+      if (b.side === 'L') {
+        const bSprite = this.scene.add.image(
+          tileX * T + 6,
+          b.y * T + 14,
+          `tree_branch_left_${colorVariant}`
+        );
+        bSprite.setOrigin(1.0, 0.5);
+        bSprite.setDepth(0);
+        branchSprites.push(bSprite);
+      } else {
+        const bSprite = this.scene.add.image(
+          tileX * T + 18,
+          b.y * T + 14,
+          `tree_branch_right_${colorVariant}`
+        );
+        bSprite.setOrigin(0.0, 0.5);
+        bSprite.setDepth(0);
+        branchSprites.push(bSprite);
+      }
+    }
 
     this.activeTrees.push({
       x: tileX,
@@ -474,7 +543,9 @@ export class WorldManager {
       trunkHeight,
       crownVariant,
       colorVariant,
-      crownSprite: crown
+      crownSprite: crown,
+      branchSprites,
+      branchSpots
     });
 
     // Growth particle poof

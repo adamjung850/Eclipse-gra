@@ -3,6 +3,7 @@ import {
   CROWN_DEFS,
   CROWN_PALETTES,
   renderCrownToContext,
+  renderBranchSpriteToContext,
   drawTreeTrunk,
   drawTreeRoot,
   drawTreeBranchL,
@@ -59,6 +60,30 @@ export class TextureGenerator {
             renderCrownToContext(ctx, cDef, CROWN_PALETTES[p]);
             canvas.refresh();
           }
+        }
+      }
+    }
+
+    // 9. Generate Large Pixel Art Branch Textures (Left & Right x 4 palettes)
+    for (let p = 0; p < CROWN_PALETTES.length; p++) {
+      const leftKey = `tree_branch_left_${p}`;
+      if (!scene.textures.exists(leftKey)) {
+        const canvas = scene.textures.createCanvas(leftKey, 40, 32);
+        if (canvas) {
+          const ctx = canvas.context;
+          ctx.imageSmoothingEnabled = false;
+          renderBranchSpriteToContext(ctx, 'L', CROWN_PALETTES[p]);
+          canvas.refresh();
+        }
+      }
+      const rightKey = `tree_branch_right_${p}`;
+      if (!scene.textures.exists(rightKey)) {
+        const canvas = scene.textures.createCanvas(rightKey, 40, 32);
+        if (canvas) {
+          const ctx = canvas.context;
+          ctx.imageSmoothingEnabled = false;
+          renderBranchSpriteToContext(ctx, 'R', CROWN_PALETTES[p]);
+          canvas.refresh();
         }
       }
     }
@@ -1560,7 +1585,7 @@ export class TextureGenerator {
       }
     }
 
-    // 2. Mystic Pixel Art Moon - 72x72 (large authentic moon with lunar craters and crescent rim)
+    // 2. Mystic Pixel Art Crescent Moon - 72x72 (ethereal glowing crescent with lunar craters)
     if (!scene.textures.exists('celestial_moon')) {
       const size = 72;
       const canvas = scene.textures.createCanvas('celestial_moon', size, size);
@@ -1569,18 +1594,21 @@ export class TextureGenerator {
         ctx.imageSmoothingEnabled = false;
         const imgData = ctx.createImageData(size, size);
         const data = imgData.data;
-        const cx = (size - 1) / 2.0;
-        const cy = (size - 1) / 2.0;
-        const rBody = 25.5;
+        const cx = 35;
+        const cy = 35;
+        const R = 25.0;
 
+        // Cutout circle for crescent (offset up-right to illuminate crescent facing left / bottom-left)
+        const cutX = cx + 11.5;
+        const cutY = cy - 4.5;
+        const cutR = 23.0;
+
+        // Soft craters on the illuminated crescent
         const craters = [
-          [-9.0, -8.0, 7.2],
-          [8.0, -10.0, 5.6],
-          [-4.5, 9.0, 8.4],
-          [10.0, 7.0, 5.2],
-          [2.5, 0.0, 4.0],
-          [-13.0, 1.0, 3.5],
-          [14.0, -2.0, 3.2]
+          [-10, 5, 4.0],
+          [-4, 14, 3.5],
+          [-13, -6, 3.2],
+          [-5, -14, 2.5]
         ];
 
         for (let y = 0; y < size; y++) {
@@ -1589,62 +1617,79 @@ export class TextureGenerator {
             const dy = y - cy;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
+            const cutDx = x - cutX;
+            const cutDy = y - cutY;
+            const cutDist = Math.sqrt(cutDx * cutDx + cutDy * cutDy);
+
+            const pIdx = (y * size + x) * 4;
+
+            const inMain = dist <= R;
+            const inCut = cutDist <= cutR;
+
             let r = 0, g = 0, b = 0, a = 0;
 
-            if (dist <= rBody) {
-              let inCrater = false;
-              let craterShade = 0;
+            if (inMain && !inCut) {
+              // Inside the illuminated crescent
+              const edgeDist = Math.min(R - dist, cutDist - cutR);
 
-              for (let c = 0; c < craters.length; c++) {
-                const [cxRel, cyRel, cR] = craters[c];
-                const cDist = Math.sqrt((dx - cxRel) * (dx - cxRel) + (dy - cyRel) * (dy - cyRel));
-                if (cDist <= cR) {
+              let inCrater = false;
+              let cDepth = 0;
+              for (const [crX, crY, crR] of craters) {
+                const cdx = dx - crX;
+                const cdy = dy - crY;
+                const cDist = Math.sqrt(cdx * cdx + cdy * cdy);
+                if (cDist <= crR) {
                   inCrater = true;
-                  craterShade = cDist <= cR * 0.58 ? 1 : 2;
+                  cDepth = 1.0 - cDist / crR;
                   break;
                 }
               }
 
-              if (inCrater) {
-                if (craterShade === 1) {
-                  // Dark crater depth (#475569)
-                  r = 71; g = 85; b = 105; a = 255;
+              if (edgeDist < 1.2) {
+                // Celestial edge silhouette
+                r = 75; g = 85; b = 115; a = 255;
+              } else if (inCrater) {
+                // Lunar mare crater shading (soft silver-slate)
+                if (cDepth > 0.5) {
+                  r = 160; g = 175; b = 205; a = 255;
                 } else {
-                  // Mid crater rim (#64748b)
-                  r = 100; g = 116; b = 139; a = 255;
+                  r = 195; g = 210; b = 230; a = 255;
                 }
               } else {
-                const lightFactor = (-dx * 0.6 - dy * 0.8) / rBody;
-                if (dist >= rBody - 1.8) {
-                  // Outer crisp dark slate rim (#334155)
-                  r = 51; g = 65; b = 85; a = 255;
-                } else if (lightFactor > 0.45) {
-                  // Illuminated crescent crest (#ffffff)
+                // Pearlescent luminous crest gradient
+                const outerFactor = (-dx * 0.7 - dy * 0.5) / R;
+                if (outerFactor > 0.35) {
+                  // Pure glowing white crest
                   r = 255; g = 255; b = 255; a = 255;
-                } else if (lightFactor > 0.05) {
-                  // Bright silver surface (#f1f5f9)
-                  r = 241; g = 245; b = 249; a = 255;
-                } else if (lightFactor > -0.35) {
-                  // Main lunar surface (#cbd5e1)
-                  r = 203; g = 213; b = 225; a = 255;
+                } else if (outerFactor > -0.1) {
+                  // Warm pale pearl / cream
+                  r = 245; g = 248; b = 255; a = 255;
+                } else if (outerFactor > -0.5) {
+                  // Soft silver
+                  r = 220; g = 230; b = 248; a = 255;
                 } else {
-                  // Lunar shadowed side (#94a3b8)
-                  r = 148; g = 163; b = 184; a = 255;
+                  // Twilight crescent rim
+                  r = 185; g = 200; b = 225; a = 255;
                 }
               }
-            } else if (dist <= rBody + 4.5) {
-              // Soft pale atmospheric blue glow
-              const alpha = Math.floor(75 * (1.0 - (dist - rBody) / 4.5));
+            } else if (inMain && inCut) {
+              // Earthshine silhouette: faint magical outline of the dark hemisphere of the moon
+              const shade = Math.floor(18 + (1.0 - dist / R) * 14);
+              r = 40; g = 48; b = 75; a = shade;
+            } else if (dist <= R + 6.0) {
+              // Ethereal celestial lunar halo
+              const haloDist = dist - R;
+              const angleFactor = Math.max(0, (-dx * 0.7 - dy * 0.5) / dist);
+              const alpha = Math.floor((1.0 - haloDist / 6.0) * (45 + angleFactor * 55));
               if (alpha > 0) {
-                r = 186; g = 230; b = 253; a = alpha;
+                r = 210; g = 225; b = 255; a = alpha;
               }
             }
 
-            const idx = (y * size + x) * 4;
-            data[idx] = r;
-            data[idx + 1] = g;
-            data[idx + 2] = b;
-            data[idx + 3] = a;
+            data[pIdx] = r;
+            data[pIdx + 1] = g;
+            data[pIdx + 2] = b;
+            data[pIdx + 3] = a;
           }
         }
         ctx.putImageData(imgData, 0, 0);

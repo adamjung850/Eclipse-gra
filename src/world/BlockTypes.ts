@@ -72,9 +72,9 @@ export const BLOCK_DEFINITIONS: Record<number, BlockConfig> = {
     hardness: 12,
     isSolid: false, // Można swobodnie przechodzić przez liście
     isTransparent: true,
-    dropItemId: 'sapling',
+    dropItemId: '',
     dropMin: 0,
-    dropMax: 1,
+    dropMax: 0,
     color: 0x2e8b39,
     particleColor: 0x3cb04a,
     soundType: 'dirt'

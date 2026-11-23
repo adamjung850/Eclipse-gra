@@ -55,21 +55,20 @@ export const CROWN_PALETTES = [
     }
 ];
 export const CROWN_DEFS = [
-    // Variant 0: Round Oak (Gęsty, okrągły dąb)
+    // Variant 0: Round Oak (Gęsty, okrągły dąb Terraria z opadającymi płatami po bokach)
     {
         id: 0,
         name: 'round_oak',
         width: 76,
-        height: 64,
+        height: 60,
         clusters: [
-            { cx: 38, cy: 30, rx: 22, ry: 20 },
-            { cx: 38, cy: 16, rx: 17, ry: 13 },
-            { cx: 22, cy: 26, rx: 16, ry: 16 },
-            { cx: 54, cy: 26, rx: 16, ry: 16 },
-            { cx: 16, cy: 40, rx: 14, ry: 13 },
-            { cx: 60, cy: 40, rx: 14, ry: 13 },
-            { cx: 28, cy: 46, rx: 14, ry: 11 },
-            { cx: 48, cy: 46, rx: 14, ry: 11 }
+            { cx: 38, cy: 26, rx: 22, ry: 19 },
+            { cx: 38, cy: 14, rx: 17, ry: 12 },
+            { cx: 20, cy: 26, rx: 16, ry: 16 },
+            { cx: 56, cy: 26, rx: 16, ry: 16 },
+            { cx: 20, cy: 44, rx: 14, ry: 14 },
+            { cx: 56, cy: 44, rx: 14, ry: 14 },
+            { cx: 38, cy: 38, rx: 12, ry: 11 }
         ]
     },
     // Variant 1: Tall Forest (Wysokie smukłe drzewo leśne)
@@ -173,12 +172,6 @@ export function renderCrownToContext(ctx, crownDef, palette) {
                     }
                 }
             }
-            // Trunk notch: indent at bottom center where the trunk joins
-            const trunkCenterX = width / 2;
-            const distFromTrunk = Math.abs(x - trunkCenterX);
-            if (distFromTrunk <= 4 && y >= height - 7) {
-                continue;
-            }
             const idx = y * width + x;
             if (bestCluster !== -1) {
                 mask[idx] = 1;
@@ -223,6 +216,16 @@ export function renderCrownToContext(ctx, crownDef, palette) {
                 pixels[pIdx] = cOutline[0];
                 pixels[pIdx + 1] = cOutline[1];
                 pixels[pIdx + 2] = cOutline[2];
+                pixels[pIdx + 3] = 255;
+                continue;
+            }
+            // Trunk socket: underside leaves overlapping top of wood
+            const trunkCenterX = width / 2;
+            const distFromTrunk = Math.abs(x - trunkCenterX);
+            if (distFromTrunk <= 6 && y >= height - 10) {
+                pixels[pIdx] = cDeepShadow[0];
+                pixels[pIdx + 1] = cDeepShadow[1];
+                pixels[pIdx + 2] = cDeepShadow[2];
                 pixels[pIdx + 3] = 255;
                 continue;
             }
@@ -286,6 +289,112 @@ export function renderCrownToContext(ctx, crownDef, palette) {
         }
     }
     ctx.putImageData(imgData, 0, 0);
+}
+export function renderBranchSpriteToContext(ctx, side, pal) {
+    const W = 40;
+    const H = 32;
+    ctx.clearRect(0, 0, W, H);
+    const WOOD = {
+        hi: '#c28859',
+        lt: '#9e6c44',
+        mid: '#7a4f2e',
+        dk: '#54321c',
+        out: '#331c0e'
+    };
+    const px = (gx, gy, hex) => {
+        if (gx < 0 || gx >= 10 || gy < 0 || gy >= 8)
+            return;
+        ctx.fillStyle = hex;
+        ctx.fillRect(gx * 4, gy * 4, 4, 4);
+    };
+    if (side === 'L') {
+        // 1. Thick wooden limb branching up-left from trunk (gx=9 connects to trunk at x=6)
+        px(9, 7, WOOD.out);
+        px(9, 6, WOOD.mid);
+        px(9, 5, WOOD.lt);
+        px(8, 6, WOOD.out);
+        px(8, 5, WOOD.mid);
+        px(8, 4, WOOD.lt);
+        px(7, 5, WOOD.out);
+        px(7, 4, WOOD.mid);
+        px(6, 5, WOOD.out);
+        px(6, 4, WOOD.mid);
+        px(5, 4, WOOD.out);
+        px(5, 3, WOOD.mid);
+        // 2. Large round leaf crown on branch tip (centered at gx=3, gy=3)
+        px(2, 0, pal.outline);
+        px(3, 0, pal.outline);
+        px(4, 0, pal.outline);
+        px(1, 1, pal.outline);
+        px(2, 1, pal.sunlit);
+        px(3, 1, pal.sunlit);
+        px(4, 1, pal.baseLeaf);
+        px(5, 1, pal.outline);
+        px(0, 2, pal.outline);
+        px(1, 2, pal.sunlit);
+        px(2, 2, pal.sunlit);
+        px(3, 2, pal.baseLeaf);
+        px(4, 2, pal.midShadow);
+        px(5, 2, pal.outline);
+        px(0, 3, pal.outline);
+        px(1, 3, pal.baseLeaf);
+        px(2, 3, pal.baseLeaf);
+        px(3, 3, pal.midShadow);
+        px(4, 3, pal.deepShadow);
+        px(5, 3, pal.outline);
+        px(0, 4, pal.outline);
+        px(1, 4, pal.midShadow);
+        px(2, 4, pal.midShadow);
+        px(3, 4, pal.deepShadow);
+        px(4, 4, pal.outline);
+        px(1, 5, pal.outline);
+        px(2, 5, pal.deepShadow);
+        px(3, 5, pal.outline);
+    }
+    else {
+        // 1. Thick wooden limb branching up-right from trunk (gx=0 connects to trunk at x=18)
+        px(0, 7, WOOD.out);
+        px(0, 6, WOOD.mid);
+        px(0, 5, WOOD.lt);
+        px(1, 6, WOOD.out);
+        px(1, 5, WOOD.mid);
+        px(1, 4, WOOD.lt);
+        px(2, 5, WOOD.out);
+        px(2, 4, WOOD.mid);
+        px(3, 5, WOOD.out);
+        px(3, 4, WOOD.mid);
+        px(4, 4, WOOD.out);
+        px(4, 3, WOOD.mid);
+        // 2. Large round leaf crown on branch tip (centered at gx=6, gy=3)
+        px(5, 0, pal.outline);
+        px(6, 0, pal.outline);
+        px(7, 0, pal.outline);
+        px(4, 1, pal.outline);
+        px(5, 1, pal.sunlit);
+        px(6, 1, pal.sunlit);
+        px(7, 1, pal.baseLeaf);
+        px(8, 1, pal.outline);
+        px(4, 2, pal.outline);
+        px(5, 2, pal.sunlit);
+        px(6, 2, pal.baseLeaf);
+        px(7, 2, pal.midShadow);
+        px(8, 2, pal.deepShadow);
+        px(9, 2, pal.outline);
+        px(4, 3, pal.outline);
+        px(5, 3, pal.baseLeaf);
+        px(6, 3, pal.midShadow);
+        px(7, 3, pal.deepShadow);
+        px(8, 3, pal.deepShadow);
+        px(9, 3, pal.outline);
+        px(5, 4, pal.outline);
+        px(6, 4, pal.midShadow);
+        px(7, 4, pal.deepShadow);
+        px(8, 4, pal.deepShadow);
+        px(9, 4, pal.outline);
+        px(6, 5, pal.outline);
+        px(7, 5, pal.deepShadow);
+        px(8, 5, pal.outline);
+    }
 }
 export function drawTreeTrunk(ctx, T) {
     // Centered tree trunk (width 14px in 24px tile)
@@ -353,53 +462,109 @@ export function drawTreeRoot(ctx, T) {
 }
 export function drawTreeBranchL(ctx, T) {
     drawTreeTrunk(ctx, T);
-    // Left branch curving up-left
+    // 1. Sturdy diagonal wooden limb extending left from trunk
+    const bWood = [
+        [5, 12, 2, 4], [4, 11, 2, 4], [3, 10, 2, 4], [2, 9, 2, 3], [1, 8, 2, 3], [0, 8, 2, 2]
+    ];
     ctx.fillStyle = '#855331';
-    const branchPts = [[5, 14], [6, 14], [4, 13], [5, 13], [3, 12], [4, 12], [2, 11], [3, 11], [1, 10], [2, 10]];
-    for (const [x, y] of branchPts)
-        ctx.fillRect(x, y, 1, 1);
+    for (const [x, y, w, h] of bWood)
+        ctx.fillRect(x, y, w, h);
+    // Bark shading & grain:
+    ctx.fillStyle = '#54321c';
+    ctx.fillRect(5, 12, 1, 3);
+    ctx.fillStyle = '#b3774c';
+    ctx.fillRect(3, 10, 1, 3);
+    ctx.fillRect(1, 8, 1, 2);
+    // Bottom dark outline of limb:
     ctx.fillStyle = '#382012';
-    for (const [x, y] of [[4, 14], [3, 13], [2, 12], [1, 11]])
-        ctx.fillRect(x, y, 1, 1);
-    // Handcrafted leaf cluster on branch tip matching pixel art foliage
+    ctx.fillRect(5, 16, 2, 1);
+    ctx.fillRect(3, 14, 2, 1);
+    ctx.fillRect(1, 12, 2, 1);
+    ctx.fillRect(0, 10, 1, 1);
+    // Top dark outline of limb:
+    ctx.fillRect(4, 10, 1, 1);
+    ctx.fillRect(2, 8, 1, 1);
+    // 2. Substantial, lush rounded foliage cluster on left branch tip (x: 0..8, y: 0..9)
+    // Dark emerald silhouette outline:
     ctx.fillStyle = '#0c2610';
-    const outlinePts = [[1, 4], [2, 4], [0, 5], [3, 5], [0, 6], [4, 6], [0, 7], [4, 7], [0, 8], [4, 8], [0, 9], [3, 9], [1, 10]];
-    for (const [x, y] of outlinePts)
-        ctx.fillRect(x, y, 1, 1);
+    const foliageOutline = [
+        [2, 0, 4, 1], [1, 1, 1, 2], [0, 3, 1, 5], [1, 8, 2, 1],
+        [6, 1, 2, 1], [8, 2, 1, 3], [7, 5, 2, 1], [6, 6, 2, 1], [3, 9, 3, 1]
+    ];
+    for (const [x, y, w, h] of foliageOutline)
+        ctx.fillRect(x, y, w, h);
+    // Foliage midtone body:
     ctx.fillStyle = '#2d8e3f';
-    ctx.fillRect(1, 5, 2, 4);
-    ctx.fillRect(3, 6, 1, 2);
+    ctx.fillRect(2, 1, 4, 7);
+    ctx.fillRect(1, 3, 2, 4);
+    ctx.fillRect(6, 2, 2, 3);
+    // Sunlit highlights (top-left of cluster):
     ctx.fillStyle = '#77e086';
-    ctx.fillRect(2, 5, 1, 2);
+    ctx.fillRect(2, 1, 3, 2);
+    ctx.fillStyle = '#b2f7bc';
+    ctx.fillRect(3, 2, 1, 1);
     ctx.fillStyle = '#44bb57';
-    ctx.fillRect(1, 6, 1, 2);
+    ctx.fillRect(2, 3, 3, 2);
+    ctx.fillRect(5, 2, 2, 2);
+    // Deep foliage shadows (bottom):
     ctx.fillStyle = '#13471e';
-    ctx.fillRect(1, 9, 2, 1);
+    ctx.fillRect(1, 7, 3, 1);
+    ctx.fillRect(3, 8, 3, 1);
+    ctx.fillStyle = '#1f6a2e';
+    ctx.fillRect(2, 6, 4, 1);
 }
 export function drawTreeBranchR(ctx, T) {
     drawTreeTrunk(ctx, T);
-    // Right branch curving up-right
+    // 1. Sturdy diagonal wooden limb extending right from trunk
+    const bWood = [
+        [17, 12, 2, 4], [18, 11, 2, 4], [19, 10, 2, 4], [20, 9, 2, 3], [21, 8, 2, 3], [22, 8, 2, 2]
+    ];
     ctx.fillStyle = '#855331';
-    const branchPts = [[18, 14], [17, 14], [19, 13], [18, 13], [20, 12], [19, 12], [21, 11], [20, 11], [22, 10], [21, 10]];
-    for (const [x, y] of branchPts)
-        ctx.fillRect(x, y, 1, 1);
+    for (const [x, y, w, h] of bWood)
+        ctx.fillRect(x, y, w, h);
+    // Bark shading & grain:
+    ctx.fillStyle = '#54321c';
+    ctx.fillRect(18, 12, 1, 3);
+    ctx.fillStyle = '#b3774c';
+    ctx.fillRect(20, 10, 1, 3);
+    ctx.fillRect(22, 8, 1, 2);
+    // Bottom dark outline:
     ctx.fillStyle = '#382012';
-    for (const [x, y] of [[19, 14], [20, 13], [21, 12], [22, 11]])
-        ctx.fillRect(x, y, 1, 1);
-    // Handcrafted leaf cluster on branch tip
+    ctx.fillRect(17, 16, 2, 1);
+    ctx.fillRect(19, 14, 2, 1);
+    ctx.fillRect(21, 12, 2, 1);
+    ctx.fillRect(23, 10, 1, 1);
+    // Top dark outline:
+    ctx.fillRect(19, 10, 1, 1);
+    ctx.fillRect(21, 8, 1, 1);
+    // 2. Substantial, lush rounded foliage cluster on right branch tip (x: 15..23, y: 0..9)
+    // Dark emerald silhouette outline:
     ctx.fillStyle = '#0c2610';
-    const outlinePts = [[21, 4], [22, 4], [20, 5], [23, 5], [19, 6], [23, 6], [19, 7], [23, 7], [19, 8], [23, 8], [20, 9], [23, 9], [22, 10]];
-    for (const [x, y] of outlinePts)
-        ctx.fillRect(x, y, 1, 1);
+    const foliageOutline = [
+        [18, 0, 4, 1], [16, 1, 2, 1], [15, 2, 1, 3], [16, 5, 2, 1],
+        [22, 1, 1, 2], [23, 3, 1, 5], [21, 8, 2, 1], [18, 9, 3, 1]
+    ];
+    for (const [x, y, w, h] of foliageOutline)
+        ctx.fillRect(x, y, w, h);
+    // Foliage midtone body:
     ctx.fillStyle = '#2d8e3f';
-    ctx.fillRect(20, 5, 2, 4);
-    ctx.fillRect(19, 6, 1, 2);
+    ctx.fillRect(18, 1, 4, 7);
+    ctx.fillRect(16, 2, 2, 3);
+    ctx.fillRect(21, 3, 2, 4);
+    // Sunlit highlights (top of cluster):
     ctx.fillStyle = '#77e086';
-    ctx.fillRect(21, 5, 1, 2);
+    ctx.fillRect(18, 1, 3, 2);
+    ctx.fillStyle = '#b2f7bc';
+    ctx.fillRect(19, 2, 1, 1);
     ctx.fillStyle = '#44bb57';
-    ctx.fillRect(22, 6, 1, 2);
+    ctx.fillRect(17, 2, 2, 2);
+    ctx.fillRect(18, 3, 3, 2);
+    // Deep foliage shadows (bottom):
     ctx.fillStyle = '#13471e';
-    ctx.fillRect(20, 9, 2, 1);
+    ctx.fillRect(20, 7, 3, 1);
+    ctx.fillRect(18, 8, 3, 1);
+    ctx.fillStyle = '#1f6a2e';
+    ctx.fillRect(18, 6, 4, 1);
 }
 export function drawTreeSapling(ctx, T) {
     // Roots at bottom (y: 21..23)

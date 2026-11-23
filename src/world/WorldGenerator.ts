@@ -1,5 +1,10 @@
 import { BlockId, GAME_CONSTANTS } from '../types/index.js';
 
+export interface BranchSpot {
+  y: number;
+  side: 'L' | 'R';
+}
+
 export interface TreeRecord {
   x: number;
   surfaceY: number;
@@ -7,6 +12,7 @@ export interface TreeRecord {
   trunkHeight: number;
   crownVariant: number;
   colorVariant: number;
+  branchSpots?: BranchSpot[];
 }
 
 export interface GeneratedWorldData {
@@ -386,28 +392,25 @@ export class WorldGenerator {
 
       // 48% chance to grow a tree
       if (Math.random() < 0.48) {
-        // Diverse tree heights:
-        // 25% short trees (4-5 blocks), 50% medium (6-8 blocks), 25% tall forest trees (9-11 blocks)
+        // Terraria-style sturdy tree proportions: compact, thick, and well-balanced (4-6 blocks, avg 4-5)
         const roll = Math.random();
         let trunkHeight: number;
-        if (roll < 0.25) {
-          trunkHeight = 4 + Math.floor(Math.random() * 2);
-        } else if (roll < 0.75) {
-          trunkHeight = 6 + Math.floor(Math.random() * 3);
+        if (roll < 0.45) {
+          trunkHeight = 4;
+        } else if (roll < 0.85) {
+          trunkHeight = 5;
         } else {
-          trunkHeight = 9 + Math.floor(Math.random() * 3);
+          trunkHeight = 6;
         }
 
         const treeTopY = surfaceY - trunkHeight;
 
         // Pick crown shape variant (0..4) and color variant (0..3)
         let crownVariant: number;
-        if (trunkHeight >= 9) {
-          // Tall trees suit tall forest (1), wide ancient (2), or split twin (3)
+        if (trunkHeight >= 6) {
           crownVariant = [1, 2, 3][Math.floor(Math.random() * 3)];
-        } else if (trunkHeight <= 5) {
-          // Short trees suit round oak (0), wild bushy (4), or compact
-          crownVariant = [0, 4, 0][Math.floor(Math.random() * 3)];
+        } else if (trunkHeight <= 4) {
+          crownVariant = [0, 4][Math.floor(Math.random() * 2)];
         } else {
           crownVariant = Math.floor(Math.random() * 5);
         }
@@ -418,38 +421,25 @@ export class WorldGenerator {
         // 1. Root base resting directly on grass
         grid[x][surfaceY - 1] = BlockId.TREE_ROOT;
 
-        // 2. Branch pattern selection based on height
+        // 2. Branch pattern: give every tree lively, leafy side boughs!
         const branchSpots: { y: number; side: 'L' | 'R' }[] = [];
         if (trunkHeight >= 5) {
-          const patternRoll = Math.random();
-          if (trunkHeight >= 8 && patternRoll < 0.35) {
-            // Dual/triple staggered branches on tall trees
+          // Height 5 and 6 have staggered branches on both sides
+          const pRoll = Math.random();
+          if (pRoll < 0.5) {
+            branchSpots.push({ y: surfaceY - 2, side: 'L' });
+            branchSpots.push({ y: surfaceY - 3, side: 'R' });
+          } else {
+            branchSpots.push({ y: surfaceY - 2, side: 'R' });
             branchSpots.push({ y: surfaceY - 3, side: 'L' });
-            branchSpots.push({ y: surfaceY - 5, side: 'R' });
-            if (trunkHeight >= 10) branchSpots.push({ y: surfaceY - 8, side: 'L' });
-          } else if (patternRoll < 0.30) {
-            // Single left branch
-            const by = surfaceY - 3 - Math.floor(Math.random() * (trunkHeight - 4));
-            branchSpots.push({ y: by, side: 'L' });
-          } else if (patternRoll < 0.60) {
-            // Single right branch
-            const by = surfaceY - 3 - Math.floor(Math.random() * (trunkHeight - 4));
-            branchSpots.push({ y: by, side: 'R' });
-          } else if (patternRoll < 0.85) {
-            // Staggered branches left & right
-            branchSpots.push({ y: surfaceY - 3, side: 'L' });
-            branchSpots.push({ y: surfaceY - 5, side: 'R' });
           }
-          // Remaining 15% have clean bare straight trunks
+        } else {
+          // Height 4 has 1 prominent leafy branch
+          branchSpots.push({ y: surfaceY - 2, side: Math.random() < 0.5 ? 'L' : 'R' });
         }
 
         for (let ty = surfaceY - 2; ty >= treeTopY; ty--) {
-          const branch = branchSpots.find(b => b.y === ty);
-          if (branch) {
-            grid[x][ty] = branch.side === 'L' ? BlockId.TREE_BRANCH_L : BlockId.TREE_BRANCH_R;
-          } else {
-            grid[x][ty] = BlockId.WOOD;
-          }
+          grid[x][ty] = BlockId.WOOD;
         }
 
         // 3. Mark Canopy blocks in grid for reach and mining detection
@@ -466,7 +456,7 @@ export class WorldGenerator {
           }
         }
 
-        trees.push({ x, surfaceY, treeTopY, trunkHeight, crownVariant, colorVariant });
+        trees.push({ x, surfaceY, treeTopY, trunkHeight, crownVariant, colorVariant, branchSpots });
         lastTreeX = x;
       }
     }
