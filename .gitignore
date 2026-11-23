@@ -58,7 +58,8 @@ $RECYCLE.BIN/
 *~
 .cache/
 
-# Local backup archives (do not commit manual zip backups)
+# Local helper scripts
+push.bat
 *.zip
 *.tar.gz
 *.rar
