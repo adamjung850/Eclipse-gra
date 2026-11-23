@@ -1,4 +1,4 @@
-import { GAME_CONSTANTS, ItemCategory } from '../types/index.js';
+import { BlockId, GAME_CONSTANTS, ItemCategory } from '../types/index.js';
 import { WorldGenerator } from '../world/WorldGenerator.js';
 import { WorldManager } from '../world/WorldManager.js';
 import { Player } from '../entities/Player.js';
@@ -8,6 +8,7 @@ import { InputManager } from '../systems/InputManager.js';
 import { SoundSynthesizer } from '../systems/SoundSynthesizer.js';
 import { CombatSystem } from '../systems/CombatSystem.js';
 import { EnemySpawner } from '../systems/EnemySpawner.js';
+import { CursorManager } from '../systems/CursorManager.js';
 import { BLOCK_DEFINITIONS } from '../world/BlockTypes.js';
 import { ITEM_REGISTRY } from '../world/ItemTypes.js';
 export class GameScene extends Phaser.Scene {
@@ -21,6 +22,7 @@ export class GameScene extends Phaser.Scene {
     enemySpawner;
     inputManager;
     sounds;
+    cursorManager;
     // Sky & Day-Night
     skyGraphic;
     gameTime = 240; // Starts in midday (0 - 1440)
@@ -71,7 +73,9 @@ export class GameScene extends Phaser.Scene {
         this.inputManager.onDropItem = () => {
             this.handlePlayerDropItem();
         };
-        // 10. Launch Parallel UI Scene (Independent of camera zoom!)
+        // 10. Centralized Custom Cursor Manager
+        this.cursorManager = CursorManager.getInstance(this.game);
+        // 11. Launch Parallel UI Scene (Independent of camera zoom!)
         this.scene.launch('UIScene', { player: this.player });
         // 11. Camera Setup
         const camera = this.cameras.main;
@@ -146,6 +150,77 @@ export class GameScene extends Phaser.Scene {
                 });
             }
         }
+        // 6. Update Pixel Art Cursor State (Combat, Reach, Dropped Items, Default)
+        this.updateCursorState();
+    }
+    updateCursorState() {
+        if (!this.cursorManager)
+            return;
+        // If UI is being hovered or holding an item, UIScene handles the cursor state
+        if (this.cursorManager.isUIHovered() || this.cursorManager.isItemHeld()) {
+            return;
+        }
+        const pointer = this.input.activePointer;
+        const camera = this.cameras.main;
+        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+        // 1. Check Enemy Hover -> Red Combat Target Crosshair
+        let enemyTargeted = false;
+        const enemyList = this.enemies.getChildren();
+        for (let i = 0; i < enemyList.length; i++) {
+            const e = enemyList[i];
+            if (e && e.active && e.visible) {
+                const bounds = e.getBounds();
+                if (worldPoint.x >= bounds.x - 6 &&
+                    worldPoint.x <= bounds.right + 6 &&
+                    worldPoint.y >= bounds.y - 6 &&
+                    worldPoint.y <= bounds.bottom + 6) {
+                    enemyTargeted = true;
+                    break;
+                }
+            }
+        }
+        this.cursorManager.setEnemyTarget(enemyTargeted);
+        if (enemyTargeted)
+            return;
+        // 2. Check Dropped Item Hover -> Red Interact Pointer
+        let itemHovered = false;
+        const dropList = this.droppedItems.getChildren();
+        for (let i = 0; i < dropList.length; i++) {
+            const drop = dropList[i];
+            if (drop && drop.active && drop.visible) {
+                const dist = Phaser.Math.Distance.Between(worldPoint.x, worldPoint.y, drop.x, drop.y);
+                if (dist <= 22) {
+                    itemHovered = true;
+                    break;
+                }
+            }
+        }
+        this.cursorManager.setDroppedItemHover(itemHovered);
+        if (itemHovered)
+            return;
+        // 3. Check Mining/Placement Reach -> Red Interact Pointer
+        const T = GAME_CONSTANTS.TILE_SIZE;
+        const tilePos = this.worldManager.worldToTile(worldPoint.x, worldPoint.y);
+        const tileX = tilePos.x;
+        const tileY = tilePos.y;
+        const playerCenter = this.player.getCenter();
+        const targetCenter = new Phaser.Math.Vector2(tileX * T + T / 2, tileY * T + T / 2);
+        const dist = Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, targetCenter.x, targetCenter.y);
+        const inReach = dist <= GAME_CONSTANTS.PLAYER_REACH_TILES * T;
+        let canInteract = false;
+        if (inReach) {
+            const blockId = this.worldManager.getBlock(tileX, tileY);
+            const selectedItem = this.player.getSelectedItem();
+            if (blockId !== BlockId.AIR && blockId !== BlockId.BEDROCK) {
+                // Mineable block within reach
+                canInteract = true;
+            }
+            else if (blockId === BlockId.AIR && selectedItem && selectedItem.isPlaceable && selectedItem.placeBlockId) {
+                // Valid block placement position within reach
+                canInteract = true;
+            }
+        }
+        this.cursorManager.setTileInReach(canInteract);
     }
     handleItemPickup(item) {
         const success = this.player.addItem(item.itemId, item.amount);

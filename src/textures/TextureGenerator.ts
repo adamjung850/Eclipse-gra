@@ -1092,6 +1092,118 @@ export class TextureGenerator {
         canvas.refresh();
       }
     }
+
+    // 3. Pixel Art Cursor Sprites (32x32)
+    this.createCursorTextures(scene);
+  }
+
+  private static createCursorTextures(scene: Phaser.Scene): void {
+    const drawGrid = (key: string, layout: string[], map: Record<string, string>, scale: number = 2) => {
+      if (scene.textures.exists(key)) return;
+      const w = layout[0].split(' ').length;
+      const h = layout.length;
+      const canvas = scene.textures.createCanvas(key, w * scale, h * scale);
+      if (!canvas) return;
+      const ctx = canvas.context;
+      ctx.imageSmoothingEnabled = false;
+
+      for (let y = 0; y < h; y++) {
+        const tokens = layout[y].split(' ');
+        for (let x = 0; x < w; x++) {
+          const col = map[tokens[x]];
+          if (col) {
+            ctx.fillStyle = col;
+            ctx.fillRect(x * scale, y * scale, scale, scale);
+          }
+        }
+      }
+      canvas.refresh();
+    };
+
+    const mapDef = { '#': '#10121a', 'W': '#ffffff', 'S': '#cbd5e1' };
+    const mapInt = { '#': '#280508', 'R': '#ff2a44', 'H': '#ff94a0', 'S': '#b91c1c' };
+    const mapTgt = { '#': '#280508', 'R': '#ff2a44', 'H': '#ff94a0' };
+
+    const arrowNorm = [
+      '. # . . . . . . . . . . . . . .',
+      '# W # . . . . . . . . . . . . .',
+      '# W W # . . . . . . . . . . . .',
+      '# W W W # . . . . . . . . . . .',
+      '# W W W W # . . . . . . . . . .',
+      '# W W W W W # . . . . . . . . .',
+      '# W W W W W W # . . . . . . . .',
+      '# W W W W W W W # . . . . . . .',
+      '# W W W W W W W W # . . . . . .',
+      '# W W W W W W W W W # . . . . .',
+      '# W W W W W # # # # # # . . . .',
+      '# W W S W W # . . . . . . . . .',
+      '# W S . # W W # . . . . . . . .',
+      '# S . . # W W # . . . . . . . .',
+      '# . . . . # W W # . . . . . . .',
+      '. . . . . . # # . . . . . . . .'
+    ];
+
+    const arrowInt = [
+      '. # . . . . . . . . . . . . . .',
+      '# H # . . . . . . . . . . . . .',
+      '# H R # . . . . . . . . . . . .',
+      '# H R R # . . . . . . . . . . .',
+      '# H R R R # . . . . . . . . . .',
+      '# H R R R R # . . . . . . . . .',
+      '# H R R R R R # . . . . . . . .',
+      '# H R R R R R R # . . . . . . .',
+      '# H R R R R R R R # . . . . . .',
+      '# H R R R R R R R R # . . . . .',
+      '# H R R R R # # # # # # . . . .',
+      '# H R S R R # . . . . . . . . .',
+      '# R S . # R R # . . . . . . . .',
+      '# S . . # R R # . . . . . . . .',
+      '# . . . . # R R # . . . . . . .',
+      '. . . . . . # # . . . . . . . .'
+    ];
+
+    const tgtLayout = [
+      '. . . . . . # # # # . . . . . .',
+      '. . . . . . # H R # . . . . . .',
+      '. . . . . . # H R # . . . . . .',
+      '. . . . . . # H R # . . . . . .',
+      '. . . . . . . # # . . . . . . .',
+      '. . . . . . . . . . . . . . . .',
+      '# # # # . . . # # . . . # # # #',
+      '# H H H # . # H R # . # H H H #',
+      '# R R R # . # R R # . # R R R #',
+      '# # # # . . . # # . . . # # # #',
+      '. . . . . . . . . . . . . . . .',
+      '. . . . . . . # # . . . . . . .',
+      '. . . . . . # H R # . . . . . .',
+      '. . . . . . # H R # . . . . . .',
+      '. . . . . . # H R # . . . . . .',
+      '. . . . . . # # # # . . . . . .'
+    ];
+
+    const grabClosed = [
+      '. . . . . # # . . # # . . . . .',
+      '. . . . # R R # # R R # . . . .',
+      '. . # # # R R # R R R # . # # .',
+      '. # R R # R R # R R R # # R R #',
+      '. # R R # R R # R R R # R R R #',
+      '. # R R # R R # R R R # R R R #',
+      '. # R R R R R R R R R R R R R #',
+      '. . # R R R R R R R R R R R R #',
+      '. . # R R R R R R R R R R R # .',
+      '. . . # R R R R R R R R R R # .',
+      '. . . # R R R R R R R R R # . .',
+      '. . . . # R R R R R R R # . . .',
+      '. . . . # R R R R R R R # . . .',
+      '. . . . . # # # # # # # . . . .',
+      '. . . . . . . . . . . . . . . .',
+      '. . . . . . . . . . . . . . . .'
+    ];
+
+    drawGrid('cursor_default', arrowNorm, mapDef, 2);
+    drawGrid('cursor_interact', arrowInt, mapInt, 2);
+    drawGrid('cursor_target', tgtLayout, mapTgt, 2);
+    drawGrid('cursor_grab', grabClosed, mapTgt, 2);
   }
 
   private static createCombatTextures(scene: Phaser.Scene): void {

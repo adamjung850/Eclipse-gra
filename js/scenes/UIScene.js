@@ -1,9 +1,11 @@
 import { CraftingStation, EquipSlotType, GAME_CONSTANTS, ItemCategory, RARITY_COLORS } from '../types/index.js';
 import { CRAFTING_RECIPES } from '../world/CraftingRecipes.js';
 import { ITEM_REGISTRY } from '../world/ItemTypes.js';
+import { CursorManager } from '../systems/CursorManager.js';
 export class UIScene extends Phaser.Scene {
     player;
     gameScene;
+    cursorManager;
     // HUD Top Elements
     hotbarSlots = [];
     slotHighlight;
@@ -54,10 +56,22 @@ export class UIScene extends Phaser.Scene {
         this.createHoverTooltip();
         // 4. Create Cursor Holding Item
         this.createCursorItemVisual();
-        // 5. Handle Keyboard & Resizing
+        // 5. Setup Cursor Hooks
+        this.cursorManager = CursorManager.getInstance(this.game);
+        this.initCursorHooks();
+        // 6. Handle Keyboard & Resizing
         this.initInputHooks();
         this.scale.on('resize', () => {
             this.repositionUI();
+        });
+    }
+    initCursorHooks() {
+        // Whenever pointer moves over any interactive GameObject in UIScene
+        this.input.on('gameobjectover', () => {
+            this.cursorManager.setUIHover(true);
+        });
+        this.input.on('gameobjectout', () => {
+            this.cursorManager.setUIHover(false);
         });
     }
     initInputHooks() {
@@ -110,6 +124,8 @@ export class UIScene extends Phaser.Scene {
                 this.cursorItemSprite.setVisible(false);
                 this.cursorItemText.setVisible(false);
             }
+            this.cursorManager.setHoldingItem(false);
+            this.cursorManager.setUIHover(false);
             this.hideTooltip();
         }
     }
@@ -449,7 +465,7 @@ export class UIScene extends Phaser.Scene {
                 backgroundColor: '#161c28',
                 padding: { x: 6, y: 4 }
             });
-            tab.setInteractive({ useHandCursor: true });
+            tab.setInteractive();
             tab.on('pointerdown', () => {
                 this.craftCategory = cat.id;
                 this.refreshCraftingRecipes();
@@ -542,7 +558,7 @@ export class UIScene extends Phaser.Scene {
             btn.add(btnLabel);
             if (canCraft) {
                 btn.setSize(76, 28);
-                btn.setInteractive({ useHandCursor: true });
+                btn.setInteractive();
                 btn.on('pointerdown', () => {
                     this.executeCraft(recipe);
                 });
@@ -734,7 +750,9 @@ export class UIScene extends Phaser.Scene {
         this.cursorItemText.setVisible(false);
     }
     updateCursorVisual() {
-        if (this.cursorSlot.item && this.cursorSlot.count > 0) {
+        const isHolding = Boolean(this.cursorSlot.item && this.cursorSlot.count > 0);
+        this.cursorManager.setHoldingItem(isHolding);
+        if (isHolding && this.cursorSlot.item) {
             this.cursorItemSprite.setTexture(this.cursorSlot.item.iconTexture);
             this.cursorItemSprite.setVisible(true);
             if (this.cursorSlot.count > 1) {
