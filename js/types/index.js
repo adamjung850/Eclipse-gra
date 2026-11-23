@@ -1,96 +1,94 @@
 /**
  * PROJECT: ECLIPSE – THE LOST WORLD
- * Type definitions & Constants (Runtime JS)
+ * Type definitions & Constants
  */
-
-export const BlockId = Object.freeze({
-  AIR: 0,
-  DIRT: 1,
-  STONE: 2,
-  GRASS: 3,
-  WOOD: 4,
-  LEAVES: 5,
-  COPPER_ORE: 6,
-  IRON_ORE: 7,
-  COAL_ORE: 8,
-  GOLD_ORE: 9,
-  CRYSTAL_ORE: 10,
-  BRICK: 11,
-  PLANK: 12,
-  GLASS: 13,
-  OBSIDIAN: 14,
-  BEDROCK: 15,
-  DIRT_WALL: 16,
-  STONE_WALL: 17,
-  WOOD_WALL: 18,
-  TORCH: 19,
-  WORKBENCH: 20,
-  FURNACE: 21,
-  ANVIL: 22
-});
-
-export const ItemRarity = Object.freeze({
-  COMMON: 'Common',
-  UNCOMMON: 'Uncommon',
-  RARE: 'Rare',
-  EPIC: 'Epic',
-  LEGENDARY: 'Legendary',
-  MYTHICAL: 'Mythical',
-  DIVINE: 'Divine'
-});
-
-export const ItemCategory = Object.freeze({
-  WEAPON: 'Weapon',
-  ARMOR: 'Armor',
-  ACCESSORY: 'Accessory',
-  TOOL: 'Tool',
-  BLOCK: 'Block',
-  WALL: 'Wall',
-  CONSUMABLE: 'Consumable',
-  MATERIAL: 'Material'
-});
-
-export const EquipSlotType = Object.freeze({
-  HELMET: 'helmet',
-  CHEST: 'chest',
-  LEGS: 'legs',
-  BOOTS: 'boots',
-  RING_1: 'ring1',
-  RING_2: 'ring2',
-  AMULET: 'amulet',
-  CAPE: 'cape'
-});
-
-export const CraftingStation = Object.freeze({
-  HAND: 'hand',
-  WORKBENCH: 'workbench',
-  FURNACE: 'furnace',
-  ANVIL: 'anvil',
-  ALCHEMY: 'alchemy'
-});
-
-export const GAME_CONSTANTS = Object.freeze({
-  TILE_SIZE: 24,
-  WORLD_WIDTH: 200,
-  WORLD_HEIGHT: 120,
-  SURFACE_HEIGHT: 38,
-  CAVERN_DEPTH: 65,
-  BEDROCK_DEPTH: 116,
-  GRAVITY: 980,
-  PLAYER_SPEED: 210,
-  PLAYER_JUMP_VELOCITY: -370,
-  PLAYER_REACH_TILES: 6.5,
-  HOTBAR_SLOTS: 9,
-  BACKPACK_SLOTS: 36,
-  TOTAL_INVENTORY_SLOTS: 45
-});
-
-export const RARITY_COLORS = Object.freeze({
-  [ItemRarity.COMMON]: '#e2e8f0',
-  [ItemRarity.UNCOMMON]: '#22c55e',
-  [ItemRarity.RARE]: '#38bdf8',
-  [ItemRarity.EPIC]: '#a855f7',
-  [ItemRarity.LEGENDARY]: '#f59e0b',
-  [ItemRarity.MYTHICAL]: '#ef4444',
-  [ItemRarity.DIVINE]: '#f43f5e'
-});
+export var BlockId;
+(function (BlockId) {
+    BlockId[BlockId["AIR"] = 0] = "AIR";
+    BlockId[BlockId["DIRT"] = 1] = "DIRT";
+    BlockId[BlockId["STONE"] = 2] = "STONE";
+    BlockId[BlockId["GRASS"] = 3] = "GRASS";
+    BlockId[BlockId["WOOD"] = 4] = "WOOD";
+    BlockId[BlockId["LEAVES"] = 5] = "LEAVES";
+    BlockId[BlockId["COPPER_ORE"] = 6] = "COPPER_ORE";
+    BlockId[BlockId["IRON_ORE"] = 7] = "IRON_ORE";
+    BlockId[BlockId["COAL_ORE"] = 8] = "COAL_ORE";
+    BlockId[BlockId["GOLD_ORE"] = 9] = "GOLD_ORE";
+    BlockId[BlockId["CRYSTAL_ORE"] = 10] = "CRYSTAL_ORE";
+    BlockId[BlockId["BRICK"] = 11] = "BRICK";
+    BlockId[BlockId["PLANK"] = 12] = "PLANK";
+    BlockId[BlockId["GLASS"] = 13] = "GLASS";
+    BlockId[BlockId["OBSIDIAN"] = 14] = "OBSIDIAN";
+    BlockId[BlockId["BEDROCK"] = 15] = "BEDROCK";
+    BlockId[BlockId["DIRT_WALL"] = 16] = "DIRT_WALL";
+    BlockId[BlockId["STONE_WALL"] = 17] = "STONE_WALL";
+    BlockId[BlockId["WOOD_WALL"] = 18] = "WOOD_WALL";
+    BlockId[BlockId["TORCH"] = 19] = "TORCH";
+    BlockId[BlockId["WORKBENCH"] = 20] = "WORKBENCH";
+    BlockId[BlockId["FURNACE"] = 21] = "FURNACE";
+    BlockId[BlockId["ANVIL"] = 22] = "ANVIL";
+})(BlockId || (BlockId = {}));
+export var ItemRarity;
+(function (ItemRarity) {
+    ItemRarity["COMMON"] = "Common";
+    ItemRarity["UNCOMMON"] = "Uncommon";
+    ItemRarity["RARE"] = "Rare";
+    ItemRarity["EPIC"] = "Epic";
+    ItemRarity["LEGENDARY"] = "Legendary";
+    ItemRarity["MYTHICAL"] = "Mythical";
+    ItemRarity["DIVINE"] = "Divine";
+})(ItemRarity || (ItemRarity = {}));
+export var ItemCategory;
+(function (ItemCategory) {
+    ItemCategory["WEAPON"] = "Weapon";
+    ItemCategory["ARMOR"] = "Armor";
+    ItemCategory["ACCESSORY"] = "Accessory";
+    ItemCategory["TOOL"] = "Tool";
+    ItemCategory["BLOCK"] = "Block";
+    ItemCategory["WALL"] = "Wall";
+    ItemCategory["CONSUMABLE"] = "Consumable";
+    ItemCategory["MATERIAL"] = "Material";
+})(ItemCategory || (ItemCategory = {}));
+export var EquipSlotType;
+(function (EquipSlotType) {
+    EquipSlotType["HELMET"] = "helmet";
+    EquipSlotType["CHEST"] = "chest";
+    EquipSlotType["LEGS"] = "legs";
+    EquipSlotType["BOOTS"] = "boots";
+    EquipSlotType["RING_1"] = "ring1";
+    EquipSlotType["RING_2"] = "ring2";
+    EquipSlotType["AMULET"] = "amulet";
+    EquipSlotType["CAPE"] = "cape";
+})(EquipSlotType || (EquipSlotType = {}));
+export var CraftingStation;
+(function (CraftingStation) {
+    CraftingStation["HAND"] = "hand";
+    CraftingStation["WORKBENCH"] = "workbench";
+    CraftingStation["FURNACE"] = "furnace";
+    CraftingStation["ANVIL"] = "anvil";
+    CraftingStation["ALCHEMY"] = "alchemy";
+})(CraftingStation || (CraftingStation = {}));
+export const GAME_CONSTANTS = {
+    TILE_SIZE: 24,
+    WORLD_WIDTH: 200,
+    WORLD_HEIGHT: 120,
+    SURFACE_HEIGHT: 38,
+    CAVERN_DEPTH: 65,
+    BEDROCK_DEPTH: 116,
+    GRAVITY: 980,
+    PLAYER_SPEED: 210,
+    PLAYER_JUMP_VELOCITY: -370,
+    PLAYER_REACH_TILES: 6.5,
+    HOTBAR_SLOTS: 9,
+    BACKPACK_SLOTS: 36, // 4 rows x 9 columns
+    TOTAL_INVENTORY_SLOTS: 45 // 9 hotbar + 36 backpack
+};
+export const RARITY_COLORS = {
+    [ItemRarity.COMMON]: '#e2e8f0', // Bright clean slate
+    [ItemRarity.UNCOMMON]: '#22c55e', // Emerald Green
+    [ItemRarity.RARE]: '#38bdf8', // Cyan Blue
+    [ItemRarity.EPIC]: '#a855f7', // Amethyst Purple
+    [ItemRarity.LEGENDARY]: '#f59e0b', // Golden Amber
+    [ItemRarity.MYTHICAL]: '#ef4444', // Crimson Red
+    [ItemRarity.DIVINE]: '#f43f5e' // Celestial Pink/Red
+};

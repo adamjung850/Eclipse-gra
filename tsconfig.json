@@ -2,15 +2,16 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./js",
     "rootDir": "./src",
-    "sourceMap": true,
-    "declaration": false
+    "sourceMap": false,
+    "declaration": false,
+    "types": ["phaser"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "node_modules/phaser/types/phaser.d.ts"]
 }

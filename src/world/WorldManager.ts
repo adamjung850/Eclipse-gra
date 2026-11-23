@@ -49,8 +49,8 @@ export class WorldManager {
     const bgLayer = this.tilemap.createBlankLayer('BackgroundLayer', tileset, 0, 0);
     if (bgLayer) {
       this.backgroundLayer = bgLayer;
-      this.backgroundLayer.setAlpha(0.65);
-      this.backgroundLayer.setTint(0x888899);
+      this.backgroundLayer.setAlpha(0.92);
+      this.backgroundLayer.setTint(0xccccdd);
 
       // Populate background tiles
       for (let x = 0; x < this.width; x++) {
@@ -168,6 +168,12 @@ export class WorldManager {
     const blockId = this.getBlock(tileX, tileY);
     if (blockId === BlockId.AIR || blockId === BlockId.BEDROCK) return;
 
+    // If breaking a grass block, ensure the background wall shows the grass block texture (with green top), not dirt
+    if (blockId === BlockId.GRASS) {
+      this.background[tileX][tileY] = BlockId.GRASS;
+      this.backgroundLayer.putTileAt(BlockId.GRASS, tileX, tileY);
+    }
+
     // Remove from grids
     this.foreground[tileX][tileY] = BlockId.AIR;
     this.foregroundLayer.removeTileAt(tileX, tileY);
@@ -229,9 +235,18 @@ export class WorldManager {
       this.background[tileX][tileY] = blockId;
       this.backgroundLayer.putTileAt(blockId, tileX, tileY);
     } else {
+      // If placing dirt with air directly above, turn it into lush grass block
+      if (blockId === BlockId.DIRT && tileY > 0 && this.foreground[tileX][tileY - 1] === BlockId.AIR) {
+        blockId = BlockId.GRASS;
+      }
       // Place in foreground layer
       this.foreground[tileX][tileY] = blockId;
       this.foregroundLayer.putTileAt(blockId, tileX, tileY);
+      // Synchronize background layer if empty
+      if (this.background[tileX][tileY] === BlockId.AIR) {
+        this.background[tileX][tileY] = blockId;
+        this.backgroundLayer.putTileAt(blockId, tileX, tileY);
+      }
       if (def.isSolid) {
         this.updateCollisions();
       }

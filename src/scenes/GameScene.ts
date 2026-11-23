@@ -92,7 +92,7 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private handleBlockDrop(tileX: number, tileY: number, blockId: number): void {
+  public handleBlockDrop(tileX: number, tileY: number, blockId: number): void {
     const def = BLOCK_DEFINITIONS[blockId];
     if (!def || !def.dropItemId) return;
 

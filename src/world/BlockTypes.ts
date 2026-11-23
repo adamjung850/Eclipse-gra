@@ -20,11 +20,11 @@ export const BLOCK_DEFINITIONS: Record<number, BlockConfig> = {
     hardness: 28,
     isSolid: true,
     isTransparent: false,
-    dropItemId: 'dirt',
+    dropItemId: 'grass_block',
     dropMin: 1,
     dropMax: 1,
-    color: 0x48a336,
-    particleColor: 0x3f912e,
+    color: 0x34962c,
+    particleColor: 0x227824,
     soundType: 'dirt'
   },
   [BlockId.DIRT]: {
@@ -36,8 +36,8 @@ export const BLOCK_DEFINITIONS: Record<number, BlockConfig> = {
     dropItemId: 'dirt',
     dropMin: 1,
     dropMax: 1,
-    color: 0x825432,
-    particleColor: 0x6e4527,
+    color: 0x745131,
+    particleColor: 0x5f4224,
     soundType: 'dirt'
   },
   [BlockId.STONE]: {
@@ -220,8 +220,8 @@ export const BLOCK_DEFINITIONS: Record<number, BlockConfig> = {
     dropItemId: 'dirt_wall',
     dropMin: 1,
     dropMax: 1,
-    color: 0x52341d,
-    particleColor: 0x52341d,
+    color: 0x5a3e26,
+    particleColor: 0x4a321e,
     soundType: 'dirt'
   },
   [BlockId.STONE_WALL]: {

@@ -44,7 +44,7 @@ export class WorldGenerator {
         } else if (y === surfaceY) {
           // Grass layer
           foreground[x][y] = BlockId.GRASS;
-          background[x][y] = BlockId.DIRT_WALL;
+          background[x][y] = BlockId.GRASS;
         } else if (y < surfaceY + 4) {
           // Dirt sub-layer
           foreground[x][y] = BlockId.DIRT;

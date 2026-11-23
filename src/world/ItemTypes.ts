@@ -509,6 +509,19 @@ export const ITEM_REGISTRY: Record<string, ItemData> = {
     value: 2,
     obtainInfo: 'Podręczny crafting: 1 Drewno -> 4 Deski'
   },
+  grass_block: {
+    id: 'grass_block',
+    name: 'Grass Block',
+    category: ItemCategory.BLOCK,
+    rarity: ItemRarity.COMMON,
+    description: 'Fresh surface soil covered in lush vibrant grass.',
+    iconTexture: 'icon_grass_block',
+    maxStack: 999,
+    isPlaceable: true,
+    placeBlockId: BlockId.GRASS,
+    value: 1,
+    obtainInfo: 'Kopanie warstwy trawy'
+  },
   dirt: {
     id: 'dirt',
     name: 'Loamy Soil',
