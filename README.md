@@ -39,6 +39,12 @@ Jeśli edytujesz pliki `.ts` w katalogu `src/`:
 
 ## 👥 Współpraca przez Git i GitHub (Instrukcja dla zespołu)
 
+### Klonowanie repozytorium (dla drugiego programisty)
+```bash
+git clone https://github.com/adamjung850/Eclipse-gra.git
+cd Eclipse-gra
+```
+
 ### 1. Pobieranie najnowszych zmian przed rozpoczęciem pracy
 Zawsze przed rozpoczęciem pracy pobierz najnowszy stan repozytorium:
 ```bash
