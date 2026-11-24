@@ -11,6 +11,7 @@ export class InputManager {
     keyE;
     keyEsc;
     keyQ;
+    keyM;
     cursors;
     // Number keys 1-9
     numKeys = [];
@@ -18,6 +19,7 @@ export class InputManager {
     onToggleInventory;
     onToggleMenu;
     onDropItem;
+    onToggleMusic;
     constructor(scene, player) {
         this.scene = scene;
         this.player = player;
@@ -36,6 +38,7 @@ export class InputManager {
         this.keyE = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
         this.keyEsc = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
         this.keyQ = kb.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+        this.keyM = kb.addKey(Phaser.Input.Keyboard.KeyCodes.M);
         this.cursors = kb.createCursorKeys();
         // 1-9 hotbar selection
         const numberKeyCodes = [
@@ -70,6 +73,11 @@ export class InputManager {
         this.keyQ.on('down', () => {
             if (this.onDropItem)
                 this.onDropItem();
+        });
+        // Toggle Music on 'M'
+        this.keyM.on('down', () => {
+            if (this.onToggleMusic)
+                this.onToggleMusic();
         });
     }
     initMouseWheel() {

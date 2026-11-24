@@ -39,6 +39,27 @@ export class UIScene extends Phaser.Scene {
   private invSlots: Phaser.GameObjects.Container[] = [];
   private equipSlots: Record<string, Phaser.GameObjects.Container> = {};
 
+  // Chest Modal State
+  public isChestOpen: boolean = false;
+  private chestContainer!: Phaser.GameObjects.Container;
+  public activeChestPos: { x: number; y: number } | null = null;
+  public activeChestSlots: InventorySlot[] = [];
+  private chestSlotContainers: Phaser.GameObjects.Container[] = [];
+  private chestPlayerSlotContainers: Phaser.GameObjects.Container[] = [];
+
+  // Boss Bar State (Minecraft/RPG Custom Style)
+  public bossBarContainer!: Phaser.GameObjects.Container;
+  private bossBarFill!: Phaser.GameObjects.Graphics;
+  private bossBarNameText!: Phaser.GameObjects.Text;
+  private bossBarHpText!: Phaser.GameObjects.Text;
+  private bossBarCurrentHp: number = 750;
+  private bossBarMaxHp: number = 750;
+  private bossBarTargetWidth: number = 380;
+  public bossBarAnimWidth: number = 380;
+  private bossBarWingsLeft!: Phaser.GameObjects.Image;
+  private bossBarWingsRight!: Phaser.GameObjects.Image;
+  private bossBarIcon!: Phaser.GameObjects.Image;
+
   // Hand / Cursor Item
   private cursorSlot: InventorySlot = { item: null, count: 0 };
   private cursorItemSprite!: Phaser.GameObjects.Image;
@@ -58,6 +79,7 @@ export class UIScene extends Phaser.Scene {
   private craftStationText!: Phaser.GameObjects.Text;
   private recipeListContainer!: Phaser.GameObjects.Container;
   private activeStationSet: Set<CraftingStation> = new Set([CraftingStation.HAND]);
+  private keyShift?: Phaser.Input.Keyboard.Key;
 
   constructor() {
     super('UIScene');
@@ -72,9 +94,13 @@ export class UIScene extends Phaser.Scene {
     this.createHotbar();
     this.createDepthInfo();
     this.createItemTooltip();
+    this.createBossBar();
 
     // 2. Create Full Inventory & Crafting Modal (Hidden by default)
     this.createInventoryModal();
+
+    // 2b. Create Chest Modal Window
+    this.createChestModal();
 
     // 3. Create Detailed Hover Tooltip
     this.createHoverTooltip();
@@ -107,17 +133,7 @@ export class UIScene extends Phaser.Scene {
   private initInputHooks(): void {
     const kb = this.input.keyboard;
     if (kb) {
-      const keyE = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
-      keyE.on('down', () => {
-        this.toggleInventory();
-      });
-
-      const keyEsc = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-      keyEsc.on('down', () => {
-        if (this.isInventoryOpen) {
-          this.toggleInventory(false);
-        }
-      });
+      this.keyShift = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
     }
 
     // Pointer move updates cursor holding item & tooltips
@@ -310,9 +326,9 @@ export class UIScene extends Phaser.Scene {
 
     // --- LEFT PANEL: PLAYER, EQUIPMENT & BACKPACK ---
     const panelX = 40;
-    const panelY = 90;
-    const panelW = 560;
-    const panelH = 540;
+    const panelY = 80;
+    const panelW = 540;
+    const panelH = 560;
 
     const leftPanelBg = this.add.graphics();
     leftPanelBg.fillStyle(0x0d111a, 0.96);
@@ -330,17 +346,28 @@ export class UIScene extends Phaser.Scene {
     });
     this.invContainer.add(title);
 
+    // Close Button [✖]
+    const btnClose = this.add.text(panelX + panelW - 32, panelY + 14, '✖', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#ef4444',
+      fontStyle: 'bold'
+    });
+    btnClose.setInteractive({ useHandCursor: true });
+    btnClose.on('pointerdown', () => this.toggleInventory(false));
+    this.invContainer.add(btnClose);
+
     // Stats Box
-    this.createCharacterStatsSection(panelX + 20, panelY + 46);
+    this.createCharacterStatsSection(panelX + 20, panelY + 44);
 
     // Equipment Slots (8 slots)
-    this.createEquipmentSlotsSection(panelX + 260, panelY + 46);
+    this.createEquipmentSlotsSection(panelX + 255, panelY + 44);
 
-    // Backpack 36 Slots (4 rows x 9 cols)
-    this.createBackpackSlotsSection(panelX + 20, panelY + 235);
+    // Full 45 Slots: Hotbar (0-8) + Backpack (9-44)
+    this.createAllInventorySlotsSection(panelX + 20, panelY + 215);
 
     // --- RIGHT PANEL: CRAFTING WORKSHOP ---
-    this.createCraftingPanel(panelX + panelW + 24, panelY, 480, panelH);
+    this.createCraftingPanel(panelX + panelW + 20, panelY, 480, panelH);
   }
 
   private createCharacterStatsSection(x: number, y: number): void {
@@ -440,12 +467,81 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  private createBackpackSlotsSection(x: number, y: number): void {
+  private createAllInventorySlotsSection(x: number, y: number): void {
     const slotSize = 48;
     const padding = 6;
+    this.invSlots = new Array(GAME_CONSTANTS.TOTAL_INVENTORY_SLOTS);
 
-    // Header label
-    const bpLabel = this.add.text(x, y - 20, 'GŁÓWNY PLECAK (Sloty 10 - 45)', {
+    // --- 1. HOTBAR SECTION (Sloty 1 - 9, index 0..8) ---
+    const hotbarLabel = this.add.text(x, y - 2, '⚡ PAS SZYBKIEGO WYBORU (Sloty 1 - 9)', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#f59e0b',
+      fontStyle: 'bold'
+    });
+    this.invContainer.add(hotbarLabel);
+
+    const hotbarY = y + 16;
+    for (let col = 0; col < 9; col++) {
+      const slotIdx = col;
+      const slotX = x + col * (slotSize + padding);
+
+      const container = this.add.container(slotX, hotbarY);
+
+      const box = this.add.graphics();
+      box.fillStyle(0x1a1e2b, 0.96);
+      box.lineStyle(1.8, 0xd97706, 0.9); // Gold amber border for hotbar
+      box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
+      box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+      container.add(box);
+
+      // Slot number index indicator (1..9)
+      const numLabel = this.add.text(4, 3, `${col + 1}`, {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        color: '#f59e0b',
+        fontStyle: 'bold'
+      });
+      container.add(numLabel);
+
+      const icon = this.add.image(slotSize / 2, slotSize / 2, 'icon_pickaxe');
+      icon.setDisplaySize(28, 28);
+      icon.setVisible(false);
+      icon.setName('icon');
+      container.add(icon);
+
+      const countLabel = this.add.text(slotSize - 4, slotSize - 4, '', {
+        fontFamily: 'monospace',
+        fontSize: '11px',
+        color: '#ffffff',
+        fontStyle: 'bold'
+      });
+      countLabel.setOrigin(1, 1);
+      countLabel.setName('count');
+      container.add(countLabel);
+
+      container.setSize(slotSize, slotSize);
+      container.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
+
+      container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        this.handleSlotClick(slotIdx, pointer.rightButtonDown());
+      });
+
+      container.on('pointerover', () => {
+        const item = this.player.inventory[slotIdx]?.item;
+        if (item) this.showTooltip(item);
+      });
+      container.on('pointerout', () => {
+        this.hideTooltip();
+      });
+
+      this.invContainer.add(container);
+      this.invSlots[slotIdx] = container;
+    }
+
+    // --- 2. BACKPACK SECTION (Sloty 10 - 45, index 9..44) ---
+    const backpackLabelY = hotbarY + slotSize + 12;
+    const bpLabel = this.add.text(x, backpackLabelY, '🎒 GŁÓWNY PLECAK (Sloty 10 - 45)', {
       fontFamily: 'monospace',
       fontSize: '11px',
       color: '#94a3b8',
@@ -453,14 +549,12 @@ export class UIScene extends Phaser.Scene {
     });
     this.invContainer.add(bpLabel);
 
-    this.invSlots = [];
-
-    // 4 rows x 9 columns
+    const bpSlotsY = backpackLabelY + 18;
     for (let row = 0; row < 4; row++) {
       for (let col = 0; col < 9; col++) {
         const slotIdx = 9 + row * 9 + col;
         const slotX = x + col * (slotSize + padding);
-        const slotY = y + row * (slotSize + padding);
+        const slotY = bpSlotsY + row * (slotSize + padding);
 
         const container = this.add.container(slotX, slotY);
 
@@ -503,7 +597,7 @@ export class UIScene extends Phaser.Scene {
         });
 
         this.invContainer.add(container);
-        this.invSlots.push(container);
+        this.invSlots[slotIdx] = container;
       }
     }
   }
@@ -731,8 +825,7 @@ export class UIScene extends Phaser.Scene {
     if (!slot) return;
 
     // Shift-Click: Instant Equip or Transfer
-    const kb = this.input.keyboard;
-    const isShift = kb ? kb.checkDown(kb.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT)) : false;
+    const isShift = this.keyShift ? this.keyShift.isDown : false;
     if (isShift && slot.item) {
       if (slot.item.equipSlot) {
         this.player.equipItem(slotIndex);
@@ -802,6 +895,9 @@ export class UIScene extends Phaser.Scene {
     this.updateCursorVisual();
     this.refreshInventoryUI();
     this.refreshCraftingRecipes();
+    if (this.isChestOpen) {
+      this.refreshChestPlayerSlotsUI();
+    }
   }
 
   private handleEquipSlotClick(equipSlotType: string): void {
@@ -850,6 +946,480 @@ export class UIScene extends Phaser.Scene {
         Math.floor(this.player.y / GAME_CONSTANTS.TILE_SIZE),
         item.placeBlockId || 1
       );
+    }
+  }
+
+  // =========================================================================
+  // CHEST MODAL WINDOW
+  // =========================================================================
+
+  private createChestModal(): void {
+    this.chestContainer = this.add.container(0, 0);
+    this.chestContainer.setDepth(160);
+    this.chestContainer.setVisible(false);
+
+    // Dim overlay
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x04060a, 0.75);
+    overlay.fillRect(0, 0, 3000, 2000);
+    this.chestContainer.add(overlay);
+
+    const slotSize = 48;
+    const padding = 6;
+    const panelW = 560;
+    const panelH = 590;
+    const panelX = Math.floor((this.scale.width - panelW) / 2);
+    const panelY = 55;
+
+    // Panel background
+    const bg = this.add.graphics();
+    bg.fillStyle(0x0d111a, 0.96);
+    bg.lineStyle(2, 0xd97706, 1); // Gold amber chest border
+    bg.fillRoundedRect(panelX, panelY, panelW, panelH, 8);
+    bg.strokeRoundedRect(panelX, panelY, panelW, panelH, 8);
+    this.chestContainer.add(bg);
+
+    // Header Title
+    const title = this.add.text(panelX + 20, panelY + 16, '📦 SKRZYNIA SKARBÓW [ESC / E - Zamknij]', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#f59e0b',
+      fontStyle: 'bold'
+    });
+    this.chestContainer.add(title);
+
+    // Buttons: Loot All & Deposit Matching & Close
+    const btnLoot = this.add.text(panelX + 260, panelY + 14, '📥 Weź wszystko', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#ffffff',
+      backgroundColor: '#1e3a5f',
+      padding: { x: 8, y: 4 }
+    });
+    btnLoot.setInteractive({ useHandCursor: true });
+    btnLoot.on('pointerdown', () => this.lootAllChest());
+    btnLoot.on('pointerover', () => btnLoot.setBackgroundColor('#2563eb'));
+    btnLoot.on('pointerout', () => btnLoot.setBackgroundColor('#1e3a5f'));
+    this.chestContainer.add(btnLoot);
+
+    const btnDeposit = this.add.text(panelX + 380, panelY + 14, '📤 Odłóż pasujące', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#ffffff',
+      backgroundColor: '#164e63',
+      padding: { x: 8, y: 4 }
+    });
+    btnDeposit.setInteractive({ useHandCursor: true });
+    btnDeposit.on('pointerdown', () => this.depositMatchingToChest());
+    btnDeposit.on('pointerover', () => btnDeposit.setBackgroundColor('#0891b2'));
+    btnDeposit.on('pointerout', () => btnDeposit.setBackgroundColor('#164e63'));
+    this.chestContainer.add(btnDeposit);
+
+    const btnClose = this.add.text(panelX + panelW - 32, panelY + 14, '✖', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#ef4444',
+      fontStyle: 'bold'
+    });
+    btnClose.setInteractive({ useHandCursor: true });
+    btnClose.on('pointerdown', () => this.closeChestModal());
+    this.chestContainer.add(btnClose);
+
+    // --- 1. CHEST SLOTS SECTION (20 SLOTS: 2 rows x 10 cols) ---
+    const chestLabel = this.add.text(panelX + 20, panelY + 48, 'ZAWARTOŚĆ SKRZYNI (20 Slotów)', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#f59e0b',
+      fontStyle: 'bold'
+    });
+    this.chestContainer.add(chestLabel);
+
+    this.chestSlotContainers = [];
+    const chestSlotsStartX = panelX + (panelW - (10 * slotSize + 9 * padding)) / 2;
+    const chestSlotsStartY = panelY + 68;
+
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 10; col++) {
+        const slotIdx = row * 10 + col;
+        const slotX = chestSlotsStartX + col * (slotSize + padding);
+        const slotY = chestSlotsStartY + row * (slotSize + padding);
+
+        const container = this.add.container(slotX, slotY);
+
+        const box = this.add.graphics();
+        box.fillStyle(0x1a1a24, 0.95);
+        box.lineStyle(1.5, 0xd97706, 0.85); // Gold slot outline
+        box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
+        box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+        container.add(box);
+
+        const icon = this.add.image(slotSize / 2, slotSize / 2, 'icon_pickaxe');
+        icon.setDisplaySize(28, 28);
+        icon.setVisible(false);
+        icon.setName('icon');
+        container.add(icon);
+
+        const countLabel = this.add.text(slotSize - 4, slotSize - 4, '', {
+          fontFamily: 'monospace',
+          fontSize: '11px',
+          color: '#ffffff',
+          fontStyle: 'bold'
+        });
+        countLabel.setOrigin(1, 1);
+        countLabel.setName('count');
+        container.add(countLabel);
+
+        container.setSize(slotSize, slotSize);
+        container.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
+
+        container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          this.handleChestSlotClick(slotIdx, pointer.rightButtonDown());
+        });
+
+        container.on('pointerover', () => {
+          const item = this.activeChestSlots[slotIdx]?.item;
+          if (item) this.showTooltip(item);
+        });
+        container.on('pointerout', () => {
+          this.hideTooltip();
+        });
+
+        this.chestContainer.add(container);
+        this.chestSlotContainers.push(container);
+      }
+    }
+
+    // --- 2. PLAYER INVENTORY INSIDE CHEST MODAL ---
+    const invSectionY = chestSlotsStartY + 2 * (slotSize + padding) + 16;
+
+    // Hotbar row (0..8)
+    const pHotbarLabel = this.add.text(panelX + 20, invSectionY, '⚡ TWÓJ PAS SZYBKIEGO WYBORU (Sloty 1 - 9)', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#f59e0b',
+      fontStyle: 'bold'
+    });
+    this.chestContainer.add(pHotbarLabel);
+
+    this.chestPlayerSlotContainers = new Array(GAME_CONSTANTS.TOTAL_INVENTORY_SLOTS);
+    const pSlotsStartX = panelX + (panelW - (9 * slotSize + 8 * padding)) / 2;
+    const pHotbarY = invSectionY + 16;
+
+    for (let col = 0; col < 9; col++) {
+      const slotIdx = col;
+      const slotX = pSlotsStartX + col * (slotSize + padding);
+
+      const container = this.add.container(slotX, pHotbarY);
+
+      const box = this.add.graphics();
+      box.fillStyle(0x1a1e2b, 0.96);
+      box.lineStyle(1.8, 0xd97706, 0.9);
+      box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
+      box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+      container.add(box);
+
+      const numLabel = this.add.text(4, 3, `${col + 1}`, {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        color: '#f59e0b',
+        fontStyle: 'bold'
+      });
+      container.add(numLabel);
+
+      const icon = this.add.image(slotSize / 2, slotSize / 2, 'icon_pickaxe');
+      icon.setDisplaySize(28, 28);
+      icon.setVisible(false);
+      icon.setName('icon');
+      container.add(icon);
+
+      const countLabel = this.add.text(slotSize - 4, slotSize - 4, '', {
+        fontFamily: 'monospace',
+        fontSize: '11px',
+        color: '#ffffff',
+        fontStyle: 'bold'
+      });
+      countLabel.setOrigin(1, 1);
+      countLabel.setName('count');
+      container.add(countLabel);
+
+      container.setSize(slotSize, slotSize);
+      container.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
+
+      container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        this.handleSlotClick(slotIdx, pointer.rightButtonDown());
+        this.refreshChestPlayerSlotsUI();
+      });
+
+      container.on('pointerover', () => {
+        const item = this.player.inventory[slotIdx]?.item;
+        if (item) this.showTooltip(item);
+      });
+      container.on('pointerout', () => {
+        this.hideTooltip();
+      });
+
+      this.chestContainer.add(container);
+      this.chestPlayerSlotContainers[slotIdx] = container;
+    }
+
+    // Backpack rows (9..44)
+    const pBpLabelY = pHotbarY + slotSize + 10;
+    const pBpLabel = this.add.text(panelX + 20, pBpLabelY, '🎒 TWÓJ GŁÓWNY PLECAK (Sloty 10 - 45)', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#94a3b8',
+      fontStyle: 'bold'
+    });
+    this.chestContainer.add(pBpLabel);
+
+    const pBpSlotsY = pBpLabelY + 16;
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 9; col++) {
+        const slotIdx = 9 + row * 9 + col;
+        const slotX = pSlotsStartX + col * (slotSize + padding);
+        const slotY = pBpSlotsY + row * (slotSize + padding);
+
+        const container = this.add.container(slotX, slotY);
+
+        const box = this.add.graphics();
+        box.fillStyle(0x131722, 0.95);
+        box.lineStyle(1.5, 0x2e384d, 1);
+        box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
+        box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+        container.add(box);
+
+        const icon = this.add.image(slotSize / 2, slotSize / 2, 'icon_pickaxe');
+        icon.setDisplaySize(28, 28);
+        icon.setVisible(false);
+        icon.setName('icon');
+        container.add(icon);
+
+        const countLabel = this.add.text(slotSize - 4, slotSize - 4, '', {
+          fontFamily: 'monospace',
+          fontSize: '11px',
+          color: '#ffffff',
+          fontStyle: 'bold'
+        });
+        countLabel.setOrigin(1, 1);
+        countLabel.setName('count');
+        container.add(countLabel);
+
+        container.setSize(slotSize, slotSize);
+        container.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
+
+        container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          this.handleSlotClick(slotIdx, pointer.rightButtonDown());
+          this.refreshChestPlayerSlotsUI();
+        });
+
+        container.on('pointerover', () => {
+          const item = this.player.inventory[slotIdx]?.item;
+          if (item) this.showTooltip(item);
+        });
+        container.on('pointerout', () => {
+          this.hideTooltip();
+        });
+
+        this.chestContainer.add(container);
+        this.chestPlayerSlotContainers[slotIdx] = container;
+      }
+    }
+  }
+
+  public openChestModal(tileX: number, tileY: number, chestSlots: InventorySlot[]): void {
+    if (this.isInventoryOpen) {
+      this.toggleInventory(false);
+    }
+
+    this.isChestOpen = true;
+    this.activeChestPos = { x: tileX, y: tileY };
+    this.activeChestSlots = chestSlots;
+    this.chestContainer.setVisible(true);
+
+    this.refreshChestUI();
+    this.refreshChestPlayerSlotsUI();
+  }
+
+  public closeChestModal(): void {
+    if (!this.isChestOpen) return;
+    this.isChestOpen = false;
+    this.chestContainer.setVisible(false);
+
+    // Return any item on cursor to player
+    if (this.cursorSlot.item) {
+      this.player.addItem(this.cursorSlot.item.id, this.cursorSlot.count);
+      this.cursorSlot = { item: null, count: 0 };
+      this.updateCursorVisual();
+    }
+
+    this.activeChestPos = null;
+    this.activeChestSlots = [];
+    this.hideTooltip();
+    this.refreshInventoryUI();
+  }
+
+  private handleChestSlotClick(slotIdx: number, isRightClick: boolean): void {
+    if (!this.activeChestSlots || !this.activeChestSlots[slotIdx]) return;
+    const slot = this.activeChestSlots[slotIdx];
+
+    // Case 1: Cursor empty
+    if (!this.cursorSlot.item) {
+      if (slot.item && slot.count > 0) {
+        if (isRightClick && slot.count > 1) {
+          const half = Math.ceil(slot.count / 2);
+          this.cursorSlot = { item: slot.item, count: half };
+          slot.count -= half;
+        } else {
+          this.cursorSlot = { item: slot.item, count: slot.count };
+          slot.item = null;
+          slot.count = 0;
+        }
+      }
+    }
+    // Case 2: Cursor holding item
+    else {
+      if (!slot.item) {
+        if (isRightClick) {
+          slot.item = this.cursorSlot.item;
+          slot.count = 1;
+          this.cursorSlot.count -= 1;
+          if (this.cursorSlot.count <= 0) this.cursorSlot.item = null;
+        } else {
+          slot.item = this.cursorSlot.item;
+          slot.count = this.cursorSlot.count;
+          this.cursorSlot = { item: null, count: 0 };
+        }
+      } else if (slot.item.id === this.cursorSlot.item.id) {
+        const space = slot.item.maxStack - slot.count;
+        if (space > 0) {
+          if (isRightClick) {
+            slot.count += 1;
+            this.cursorSlot.count -= 1;
+            if (this.cursorSlot.count <= 0) this.cursorSlot.item = null;
+          } else {
+            const add = Math.min(space, this.cursorSlot.count);
+            slot.count += add;
+            this.cursorSlot.count -= add;
+            if (this.cursorSlot.count <= 0) this.cursorSlot.item = null;
+          }
+        }
+      } else {
+        // Swap
+        const temp = { item: slot.item, count: slot.count };
+        slot.item = this.cursorSlot.item;
+        slot.count = this.cursorSlot.count;
+        this.cursorSlot = temp;
+      }
+    }
+
+    this.updateCursorVisual();
+    this.refreshChestUI();
+    this.refreshChestPlayerSlotsUI();
+  }
+
+  public refreshChestUI(): void {
+    if (!this.activeChestSlots) return;
+
+    for (let i = 0; i < this.chestSlotContainers.length; i++) {
+      const container = this.chestSlotContainers[i];
+      const slotData = this.activeChestSlots[i];
+      if (!container) continue;
+
+      const icon = container.getByName('icon') as Phaser.GameObjects.Image;
+      const countLabel = container.getByName('count') as Phaser.GameObjects.Text;
+
+      if (slotData && slotData.item && slotData.count > 0) {
+        icon.setTexture(slotData.item.iconTexture);
+        icon.setVisible(true);
+        if (slotData.count > 1) {
+          countLabel.setText(`${slotData.count}`);
+          countLabel.setVisible(true);
+        } else {
+          countLabel.setVisible(false);
+        }
+      } else {
+        icon.setVisible(false);
+        countLabel.setVisible(false);
+      }
+    }
+  }
+
+  public refreshChestPlayerSlotsUI(): void {
+    for (let slotIndex = 0; slotIndex < GAME_CONSTANTS.TOTAL_INVENTORY_SLOTS; slotIndex++) {
+      const container = this.chestPlayerSlotContainers[slotIndex];
+      if (!container) continue;
+
+      const slotData = this.player.inventory[slotIndex];
+      const icon = container.getByName('icon') as Phaser.GameObjects.Image;
+      const countLabel = container.getByName('count') as Phaser.GameObjects.Text;
+
+      if (slotData && slotData.item && slotData.count > 0) {
+        icon.setTexture(slotData.item.iconTexture);
+        icon.setVisible(true);
+        if (slotData.count > 1) {
+          countLabel.setText(`${slotData.count}`);
+          countLabel.setVisible(true);
+        } else {
+          countLabel.setVisible(false);
+        }
+      } else {
+        icon.setVisible(false);
+        countLabel.setVisible(false);
+      }
+    }
+    this.updateHotbarVisuals();
+  }
+
+  private lootAllChest(): void {
+    if (!this.activeChestSlots) return;
+    let anyLooted = false;
+    for (const slot of this.activeChestSlots) {
+      if (slot && slot.item && slot.count > 0) {
+        const added = this.player.addItem(slot.item.id, slot.count);
+        if (added) {
+          slot.item = null;
+          slot.count = 0;
+          anyLooted = true;
+        }
+      }
+    }
+    if (anyLooted) {
+      this.gameScene.sounds.play('pickup');
+      this.refreshChestUI();
+      this.refreshChestPlayerSlotsUI();
+    }
+  }
+
+  private depositMatchingToChest(): void {
+    if (!this.activeChestSlots) return;
+    let anyDeposited = false;
+    const chestItemIds = new Set<string>();
+    for (const s of this.activeChestSlots) {
+      if (s.item) chestItemIds.add(s.item.id);
+    }
+
+    for (const pSlot of this.player.inventory) {
+      if (pSlot.item && chestItemIds.has(pSlot.item.id)) {
+        for (const cSlot of this.activeChestSlots) {
+          if (cSlot.item && cSlot.item.id === pSlot.item.id && cSlot.count < cSlot.item.maxStack) {
+            const space = cSlot.item.maxStack - cSlot.count;
+            const take = Math.min(space, pSlot.count);
+            cSlot.count += take;
+            pSlot.count -= take;
+            anyDeposited = true;
+            if (pSlot.count <= 0) {
+              pSlot.item = null;
+              pSlot.count = 0;
+              break;
+            }
+          }
+        }
+      }
+    }
+    if (anyDeposited) {
+      this.gameScene.sounds.play('place');
+      this.refreshChestUI();
+      this.refreshChestPlayerSlotsUI();
     }
   }
 
@@ -985,10 +1555,9 @@ export class UIScene extends Phaser.Scene {
   // =========================================================================
 
   public refreshInventoryUI(): void {
-    // 1. Refresh 36 backpack slots
-    for (let i = 0; i < 36; i++) {
-      const slotIndex = 9 + i;
-      const slotContainer = this.invSlots[i];
+    // 1. Refresh all 45 inventory slots (Hotbar 0..8 + Backpack 9..44)
+    for (let slotIndex = 0; slotIndex < GAME_CONSTANTS.TOTAL_INVENTORY_SLOTS; slotIndex++) {
+      const slotContainer = this.invSlots[slotIndex];
       if (!slotContainer) continue;
 
       const slotData = this.player.inventory[slotIndex];
@@ -1061,6 +1630,8 @@ export class UIScene extends Phaser.Scene {
     if (this.itemTooltipText) {
       this.itemTooltipText.setPosition(startX, 70);
     }
+
+    this.repositionBossBar();
   }
 
   public update(): void {
@@ -1154,5 +1725,186 @@ export class UIScene extends Phaser.Scene {
     const depthMeters = (tileY - GAME_CONSTANTS.SURFACE_HEIGHT) * 2;
     const timeStr = this.gameScene.dayNightSystem ? ` | ${this.gameScene.dayNightSystem.getTimeString()}` : '';
     this.depthText.setText(`[Biom: ${biome.polishName} | Głębokość: ${depthMeters}m] | Poziom ${this.player.level}${timeStr}`);
+  }
+
+  // =========================================================================
+  // ORNATE PIXEL ART BOSS BAR HUD (MINECRAFT / TERRARIA STYLE)
+  // =========================================================================
+
+  private createBossBar(): void {
+    this.bossBarContainer = this.add.container(0, 0);
+    this.bossBarContainer.setDepth(120);
+    this.bossBarContainer.setVisible(false);
+
+    const barW = 380;
+    const barH = 12;
+
+    // Background bar graphics
+    const bgGraphics = this.add.graphics();
+    bgGraphics.setName('barBg');
+    this.bossBarContainer.add(bgGraphics);
+
+    // Dynamic health fill graphics
+    this.bossBarFill = this.add.graphics();
+    this.bossBarContainer.add(this.bossBarFill);
+
+    // Left & Right Ornaments
+    this.bossBarWingsLeft = this.add.image(0, 0, 'bossbar_ornament_left');
+    this.bossBarWingsLeft.setDisplaySize(48, 24);
+    this.bossBarContainer.add(this.bossBarWingsLeft);
+
+    this.bossBarWingsRight = this.add.image(0, 0, 'bossbar_ornament_right');
+    this.bossBarWingsRight.setDisplaySize(48, 24);
+    this.bossBarContainer.add(this.bossBarWingsRight);
+
+    // Center Vormak Icon Crest
+    this.bossBarIcon = this.add.image(0, 0, 'bossbar_icon_vormak');
+    this.bossBarIcon.setDisplaySize(32, 32);
+    this.bossBarContainer.add(this.bossBarIcon);
+
+    // Boss Name Text (Centered above)
+    this.bossBarNameText = this.add.text(0, 0, 'VORMAK, POŻERACZ ZIEMI', {
+      fontFamily: 'monospace',
+      fontSize: '13px',
+      color: '#38bdf8',
+      fontStyle: 'bold',
+      stroke: '#030712',
+      strokeThickness: 3
+    });
+    this.bossBarNameText.setOrigin(0.5, 1);
+    this.bossBarContainer.add(this.bossBarNameText);
+
+    // Boss HP Text (Centered below)
+    this.bossBarHpText = this.add.text(0, 0, '750 / 750 HP', {
+      fontFamily: 'monospace',
+      fontSize: '10px',
+      color: '#e2e8f0',
+      fontStyle: 'bold',
+      stroke: '#030712',
+      strokeThickness: 2
+    });
+    this.bossBarHpText.setOrigin(0.5, 0);
+    this.bossBarContainer.add(this.bossBarHpText);
+
+    this.repositionBossBar();
+  }
+
+  public repositionBossBar(): void {
+    if (!this.bossBarContainer) return;
+
+    const barW = 380;
+    const barH = 12;
+    const centerX = Math.floor(this.scale.width / 2);
+    const topY = 48;
+
+    this.bossBarContainer.setPosition(centerX, topY);
+
+    const bgGraphics = this.bossBarContainer.getByName('barBg') as Phaser.GameObjects.Graphics;
+    if (bgGraphics) {
+      bgGraphics.clear();
+      // Outer dark shadow
+      bgGraphics.fillStyle(0x050811, 0.95);
+      bgGraphics.fillRoundedRect(-barW / 2 - 2, -barH / 2 - 2, barW + 4, barH + 4, 3);
+
+      // Slate casing
+      bgGraphics.fillStyle(0x0f172a, 0.9);
+      bgGraphics.lineStyle(1.5, 0x1e293b, 1);
+      bgGraphics.fillRoundedRect(-barW / 2, -barH / 2, barW, barH, 2);
+      bgGraphics.strokeRoundedRect(-barW / 2, -barH / 2, barW, barH, 2);
+
+      // Gold segment dividers every 10%
+      bgGraphics.lineStyle(1, 0xd97706, 0.6);
+      for (let i = 1; i < 10; i++) {
+        const divX = -barW / 2 + (barW / 10) * i;
+        bgGraphics.lineBetween(divX, -barH / 2, divX, barH / 2);
+      }
+    }
+
+    this.bossBarWingsLeft.setPosition(-barW / 2 - 18, 0);
+    this.bossBarWingsRight.setPosition(barW / 2 + 18, 0);
+    this.bossBarIcon.setPosition(0, -6);
+    this.bossBarNameText.setPosition(0, -20);
+    this.bossBarHpText.setPosition(0, barH / 2 + 4);
+
+    this.renderBossBarFill();
+  }
+
+  public showBossBar(bossName: string, currentHp: number, maxHp: number): void {
+    this.bossBarNameText.setText(bossName.toUpperCase());
+    this.bossBarMaxHp = maxHp;
+    this.bossBarCurrentHp = currentHp;
+    this.bossBarAnimWidth = 380;
+    this.bossBarTargetWidth = 380;
+
+    this.bossBarContainer.setAlpha(0);
+    this.bossBarContainer.setVisible(true);
+
+    this.repositionBossBar();
+    this.tweens.killTweensOf(this.bossBarContainer);
+    this.tweens.add({
+      targets: this.bossBarContainer,
+      alpha: 1,
+      duration: 350,
+      ease: 'Sine.easeOut'
+    });
+  }
+
+  public updateBossBar(currentHp: number, maxHp: number): void {
+    this.bossBarCurrentHp = Math.max(0, currentHp);
+    this.bossBarMaxHp = maxHp;
+
+    const ratio = Phaser.Math.Clamp(this.bossBarCurrentHp / this.bossBarMaxHp, 0, 1);
+    this.bossBarTargetWidth = 380 * ratio;
+
+    const pct = Math.round(ratio * 100);
+    this.bossBarHpText.setText(`${this.bossBarCurrentHp} / ${this.bossBarMaxHp} HP (${pct}%)`);
+
+    // Smoothly animate the health fill reduction
+    this.tweens.killTweensOf(this);
+    this.tweens.add({
+      targets: this,
+      bossBarAnimWidth: this.bossBarTargetWidth,
+      duration: 180,
+      ease: 'Quad.easeOut',
+      onUpdate: () => {
+        this.renderBossBarFill();
+      }
+    });
+  }
+
+  public hideBossBar(): void {
+    if (!this.bossBarContainer || !this.bossBarContainer.visible) return;
+    this.tweens.killTweensOf(this.bossBarContainer);
+    this.tweens.add({
+      targets: this.bossBarContainer,
+      alpha: 0,
+      duration: 600,
+      ease: 'Sine.easeIn',
+      onComplete: () => {
+        this.bossBarContainer.setVisible(false);
+      }
+    });
+  }
+
+  private renderBossBarFill(): void {
+    if (!this.bossBarFill) return;
+    this.bossBarFill.clear();
+
+    const barW = 380;
+    const barH = 12;
+    const w = Phaser.Math.Clamp(this.bossBarAnimWidth, 0, barW);
+    if (w <= 0) return;
+
+    // Glowing cyan-emerald gradient health bar
+    this.bossBarFill.fillStyle(0x06b6d4, 1);
+    this.bossBarFill.fillRoundedRect(-barW / 2 + 1, -barH / 2 + 1, w - 2, barH - 2, 2);
+
+    // Inner bright cyan highlight sheen
+    this.bossBarFill.fillStyle(0x67e8f9, 0.85);
+    this.bossBarFill.fillRect(-barW / 2 + 2, -barH / 2 + 2, Math.max(0, w - 4), 3);
+
+    // Soft emerald secondary gradient (bottom half)
+    this.bossBarFill.fillStyle(0x10b981, 0.6);
+    this.bossBarFill.fillRect(-barW / 2 + 2, 0, Math.max(0, w - 4), barH / 2 - 2);
   }
 }

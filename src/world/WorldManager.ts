@@ -1,8 +1,9 @@
-import { BlockId, BiomeId, GAME_CONSTANTS } from '../types/index.js';
+import { BlockId, BiomeId, GAME_CONSTANTS, InventorySlot } from '../types/index.js';
 import { BLOCK_DEFINITIONS } from './BlockTypes.js';
 import { GeneratedWorldData, TreeRecord, BranchSpot } from './WorldGenerator.js';
 import { CROWN_PALETTES, CROWN_DEFS } from '../textures/TreeSprites.js';
 import { BiomeSystem } from './BiomeSystem.js';
+import { ITEM_REGISTRY } from './ItemTypes.js';
 
 export interface ActiveTree {
   x: number;
@@ -40,6 +41,11 @@ export class WorldManager {
   // Trees & Sapling growth
   public activeTrees: ActiveTree[] = [];
   public plantedSaplings: PlantedSapling[] = [];
+
+  // Chests Data: tileKey "x,y" => 20 InventorySlots
+  public chests: Map<string, InventorySlot[]> = new Map();
+  public onItemDrop?: (tileX: number, tileY: number, itemId: string, count: number) => void;
+  public onChestClosed?: (tileX: number, tileY: number) => void;
 
   // Callback when a block is broken: (tileX, tileY, blockId) => void
   public onBlockBroken?: (tileX: number, tileY: number, blockId: number) => void;
@@ -248,6 +254,80 @@ export class WorldManager {
     return def ? def.isSolid : false;
   }
 
+  public getChestAt(tileX: number, tileY: number): InventorySlot[] | null {
+    if (this.getBlock(tileX, tileY) !== BlockId.CHEST) return null;
+
+    const key = `${tileX},${tileY}`;
+    if (this.chests.has(key)) {
+      return this.chests.get(key)!;
+    }
+
+    // Initialize 20 chest slots (2 rows x 10 cols)
+    const slots: InventorySlot[] = [];
+    for (let i = 0; i < 20; i++) {
+      slots.push({ item: null, count: 0 });
+    }
+
+    // Procedurally generate authentic dungeon / cavern / biome treasure
+    const biome = BiomeSystem.getBiomeAt(tileX, tileY, this.height);
+    let sIdx = 0;
+
+    // Guaranteed essentials
+    slots[sIdx++] = { item: ITEM_REGISTRY['torch'], count: 12 + Math.floor(Math.random() * 16) };
+    slots[sIdx++] = { item: ITEM_REGISTRY['plank'], count: 16 + Math.floor(Math.random() * 24) };
+
+    // Potions
+    if (Math.random() < 0.75) {
+      slots[sIdx++] = { item: ITEM_REGISTRY['minor_healing_potion'], count: 2 + Math.floor(Math.random() * 3) };
+    }
+    if (Math.random() < 0.60) {
+      slots[sIdx++] = { item: ITEM_REGISTRY['minor_mana_potion'], count: 2 + Math.floor(Math.random() * 3) };
+    }
+
+    // Bars & Ores
+    const barRoll = Math.random();
+    if (barRoll < 0.45) {
+      slots[sIdx++] = { item: ITEM_REGISTRY['iron_bar'], count: 3 + Math.floor(Math.random() * 4) };
+    } else if (barRoll < 0.75) {
+      slots[sIdx++] = { item: ITEM_REGISTRY['copper_bar'], count: 4 + Math.floor(Math.random() * 6) };
+    } else {
+      slots[sIdx++] = { item: ITEM_REGISTRY['gold_ore'], count: 3 + Math.floor(Math.random() * 4) };
+    }
+
+    // Biome-specific unique treasure loot
+    if (biome.id === BiomeId.FROZEN_PEAKS) {
+      slots[sIdx++] = Math.random() < 0.55
+        ? { item: ITEM_REGISTRY['ice_blade'], count: 1 }
+        : { item: ITEM_REGISTRY['blizzard_pendant'], count: 1 };
+    } else if (biome.id === BiomeId.DESERT) {
+      slots[sIdx++] = Math.random() < 0.55
+        ? { item: ITEM_REGISTRY['sandstorm_bottle'], count: 1 }
+        : { item: ITEM_REGISTRY['sun_dagger'], count: 1 };
+    } else if (biome.id === BiomeId.DARK_FOREST) {
+      slots[sIdx++] = Math.random() < 0.55
+        ? { item: ITEM_REGISTRY['necrotic_dagger'], count: 1 }
+        : { item: ITEM_REGISTRY['shadow_hood'], count: 1 };
+    } else {
+      // General Cavern / Miner Cabin
+      const cabRoll = Math.random();
+      if (cabRoll < 0.45) {
+        slots[sIdx++] = { item: ITEM_REGISTRY['band_of_regen'], count: 1 };
+      } else if (cabRoll < 0.75) {
+        slots[sIdx++] = { item: ITEM_REGISTRY['hunting_bow'], count: 1 };
+      } else {
+        slots[sIdx++] = { item: ITEM_REGISTRY['iron_sword'], count: 1 };
+      }
+    }
+
+    // Diamond chance
+    if (Math.random() < 0.30) {
+      slots[sIdx++] = { item: ITEM_REGISTRY['diamond'], count: 1 + Math.floor(Math.random() * 2) };
+    }
+
+    this.chests.set(key, slots);
+    return slots;
+  }
+
   public damageBlock(tileX: number, tileY: number, damage: number): boolean {
     const blockId = this.getBlock(tileX, tileY);
     if (blockId === BlockId.AIR || blockId === BlockId.BEDROCK) {
@@ -319,21 +399,24 @@ export class WorldManager {
       return;
     }
 
-    // Whenever ANY terrain, ore, or building block is broken, place it in the background wall layer
-    // (which is tinted dark) so that the destroyed block's texture appears behind it dark,
-    // making it immediately clear that the block was destroyed!
-    const isTreeFlora = this.isTreeTrunkBlock(blockId) ||
-      blockId === BlockId.LEAVES || blockId === BlockId.DARK_LEAVES ||
-      blockId === BlockId.TREE_ROOT || blockId === BlockId.TREE_BRANCH_L ||
-      blockId === BlockId.TREE_BRANCH_R || blockId === BlockId.CACTUS ||
-      blockId === BlockId.SAPLING;
-
-    if (!isTreeFlora && blockId !== BlockId.TORCH && blockId !== BlockId.CHEST) {
-      this.background[tileX][tileY] = blockId;
-      this.backgroundLayer.putTileAt(blockId, tileX, tileY);
+    // If breaking a chest, drop all stored contents!
+    if (blockId === BlockId.CHEST) {
+      const key = `${tileX},${tileY}`;
+      const slots = this.chests.get(key);
+      if (slots) {
+        for (const slot of slots) {
+          if (slot && slot.item && slot.count > 0 && this.onItemDrop) {
+            this.onItemDrop(tileX, tileY, slot.item.id, slot.count);
+          }
+        }
+        this.chests.delete(key);
+      }
+      if (this.onChestClosed) {
+        this.onChestClosed(tileX, tileY);
+      }
     }
 
-    // Remove from grids
+    // Remove from foreground grid and layer
     this.foreground[tileX][tileY] = BlockId.AIR;
     this.foregroundLayer.removeTileAt(tileX, tileY);
     this.clearDamage(tileX, tileY);
@@ -681,11 +764,6 @@ export class WorldManager {
         });
       }
 
-      // Synchronize background layer if empty
-      if (this.background[tileX][tileY] === BlockId.AIR) {
-        this.background[tileX][tileY] = blockId;
-        this.backgroundLayer.putTileAt(blockId, tileX, tileY);
-      }
       if (def.isSolid) {
         this.updateCollisions();
       }

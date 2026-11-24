@@ -115,6 +115,23 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
       { itemId: 'torch', min: 1, max: 3, chance: 0.5 },
       { itemId: 'coal', min: 1, max: 2, chance: 0.6 }
     ]
+  },
+  vormak: {
+    id: 'vormak',
+    name: 'Vormak',
+    texture: 'boss_vormak_head',
+    width: 56,
+    height: 56,
+    bodyWidth: 44,
+    bodyHeight: 44,
+    maxHp: 750,
+    damage: 24,
+    defense: 6,
+    speed: 0,
+    xpReward: 350,
+    behavior: 'crawler',
+    flying: true,
+    drops: []
   }
 };
 
@@ -137,7 +154,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private wanderDirection: number = 1;
   private currentHopDir: number = 0;
   private currentHopSpeedX: number = 0;
-  private flashTimer: number = 0;
+  public flashTimer: number = 0;
   private stunTimer: number = 0; // Hitstun during knockback
   public isInvulnerable: boolean = false;
   private invulnTimer: number = 0;

@@ -2,6 +2,22 @@ import { CraftingStation } from '../types/index.js';
 export const CRAFTING_RECIPES = [
     // --- HANDCRAFTING (Station: HAND) ---
     {
+        id: 'wooden_pickaxe',
+        resultItemId: 'wooden_pickaxe',
+        resultCount: 1,
+        station: CraftingStation.HAND,
+        category: 'tools',
+        ingredients: [{ itemId: 'wood', count: 5 }]
+    },
+    {
+        id: 'wooden_sword',
+        resultItemId: 'wooden_sword',
+        resultCount: 1,
+        station: CraftingStation.HAND,
+        category: 'weapons',
+        ingredients: [{ itemId: 'wood', count: 4 }]
+    },
+    {
         id: 'planks',
         resultItemId: 'plank',
         resultCount: 4,

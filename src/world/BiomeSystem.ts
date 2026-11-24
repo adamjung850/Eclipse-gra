@@ -120,7 +120,55 @@ export const BIOME_CONFIGS: Record<BiomeId, BiomeConfig> = {
   }
 };
 
+export interface SurfaceBiomeRegion {
+  biomeId: BiomeId;
+  startX: number;
+  endX: number;
+}
+
 export class BiomeSystem {
+  public static surfaceRegions: SurfaceBiomeRegion[] = [];
+
+  /**
+   * Initializes randomized surface biome regions across the world width.
+   * Shuffles surface biomes (Desert, Dark Forest, Frozen Peaks) while keeping
+   * Greenlands near the center for a balanced player spawn.
+   */
+  public static initSurfaceRegions(width: number): SurfaceBiomeRegion[] {
+    const otherBiomes = [BiomeId.FROZEN_PEAKS, BiomeId.DARK_FOREST, BiomeId.DESERT];
+    // Fisher-Yates shuffle
+    for (let i = otherBiomes.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [otherBiomes[i], otherBiomes[j]] = [otherBiomes[j], otherBiomes[i]];
+    }
+
+    // Place Greenlands at index 1 or 2 (central 2 quarters of the world)
+    const greenlandsIndex = Math.random() < 0.5 ? 1 : 2;
+    const layout: BiomeId[] = [];
+    let otherIdx = 0;
+    for (let i = 0; i < 4; i++) {
+      if (i === greenlandsIndex) {
+        layout.push(BiomeId.GREENLANDS);
+      } else {
+        layout.push(otherBiomes[otherIdx++]);
+      }
+    }
+
+    // Randomized boundary coordinates with soft variance
+    const b1 = Math.round(115 + (Math.random() - 0.5) * 30);
+    const b2 = Math.round(250 + (Math.random() - 0.5) * 30);
+    const b3 = Math.round(380 + (Math.random() - 0.5) * 30);
+
+    this.surfaceRegions = [
+      { biomeId: layout[0], startX: 0, endX: b1 },
+      { biomeId: layout[1], startX: b1, endX: b2 },
+      { biomeId: layout[2], startX: b2, endX: b3 },
+      { biomeId: layout[3], startX: b3, endX: width }
+    ];
+
+    return this.surfaceRegions;
+  }
+
   /**
    * Evaluates the active biome at a given tile coordinate (x, y).
    * Subterranean depth overrides surface biomes.
@@ -140,20 +188,18 @@ export class BiomeSystem {
       return BIOME_CONFIGS[BiomeId.UNDERGROUND];
     }
 
-    // 2. Surface Biomes (Horizontal distribution across the 500-tile world)
-    // Frozen Peaks: 0..115 (with transition ~105..120)
-    // Greenlands (Spawn): 115..260
-    // Dark Forest: 260..380
-    // Desert: 380..500
-    if (tileX < 115) {
-      return BIOME_CONFIGS[BiomeId.FROZEN_PEAKS];
-    } else if (tileX < 260) {
-      return BIOME_CONFIGS[BiomeId.GREENLANDS];
-    } else if (tileX < 380) {
-      return BIOME_CONFIGS[BiomeId.DARK_FOREST];
-    } else {
-      return BIOME_CONFIGS[BiomeId.DESERT];
+    // 2. Surface Biomes (Dynamically and randomly distributed)
+    if (!this.surfaceRegions || this.surfaceRegions.length === 0) {
+      this.initSurfaceRegions(GAME_CONSTANTS.WORLD_WIDTH);
     }
+
+    for (const region of this.surfaceRegions) {
+      if (tileX >= region.startX && tileX < region.endX) {
+        return BIOME_CONFIGS[region.biomeId] || BIOME_CONFIGS[BiomeId.GREENLANDS];
+      }
+    }
+
+    return BIOME_CONFIGS[BiomeId.GREENLANDS];
   }
 
   /**

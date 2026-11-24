@@ -9,32 +9,18 @@ export class WorldGenerator {
             foreground[x] = new Array(height).fill(BlockId.AIR);
             background[x] = new Array(height).fill(BlockId.AIR);
         }
+        // Initialize randomized surface biome distribution
+        BiomeSystem.initSurfaceRegions(width);
         // 1. Calculate Multi-Biome Surface Height Profile
+        // All surface biomes are on the EXACT same base level with continuous, organic rolling relief (no cliff walls)
         const surfaceHeights = new Array(width);
+        const seedOffset = Math.random() * 1000;
         for (let x = 0; x < width; x++) {
-            let baseH = GAME_CONSTANTS.SURFACE_HEIGHT;
-            let relief = 0;
-            if (x < 115) {
-                // Frozen Peaks (0..115): High alpine jagged peaks rising up to 14 blocks
-                const peakT = Math.max(0, 1.0 - x / 115);
-                baseH = GAME_CONSTANTS.SURFACE_HEIGHT - 6 * peakT;
-                relief = Math.sin(x * 0.055) * 8 + Math.cos(x * 0.12) * 5 + Math.sin(x * 0.22) * 2;
-            }
-            else if (x < 260) {
-                // Greenlands (115..260): Gentle rolling grassy hills, peaceful spawn center
-                baseH = GAME_CONSTANTS.SURFACE_HEIGHT + 1;
-                relief = Math.sin(x * 0.022) * 6 + Math.cos(x * 0.048) * 3;
-            }
-            else if (x < 380) {
-                // Dark Forest (260..380): Shadowy rolling mounds with misty dips
-                baseH = GAME_CONSTANTS.SURFACE_HEIGHT + 2;
-                relief = Math.sin(x * 0.035) * 5 + Math.cos(x * 0.075) * 3.5;
-            }
-            else {
-                // Desert (380..500): Undulating sweeping sand dunes
-                baseH = GAME_CONSTANTS.SURFACE_HEIGHT;
-                relief = Math.sin(x * 0.025) * 7 + Math.cos(x * 0.06) * 3;
-            }
+            const baseH = GAME_CONSTANTS.SURFACE_HEIGHT;
+            // Gentle, rolling harmonic waves (max slope <= 1 block per column)
+            const relief = Math.sin((x + seedOffset) * 0.022) * 5 +
+                Math.cos((x + seedOffset) * 0.048) * 3 +
+                Math.sin((x + seedOffset) * 0.09) * 1.5;
             surfaceHeights[x] = Math.floor(baseH + relief);
         }
         // 2. Fill Primary Strata according to Biome and Depth
@@ -97,16 +83,25 @@ export class WorldGenerator {
                     }
                 }
                 else {
-                    // Surface Biome Soil Strata
-                    if (biome.id === BiomeId.FROZEN_PEAKS) {
+                    // Surface Biome Soil Strata with smooth organic border blending
+                    let curBiome = biome;
+                    for (const reg of BiomeSystem.surfaceRegions) {
+                        if (Math.abs(x - reg.startX) <= 3 && reg.startX > 0) {
+                            if (Math.random() < 0.5) {
+                                curBiome = BiomeSystem.getBiomeAt(reg.startX - 1, surfaceY, surfaceY);
+                            }
+                            break;
+                        }
+                    }
+                    if (curBiome.id === BiomeId.FROZEN_PEAKS) {
                         foreground[x][y] = y === surfaceY ? BlockId.SNOW : (y < surfaceY + 3 ? BlockId.SNOW : BlockId.ICE);
                         background[x][y] = foreground[x][y];
                     }
-                    else if (biome.id === BiomeId.DARK_FOREST) {
+                    else if (curBiome.id === BiomeId.DARK_FOREST) {
                         foreground[x][y] = y === surfaceY ? BlockId.DARK_GRASS : BlockId.DARK_DIRT;
                         background[x][y] = foreground[x][y];
                     }
-                    else if (biome.id === BiomeId.DESERT) {
+                    else if (curBiome.id === BiomeId.DESERT) {
                         foreground[x][y] = y < surfaceY + 3 ? BlockId.SAND : BlockId.SANDSTONE;
                         background[x][y] = foreground[x][y];
                     }
@@ -127,8 +122,9 @@ export class WorldGenerator {
         // 6. Generate Procedural Flora (Trees & Cacti) on Surface
         const trees = [];
         this.spawnFlora(width, foreground, surfaceHeights, trees);
-        // 7. Find Safe Player Spawn in the peaceful Greenlands
-        const spawnTileX = 185;
+        // 7. Find Safe Player Spawn inside the peaceful Greenlands region
+        const greenlandsRegion = BiomeSystem.surfaceRegions.find(r => r.biomeId === BiomeId.GREENLANDS) || BiomeSystem.surfaceRegions[1];
+        const spawnTileX = Math.floor((greenlandsRegion.startX + greenlandsRegion.endX) / 2);
         const spawnTileY = surfaceHeights[spawnTileX] - 2;
         const spawnX = spawnTileX * GAME_CONSTANTS.TILE_SIZE + GAME_CONSTANTS.TILE_SIZE / 2;
         const spawnY = spawnTileY * GAME_CONSTANTS.TILE_SIZE;
@@ -209,13 +205,8 @@ export class WorldGenerator {
                 }
             }
         };
-        // 1. Surface Cave Entrances in each biome
-        const entranceXs = [
-            40, // Frozen Peaks entrance
-            150, // Greenlands entrance
-            310, // Dark Forest descent
-            440 // Desert cavern sinkhole
-        ];
+        // 1. Surface Cave Entrances in each biome region
+        const entranceXs = BiomeSystem.surfaceRegions.map(reg => Math.floor((reg.startX + reg.endX) / 2 + (Math.random() - 0.5) * 20));
         for (const entX of entranceXs) {
             const isRightSinking = Math.random() > 0.5;
             carveWorm({
@@ -367,9 +358,10 @@ export class WorldGenerator {
             grid[roomX + 5][roomY + rh - 2] = BlockId.WORKBENCH;
             grid[roomX + rw - 2][roomY + 1] = BlockId.TORCH;
         }
-        // 2. Frozen Ice Shrine (Frozen Peaks: x = 20..80)
-        {
-            const shrineX = Math.floor(35 + Math.random() * 40);
+        // 2. Frozen Ice Shrine (in Frozen Peaks region)
+        const frozenReg = BiomeSystem.surfaceRegions.find(r => r.biomeId === BiomeId.FROZEN_PEAKS);
+        if (frozenReg) {
+            const shrineX = Math.floor(frozenReg.startX + 20 + Math.random() * Math.max(10, (frozenReg.endX - frozenReg.startX) - 40));
             const shrineY = Math.floor(surfaceHeights[shrineX] + 12);
             const rw = 8, rh = 5;
             for (let x = shrineX; x < shrineX + rw; x++) {
@@ -388,9 +380,10 @@ export class WorldGenerator {
             grid[shrineX + 3][shrineY + rh - 2] = BlockId.CHEST;
             grid[shrineX + 4][shrineY + 1] = BlockId.TORCH;
         }
-        // 3. Desert Sandstone Tomb (Desert: x = 400..470)
-        {
-            const tombX = Math.floor(410 + Math.random() * 50);
+        // 3. Desert Sandstone Tomb (in Desert region)
+        const desertReg = BiomeSystem.surfaceRegions.find(r => r.biomeId === BiomeId.DESERT);
+        if (desertReg) {
+            const tombX = Math.floor(desertReg.startX + 20 + Math.random() * Math.max(10, (desertReg.endX - desertReg.startX) - 40));
             const tombY = Math.floor(surfaceHeights[tombX] + 10);
             const rw = 9, rh = 5;
             for (let x = tombX; x < tombX + rw; x++) {
@@ -409,9 +402,10 @@ export class WorldGenerator {
             grid[tombX + 3][tombY + rh - 2] = BlockId.CHEST;
             grid[tombX + rw - 2][tombY + 1] = BlockId.TORCH;
         }
-        // 4. Dark Forest Crypt (Dark Forest: x = 280..360)
-        {
-            const cryptX = Math.floor(290 + Math.random() * 60);
+        // 4. Dark Forest Crypt (in Dark Forest region)
+        const darkReg = BiomeSystem.surfaceRegions.find(r => r.biomeId === BiomeId.DARK_FOREST);
+        if (darkReg) {
+            const cryptX = Math.floor(darkReg.startX + 20 + Math.random() * Math.max(10, (darkReg.endX - darkReg.startX) - 40));
             const cryptY = Math.floor(surfaceHeights[cryptX] + 14);
             const rw = 8, rh = 5;
             for (let x = cryptX; x < cryptX + rw; x++) {

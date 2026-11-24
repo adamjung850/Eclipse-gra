@@ -1,6 +1,19 @@
 import { BlockId, EquipSlotType, ItemCategory, ItemRarity } from '../types/index.js';
 export const ITEM_REGISTRY = {
     // --- NARZĘDZIA (TOOLS) ---
+    wooden_pickaxe: {
+        id: 'wooden_pickaxe',
+        name: 'Drewniany Kilof',
+        category: ItemCategory.TOOL,
+        rarity: ItemRarity.COMMON,
+        description: 'Prosty kilof ociosany z twardego drewna. Umożliwia wydobycie kamienia i węgla.',
+        iconTexture: 'icon_wooden_pickaxe',
+        maxStack: 1,
+        toolPower: 12,
+        damage: 3,
+        value: 6,
+        obtainInfo: 'Wytworzono: Podręczny crafting (5 Drewno)'
+    },
     copper_pickaxe: {
         id: 'copper_pickaxe',
         name: 'Miedziany Kilof',
@@ -80,6 +93,20 @@ export const ITEM_REGISTRY = {
         obtainInfo: 'Wytworzono: Kowadło mistrzowskie'
     },
     // --- BRONIE (WEAPONS) ---
+    wooden_sword: {
+        id: 'wooden_sword',
+        name: 'Drewniany Miecz',
+        category: ItemCategory.WEAPON,
+        rarity: ItemRarity.COMMON,
+        description: 'Ciosana drewniana klinga. Niezbędna do obrony przed pierwszymi szlamami.',
+        iconTexture: 'icon_wooden_sword',
+        maxStack: 1,
+        toolPower: 4,
+        damage: 7,
+        critChance: 0.04,
+        value: 5,
+        obtainInfo: 'Wytworzono: Podręczny crafting (4 Drewno)'
+    },
     copper_sword: {
         id: 'copper_sword',
         name: 'Miedziany Miecz',

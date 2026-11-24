@@ -14,6 +14,7 @@ export class InputManager {
   private keyE!: Phaser.Input.Keyboard.Key;
   private keyEsc!: Phaser.Input.Keyboard.Key;
   private keyQ!: Phaser.Input.Keyboard.Key;
+  private keyM!: Phaser.Input.Keyboard.Key;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
 
   // Number keys 1-9
@@ -23,6 +24,7 @@ export class InputManager {
   public onToggleInventory?: () => void;
   public onToggleMenu?: () => void;
   public onDropItem?: () => void;
+  public onToggleMusic?: () => void;
 
   constructor(scene: Phaser.Scene, player: Player) {
     this.scene = scene;
@@ -44,6 +46,7 @@ export class InputManager {
     this.keyE = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.keyEsc = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
     this.keyQ = kb.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+    this.keyM = kb.addKey(Phaser.Input.Keyboard.KeyCodes.M);
 
     this.cursors = kb.createCursorKeys();
 
@@ -81,6 +84,11 @@ export class InputManager {
     // Drop item on 'Q'
     this.keyQ.on('down', () => {
       if (this.onDropItem) this.onDropItem();
+    });
+
+    // Toggle Music on 'M'
+    this.keyM.on('down', () => {
+      if (this.onToggleMusic) this.onToggleMusic();
     });
   }
 

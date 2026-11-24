@@ -76,24 +76,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private initInventory(): void {
-    // 45 slots total: 9 hotbar + 36 backpack
+    // 45 slots total: 9 hotbar + 36 backpack (all empty on spawn - pure survival progression)
     for (let i = 0; i < GAME_CONSTANTS.TOTAL_INVENTORY_SLOTS; i++) {
       this.inventory.push({ item: null, count: 0 });
     }
-
-    // Starter loadout
-    this.inventory[0] = { item: ITEM_REGISTRY['copper_pickaxe'], count: 1 };
-    this.inventory[1] = { item: ITEM_REGISTRY['copper_sword'], count: 1 };
-    this.inventory[2] = { item: ITEM_REGISTRY['torch'], count: 30 };
-    this.inventory[3] = { item: ITEM_REGISTRY['plank'], count: 64 };
-    this.inventory[4] = { item: ITEM_REGISTRY['brick'], count: 40 };
-
-    // Starter backpack items for testing crafting & equipment
-    this.inventory[9] = { item: ITEM_REGISTRY['wood'], count: 35 };
-    this.inventory[10] = { item: ITEM_REGISTRY['stone'], count: 40 };
-    this.inventory[11] = { item: ITEM_REGISTRY['coal'], count: 12 };
-    this.inventory[12] = { item: ITEM_REGISTRY['copper_ore'], count: 18 };
-    this.inventory[13] = { item: ITEM_REGISTRY['minor_healing_potion'], count: 5 };
   }
 
   private initToolVisual(): void {

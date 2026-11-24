@@ -48,6 +48,9 @@ export class TextureGenerator {
     // 7. Generate Celestial Textures (Sun & Moon)
     this.createCelestialTextures(scene);
 
+    // 7.1 Generate Boss Textures (Vormak Worm & Boss Bar)
+    this.createBossTextures(scene);
+
     // 8. Generate Procedural Handcrafted Tree Crown Textures (5 shapes x 4 palettes = 20 textures)
     for (let v = 0; v < CROWN_DEFS.length; v++) {
       const cDef = CROWN_DEFS[v];
@@ -1366,6 +1369,51 @@ export class TextureGenerator {
       canvas.refresh();
     };
 
+    // Wooden Pickaxe Icon
+    drawIcon('icon_wooden_pickaxe', (ctx) => {
+      // Handle
+      ctx.strokeStyle = '#543217';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(4, 20); ctx.lineTo(17, 7);
+      ctx.stroke();
+      // Wooden Pickaxe Head
+      ctx.fillStyle = '#87562c';
+      ctx.beginPath();
+      ctx.moveTo(11, 3);
+      ctx.lineTo(21, 5);
+      ctx.lineTo(20, 15);
+      ctx.lineTo(16, 10);
+      ctx.closePath();
+      ctx.fill();
+      // Wood grain highlight
+      ctx.fillStyle = '#aa7645';
+      ctx.fillRect(16, 6, 3, 2);
+    });
+
+    // Wooden Sword Icon
+    drawIcon('icon_wooden_sword', (ctx) => {
+      // Handle & pommel
+      ctx.fillStyle = '#543217';
+      ctx.fillRect(3, 20, 4, 4);
+      ctx.fillRect(5, 17, 3, 4);
+      // Guard
+      ctx.fillStyle = '#6e431f';
+      ctx.fillRect(4, 15, 8, 3);
+      // Wooden blade
+      ctx.fillStyle = '#87562c';
+      ctx.beginPath();
+      ctx.moveTo(7, 15);
+      ctx.lineTo(19, 3);
+      ctx.lineTo(21, 4);
+      ctx.lineTo(9, 16);
+      ctx.closePath();
+      ctx.fill();
+      // Edge grain
+      ctx.fillStyle = '#aa7645';
+      ctx.fillRect(15, 6, 2, 2);
+    });
+
     // Pickaxe Icon
     drawIcon('icon_pickaxe', (ctx) => {
       // Handle
@@ -2585,6 +2633,513 @@ export class TextureGenerator {
           }
         }
         ctx.putImageData(imgData, 0, 0);
+        canvas.refresh();
+      }
+    }
+  }
+
+  private static createBossTextures(scene: Phaser.Scene): void {
+    // 1. VORMAK BOSS HEAD (96x96) - Colossal Gaping Maw, Mossy Stone & Cyan Cracks
+    if (!scene.textures.exists('boss_vormak_head')) {
+      const canvas = scene.textures.createCanvas('boss_vormak_head', 96, 96);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.imageSmoothingEnabled = false;
+
+        // Dark back/neck connection mass (left side)
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(30, 48, 28, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Main upper skull stone plate (massive dark charcoal slate)
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.ellipse(48, 36, 38, 24, -0.08, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Lower jaw stone plate (heavy dropped jaw)
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.ellipse(54, 62, 30, 18, 0.28, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Deep mouth throat cavity
+        ctx.fillStyle = '#030712';
+        ctx.beginPath();
+        ctx.moveTo(34, 46);
+        ctx.lineTo(84, 42);
+        ctx.lineTo(76, 68);
+        ctx.lineTo(38, 58);
+        ctx.closePath();
+        ctx.fill();
+
+        // Glowing mouth abyss / inner flame
+        const throatGlow = ctx.createRadialGradient(42, 50, 2, 42, 50, 18);
+        throatGlow.addColorStop(0, '#a5f3fc');
+        throatGlow.addColorStop(0.3, '#22d3ee');
+        throatGlow.addColorStop(0.7, '#0891b2');
+        throatGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = throatGlow;
+        ctx.beginPath();
+        ctx.arc(42, 50, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stone texture bevels & ridges
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(20, 26, 30, 8);
+        ctx.fillRect(32, 20, 36, 7);
+        ctx.fillRect(26, 68, 28, 7);
+        ctx.fillRect(40, 72, 22, 6);
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(36, 22, 24, 3);
+        ctx.fillRect(42, 74, 16, 3);
+        ctx.fillRect(22, 28, 14, 3);
+
+        // Cracks of glowing electric cyan energy (fissures between stone blocks)
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Skull fissures
+        ctx.moveTo(16, 38); ctx.lineTo(34, 32); ctx.lineTo(52, 22); ctx.lineTo(72, 26); ctx.lineTo(84, 34);
+        ctx.moveTo(34, 32); ctx.lineTo(44, 44);
+        ctx.moveTo(52, 22); ctx.lineTo(60, 36);
+        // Jaw fissures
+        ctx.moveTo(24, 58); ctx.lineTo(40, 66); ctx.lineTo(62, 74); ctx.lineTo(76, 68);
+        ctx.moveTo(40, 66); ctx.lineTo(48, 56);
+        ctx.stroke();
+
+        // Hot spots in fissures (white-cyan glow)
+        ctx.fillStyle = '#67e8f9';
+        ctx.fillRect(33, 31, 3, 3);
+        ctx.fillRect(51, 21, 3, 3);
+        ctx.fillRect(39, 65, 3, 3);
+        ctx.fillRect(61, 73, 3, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(34, 32, 2, 2);
+        ctx.fillRect(52, 22, 2, 2);
+
+        // --- LUSH GREEN MOSS OVERGROWTH (Top Crest & Jaw Underside) ---
+        // Base dark moss
+        ctx.fillStyle = '#14532d';
+        ctx.fillRect(22, 14, 46, 9);
+        ctx.fillRect(28, 10, 34, 7);
+        ctx.fillRect(38, 7, 20, 5);
+        ctx.fillRect(32, 76, 26, 6);
+
+        // Vibrant foliage moss
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(24, 16, 40, 6);
+        ctx.fillRect(30, 12, 28, 4);
+        ctx.fillRect(40, 9, 14, 3);
+        ctx.fillRect(34, 77, 20, 4);
+
+        // Moss tufts and bright lichen highlights
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(26, 14, 8, 3);
+        ctx.fillRect(38, 11, 10, 3);
+        ctx.fillRect(52, 13, 8, 3);
+        ctx.fillRect(36, 78, 6, 2);
+        ctx.fillStyle = '#86efac';
+        ctx.fillRect(28, 15, 4, 1);
+        ctx.fillRect(40, 12, 5, 1);
+        ctx.fillRect(54, 14, 4, 1);
+
+        // Hanging moss tendrils & vines
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(20, 22, 3, 6);
+        ctx.fillRect(24, 24, 2, 4);
+        ctx.fillRect(58, 22, 3, 5);
+        ctx.fillRect(68, 28, 3, 4);
+        ctx.fillRect(28, 74, 2, 5);
+
+        // --- SHARP FANGS & TEETH ---
+        ctx.fillStyle = '#f8fafc';
+        // Upper Teeth (curved downwards into maw)
+        const upperTeeth = [
+          [44, 43, 5, 9],
+          [52, 42, 6, 11],
+          [60, 41, 6, 12],
+          [68, 41, 5, 10],
+          [75, 42, 5, 8],
+          [82, 43, 4, 6]
+        ];
+        upperTeeth.forEach(([tx, ty, tw, th]) => {
+          ctx.beginPath();
+          ctx.moveTo(tx, ty);
+          ctx.lineTo(tx + tw, ty);
+          ctx.lineTo(tx + tw / 2, ty + th);
+          ctx.closePath();
+          ctx.fill();
+        });
+
+        // Lower Teeth (curved upwards into maw)
+        const lowerTeeth = [
+          [46, 57, 5, 9],
+          [54, 59, 6, 11],
+          [62, 61, 6, 11],
+          [70, 62, 5, 9],
+          [77, 63, 4, 7]
+        ];
+        lowerTeeth.forEach(([tx, ty, tw, th]) => {
+          ctx.beginPath();
+          ctx.moveTo(tx, ty + th);
+          ctx.lineTo(tx + tw, ty + th);
+          ctx.lineTo(tx + tw / 2, ty);
+          ctx.closePath();
+          ctx.fill();
+        });
+
+        // Tooth shading & cyan glint on fang tips
+        ctx.fillStyle = '#94a3b8';
+        upperTeeth.forEach(([tx, ty, tw]) => ctx.fillRect(tx, ty, tw, 2));
+        lowerTeeth.forEach(([tx, ty, tw, th]) => ctx.fillRect(tx, ty + th - 2, tw, 2));
+
+        ctx.fillStyle = '#67e8f9';
+        upperTeeth.forEach(([tx, ty, tw, th]) => ctx.fillRect(tx + Math.floor(tw / 2), ty + th - 2, 1, 2));
+        lowerTeeth.forEach(([tx, ty, tw]) => ctx.fillRect(tx + Math.floor(tw / 2), ty, 1, 2));
+
+        // --- GLOWING CYAN EYE ---
+        ctx.fillStyle = '#030712';
+        ctx.fillRect(60, 24, 11, 7); // deep eye socket
+        ctx.fillStyle = '#0891b2';
+        ctx.fillRect(62, 25, 8, 5); // eye glow
+        ctx.fillStyle = '#22d3ee';
+        ctx.fillRect(63, 26, 6, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(65, 27, 3, 2); // bright pupil slit
+
+        canvas.refresh();
+      }
+    }
+
+    // 2. VORMAK BODY SEGMENT (68x68) - Armored mossy stone ring with fissures & spikes
+    if (!scene.textures.exists('boss_vormak_body')) {
+      const canvas = scene.textures.createCanvas('boss_vormak_body', 68, 68);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.imageSmoothingEnabled = false;
+
+        // Dark back shadow
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(34, 34, 32, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Main rocky carapace
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(34, 34, 28, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Segment plates / ridge lines
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(14, 22, 40, 24);
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(18, 24, 32, 6);
+        ctx.fillRect(16, 36, 36, 5);
+
+        // Side rocky spikes / armored ridges
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.moveTo(8, 34); ctx.lineTo(18, 24); ctx.lineTo(18, 44); ctx.closePath(); ctx.fill();
+        ctx.moveTo(60, 34); ctx.lineTo(50, 24); ctx.lineTo(50, 44); ctx.closePath(); ctx.fill();
+
+        // Spikes highlight
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(12, 32, 6, 4);
+        ctx.fillRect(50, 32, 6, 4);
+
+        // Glowing cyan energy fissures cutting through rock
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(10, 34); ctx.lineTo(24, 28); ctx.lineTo(44, 34); ctx.lineTo(58, 30);
+        ctx.moveTo(30, 28); ctx.lineTo(36, 48); ctx.lineTo(50, 52);
+        ctx.stroke();
+
+        ctx.fillStyle = '#67e8f9';
+        ctx.fillRect(23, 27, 3, 3);
+        ctx.fillRect(43, 33, 3, 3);
+        ctx.fillRect(35, 47, 3, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(24, 28, 2, 2);
+        ctx.fillRect(44, 34, 2, 2);
+
+        // Moss layer over upper stone plate
+        ctx.fillStyle = '#14532d';
+        ctx.fillRect(16, 8, 36, 9);
+        ctx.fillRect(22, 5, 24, 6);
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(18, 9, 32, 6);
+        ctx.fillRect(24, 6, 18, 5);
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(22, 8, 8, 3);
+        ctx.fillRect(36, 7, 9, 3);
+        ctx.fillStyle = '#86efac';
+        ctx.fillRect(24, 9, 4, 1);
+        ctx.fillRect(38, 8, 4, 1);
+
+        // Hanging moss tendrils
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(18, 16, 2, 4);
+        ctx.fillRect(48, 16, 2, 4);
+
+        canvas.refresh();
+      }
+    }
+
+    // 3. VORMAK TAIL SEGMENT (56x56) - Tapered stone tail tip with moss
+    if (!scene.textures.exists('boss_vormak_tail')) {
+      const canvas = scene.textures.createCanvas('boss_vormak_tail', 56, 56);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.imageSmoothingEnabled = false;
+
+        // Tapered stone tip
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.ellipse(28, 28, 26, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.ellipse(28, 28, 22, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stone texture
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(16, 20, 24, 16);
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(20, 22, 16, 4);
+
+        // Glowing fissure down tail
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(8, 28); ctx.lineTo(24, 24); ctx.lineTo(44, 28);
+        ctx.stroke();
+
+        ctx.fillStyle = '#22d3ee';
+        ctx.fillRect(22, 23, 4, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(23, 24, 2, 2);
+
+        // Moss cover
+        ctx.fillStyle = '#14532d';
+        ctx.fillRect(14, 10, 28, 6);
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(16, 11, 24, 4);
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(20, 11, 8, 2);
+
+        canvas.refresh();
+      }
+    }
+
+    // 4. TELEGRAPH WARNING MARK (24x32) - Red exclamation mark
+    if (!scene.textures.exists('vormak_warning_mark')) {
+      const canvas = scene.textures.createCanvas('vormak_warning_mark', 24, 32);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.imageSmoothingEnabled = false;
+
+        // Dark red border diamond badge
+        ctx.fillStyle = '#450a0a';
+        ctx.beginPath();
+        ctx.moveTo(12, 1); ctx.lineTo(23, 16); ctx.lineTo(12, 31); ctx.lineTo(1, 16);
+        ctx.closePath();
+        ctx.fill();
+
+        // Crimson inner core
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.moveTo(12, 3); ctx.lineTo(21, 16); ctx.lineTo(12, 29); ctx.lineTo(3, 16);
+        ctx.closePath();
+        ctx.fill();
+
+        // Pulsing warning red
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(8, 8, 8, 16);
+
+        // White exclamation mark
+        ctx.fillStyle = '#ffffff';
+        // Upper bar
+        ctx.fillRect(10, 6, 4, 12);
+        ctx.fillStyle = '#fee2e2';
+        ctx.fillRect(11, 7, 2, 10);
+
+        // Dot
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(10, 21, 4, 4);
+        ctx.fillStyle = '#fee2e2';
+        ctx.fillRect(11, 22, 2, 2);
+
+        canvas.refresh();
+      }
+    }
+
+    // 5. DEBRIS EXPLOSION PARTICLES (Stone, Moss, Dirt Chunks)
+    if (!scene.textures.exists('particle_debris_stone')) {
+      const canvas = scene.textures.createCanvas('particle_debris_stone', 8, 8);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(1, 1, 6, 6);
+        ctx.fillStyle = '#475569'; ctx.fillRect(2, 2, 4, 4);
+        ctx.fillStyle = '#94a3b8'; ctx.fillRect(3, 2, 2, 2);
+        canvas.refresh();
+      }
+    }
+    if (!scene.textures.exists('particle_debris_moss')) {
+      const canvas = scene.textures.createCanvas('particle_debris_moss', 8, 8);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.fillStyle = '#14532d'; ctx.fillRect(1, 1, 6, 6);
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(2, 2, 4, 4);
+        ctx.fillStyle = '#4ade80'; ctx.fillRect(3, 2, 2, 2);
+        canvas.refresh();
+      }
+    }
+    if (!scene.textures.exists('particle_debris_dirt')) {
+      const canvas = scene.textures.createCanvas('particle_debris_dirt', 8, 8);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.fillStyle = '#3f220d'; ctx.fillRect(1, 1, 6, 6);
+        ctx.fillStyle = '#78350f'; ctx.fillRect(2, 2, 4, 4);
+        ctx.fillStyle = '#9a3412'; ctx.fillRect(3, 2, 2, 2);
+        canvas.refresh();
+      }
+    }
+
+    // 6. BOSS BAR ORNAMENTS & ICON (Minecraft/RPG Style)
+    // 6.1 Miniature Vormak Head Icon (32x32)
+    if (!scene.textures.exists('bossbar_icon_vormak')) {
+      const canvas = scene.textures.createCanvas('bossbar_icon_vormak', 32, 32);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.imageSmoothingEnabled = false;
+
+        // Dark emblem background circle
+        ctx.fillStyle = '#090d16';
+        ctx.beginPath();
+        ctx.arc(16, 16, 15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Miniature skull
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.ellipse(16, 14, 11, 8, -0.1, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Miniature lower jaw
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.ellipse(18, 22, 8, 5, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Mouth gap
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(14, 16, 10, 4);
+
+        // Teeth
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(15, 16, 2, 2);
+        ctx.fillRect(19, 16, 2, 2);
+        ctx.fillRect(17, 19, 2, 2);
+
+        // Moss
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(8, 7, 12, 3);
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(10, 6, 6, 2);
+
+        // Glowing eye
+        ctx.fillStyle = '#22d3ee';
+        ctx.fillRect(20, 11, 3, 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(21, 11, 1, 1);
+
+        canvas.refresh();
+      }
+    }
+
+    // 6.2 Left Ornate Wing/Horn (48x24)
+    if (!scene.textures.exists('bossbar_ornament_left')) {
+      const canvas = scene.textures.createCanvas('bossbar_ornament_left', 48, 24);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.imageSmoothingEnabled = false;
+
+        // Carved stone wing arching leftwards
+        ctx.fillStyle = '#0b0f19';
+        ctx.beginPath();
+        ctx.moveTo(48, 4); ctx.lineTo(24, 2); ctx.lineTo(8, 8); ctx.lineTo(0, 18);
+        ctx.lineTo(8, 22); ctx.lineTo(20, 18); ctx.lineTo(34, 20); ctx.lineTo(48, 16);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.moveTo(48, 6); ctx.lineTo(26, 4); ctx.lineTo(10, 10); ctx.lineTo(2, 18);
+        ctx.lineTo(8, 20); ctx.lineTo(20, 16); ctx.lineTo(34, 18); ctx.lineTo(48, 14);
+        ctx.closePath();
+        ctx.fill();
+
+        // Moss frills along top ridge
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(14, 5, 18, 3);
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(18, 4, 10, 2);
+
+        // Cyan glow gem / fissure
+        ctx.fillStyle = '#06b6d4';
+        ctx.fillRect(28, 10, 8, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(31, 11, 3, 1);
+
+        canvas.refresh();
+      }
+    }
+
+    // 6.3 Right Ornate Wing/Horn (48x24) - Mirrored
+    if (!scene.textures.exists('bossbar_ornament_right')) {
+      const canvas = scene.textures.createCanvas('bossbar_ornament_right', 48, 24);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.imageSmoothingEnabled = false;
+        ctx.translate(48, 0);
+        ctx.scale(-1, 1);
+
+        // Same as left, horizontally flipped
+        ctx.fillStyle = '#0b0f19';
+        ctx.beginPath();
+        ctx.moveTo(48, 4); ctx.lineTo(24, 2); ctx.lineTo(8, 8); ctx.lineTo(0, 18);
+        ctx.lineTo(8, 22); ctx.lineTo(20, 18); ctx.lineTo(34, 20); ctx.lineTo(48, 16);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.moveTo(48, 6); ctx.lineTo(26, 4); ctx.lineTo(10, 10); ctx.lineTo(2, 18);
+        ctx.lineTo(8, 20); ctx.lineTo(20, 16); ctx.lineTo(34, 18); ctx.lineTo(48, 14);
+        ctx.closePath();
+        ctx.fill();
+
+        // Moss frills
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(14, 5, 18, 3);
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(18, 4, 10, 2);
+
+        // Cyan glow gem / fissure
+        ctx.fillStyle = '#06b6d4';
+        ctx.fillRect(28, 10, 8, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(31, 11, 3, 1);
+
         canvas.refresh();
       }
     }

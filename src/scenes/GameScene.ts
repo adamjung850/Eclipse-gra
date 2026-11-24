@@ -15,6 +15,7 @@ import { BLOCK_DEFINITIONS } from '../world/BlockTypes.js';
 import { ITEM_REGISTRY } from '../world/ItemTypes.js';
 import { ChestSystem } from '../world/ChestSystem.js';
 import { BiomeSystem } from '../world/BiomeSystem.js';
+import { VormakBoss } from '../entities/VormakBoss.js';
 
 export class GameScene extends Phaser.Scene {
   public worldManager!: WorldManager;
@@ -22,6 +23,7 @@ export class GameScene extends Phaser.Scene {
   public droppedItems!: Phaser.Physics.Arcade.Group;
   public enemies!: Phaser.Physics.Arcade.Group;
   public projectiles!: Phaser.Physics.Arcade.Group;
+  public vormakBoss?: VormakBoss;
 
   public miningSystem!: MiningSystem;
   public combatSystem!: CombatSystem;
@@ -121,9 +123,24 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.droppedItems, this.worldManager.foregroundLayer);
     this.physics.add.collider(this.enemies, this.worldManager.foregroundLayer);
 
-    // 8. Block Broken Hook -> Spawn Drops
+    // 8. Block Broken Hook & Item Drops
     this.worldManager.onBlockBroken = (tileX: number, tileY: number, blockId: number) => {
       this.handleBlockDrop(tileX, tileY, blockId);
+    };
+
+    this.worldManager.onItemDrop = (tileX: number, tileY: number, itemId: string, count: number) => {
+      const T = GAME_CONSTANTS.TILE_SIZE;
+      const dropX = tileX * T + T / 2 + (Math.random() - 0.5) * 14;
+      const dropY = tileY * T + T / 2 + (Math.random() - 0.5) * 10;
+      const dropped = new DroppedItem(this, dropX, dropY, itemId, count);
+      this.droppedItems.add(dropped);
+    };
+
+    this.worldManager.onChestClosed = (tileX: number, tileY: number) => {
+      const uiScene = this.scene.get('UIScene') as any;
+      if (uiScene && uiScene.isChestOpen && uiScene.activeChestPos?.x === tileX && uiScene.activeChestPos?.y === tileY) {
+        uiScene.closeChestModal();
+      }
     };
 
     // 9. Systems (Mining, Combat, Spawning & Input)
@@ -155,6 +172,69 @@ export class GameScene extends Phaser.Scene {
       this.handlePlayerDropItem();
     };
 
+    this.inputManager.onToggleMusic = () => {
+      const isPlaying = this.sounds.toggleMusic();
+      this.showWorldFloatingText(
+        this.player.x,
+        this.player.y - 25,
+        isPlaying ? '🎵 Muzyka: WŁĄCZONA' : '🔇 Muzyka: WYŁĄCZONA',
+        isPlaying ? '#38bdf8' : '#94a3b8'
+      );
+    };
+
+    // Auto-start music on first player interaction
+    this.input.once('pointerdown', () => {
+      this.sounds.startMusic();
+    });
+    this.inputManager.onToggleInventory = () => {
+      const uiScene = this.scene.get('UIScene') as any;
+      if (!uiScene) return;
+
+      if (uiScene.isChestOpen) {
+        uiScene.closeChestModal();
+        return;
+      }
+
+      uiScene.toggleInventory();
+    };
+
+    this.inputManager.onToggleMenu = () => {
+      const uiScene = this.scene.get('UIScene') as any;
+      if (!uiScene) return;
+
+      if (uiScene.isChestOpen) {
+        uiScene.closeChestModal();
+      } else if (uiScene.isInventoryOpen) {
+        uiScene.toggleInventory(false);
+      }
+    };
+
+    // Right-Click to open Chest within reach
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.rightButtonDown()) {
+        const camera = this.cameras.main;
+        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+        const tilePos = this.worldManager.worldToTile(worldPoint.x, worldPoint.y);
+        const playerCenter = this.player.getCenter();
+        const dist = Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, worldPoint.x, worldPoint.y);
+        const maxReach = (GAME_CONSTANTS.PLAYER_REACH_TILES + 1) * GAME_CONSTANTS.TILE_SIZE;
+
+        if (dist <= maxReach) {
+          const blockId = this.worldManager.getBlock(tilePos.x, tilePos.y);
+          if (blockId === BlockId.CHEST) {
+            const chestSlots = this.worldManager.getChestAt(tilePos.x, tilePos.y);
+            if (chestSlots) {
+              const uiScene = this.scene.get('UIScene') as any;
+              if (uiScene) {
+                uiScene.openChestModal(tilePos.x, tilePos.y, chestSlots);
+                this.sounds.play('pickup');
+              }
+            }
+          }
+        }
+      }
+    });
+
     // 10. Centralized Custom Cursor Manager
     this.cursorManager = CursorManager.getInstance(this.game);
 
@@ -176,6 +256,23 @@ export class GameScene extends Phaser.Scene {
         '#6ee7b7'
       );
     });
+
+    // 12. Dev Test Spawn: Vormak Boss Battle Encounter
+    this.time.delayedCall(700, () => {
+      this.vormakBoss = new VormakBoss(
+        this,
+        this.worldManager,
+        this.player,
+        this.sounds,
+        this.enemies
+      );
+      this.showWorldFloatingText(
+        this.player.x,
+        this.player.y - 50,
+        '⚠️ Ziemia drży... Vormak nadchodzi!',
+        '#ef4444'
+      );
+    });
   }
 
   public handleBlockDrop(tileX: number, tileY: number, blockId: number): void {
@@ -183,22 +280,11 @@ export class GameScene extends Phaser.Scene {
     const dropX = tileX * T + T / 2;
     const dropY = tileY * T + T / 2;
 
-    // Special case: Chest opening / destruction drops treasure horde!
+    // Chest block destruction drops the chest item itself (contents were dropped via onItemDrop)
     if (blockId === BlockId.CHEST) {
-      const lootItems = ChestSystem.getLootForChest(tileX, tileY);
-      for (const loot of lootItems) {
-        const offX = (Math.random() - 0.5) * 16;
-        const offY = (Math.random() - 0.5) * 12;
-        const dropped = new DroppedItem(this, dropX + offX, dropY + offY, loot.itemId, loot.count);
-        this.droppedItems.add(dropped);
-      }
-      // Also drop the chest block itself
       const chestDrop = new DroppedItem(this, dropX, dropY, 'ancient_chest', 1);
       this.droppedItems.add(chestDrop);
-
-      this.sounds.play('craft');
-      const biome = BiomeSystem.getBiomeAt(tileX, tileY);
-      this.showWorldFloatingText(dropX, dropY - 20, `Otwarto Skrzynię [${biome.polishName}]!`, '#fbbf24');
+      this.sounds.play('break');
       return;
     }
 
@@ -235,9 +321,26 @@ export class GameScene extends Phaser.Scene {
     // 2. Input & Player update
     this.inputManager.update(delta);
 
+    // Auto-close chest modal if player walks out of reach
+    const uiScene = this.scene.get('UIScene') as any;
+    if (uiScene && uiScene.isChestOpen && uiScene.activeChestPos) {
+      const T = GAME_CONSTANTS.TILE_SIZE;
+      const chestX = uiScene.activeChestPos.x * T + T / 2;
+      const chestY = uiScene.activeChestPos.y * T + T / 2;
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, chestX, chestY);
+      if (dist > (GAME_CONSTANTS.PLAYER_REACH_TILES + 2) * T) {
+        uiScene.closeChestModal();
+      }
+    }
+
     // 3. Spawner & Combat updates
     this.enemySpawner.update(delta);
     this.combatSystem.update(time, delta, this.input.activePointer);
+
+    // 3.1 Vormak Boss Update
+    if (this.vormakBoss && !this.vormakBoss.isDead) {
+      this.vormakBoss.update(time, delta);
+    }
 
     // 4. Mining, Building & Attack handling
     if (this.input.activePointer.isDown) {
