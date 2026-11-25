@@ -5,6 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>ECLIPSE – THE LOST WORLD | 2D Sandbox RPG</title>
   <link rel="stylesheet" href="css/style.css">
+  <!-- Cache-busting Import Map so all ES sub-modules always refresh cleanly on page reload -->
+  <script type="importmap">
+    {
+      "imports": {
+        "/js/main.js": "/js/main.js?v=7.0",
+        "/js/entities/DroppedItem.js": "/js/entities/DroppedItem.js?v=7.0",
+        "/js/entities/Enemy.js": "/js/entities/Enemy.js?v=7.0",
+        "/js/entities/Player.js": "/js/entities/Player.js?v=7.0",
+        "/js/entities/Projectile.js": "/js/entities/Projectile.js?v=7.0",
+        "/js/entities/VormakBoss.js": "/js/entities/VormakBoss.js?v=7.0",
+        "/js/scenes/BootScene.js": "/js/scenes/BootScene.js?v=7.0",
+        "/js/scenes/GameScene.js": "/js/scenes/GameScene.js?v=7.0",
+        "/js/scenes/UIScene.js": "/js/scenes/UIScene.js?v=7.0",
+        "/js/systems/CombatSystem.js": "/js/systems/CombatSystem.js?v=7.0",
+        "/js/systems/CursorManager.js": "/js/systems/CursorManager.js?v=7.0",
+        "/js/systems/DarknessSystem.js": "/js/systems/DarknessSystem.js?v=7.0",
+        "/js/systems/DayNightSystem.js": "/js/systems/DayNightSystem.js?v=7.0",
+        "/js/systems/EnemySpawner.js": "/js/systems/EnemySpawner.js?v=7.0",
+        "/js/systems/InputManager.js": "/js/systems/InputManager.js?v=7.0",
+        "/js/systems/MiningSystem.js": "/js/systems/MiningSystem.js?v=7.0",
+        "/js/systems/SoundSynthesizer.js": "/js/systems/SoundSynthesizer.js?v=7.0",
+        "/js/textures/TextureGenerator.js": "/js/textures/TextureGenerator.js?v=7.0",
+        "/js/textures/TreeSprites.js": "/js/textures/TreeSprites.js?v=7.0",
+        "/js/types/index.js": "/js/types/index.js?v=7.0",
+        "/js/ui/HUD.js": "/js/ui/HUD.js?v=7.0",
+        "/js/world/BiomeSystem.js": "/js/world/BiomeSystem.js?v=7.0",
+        "/js/world/BlockTypes.js": "/js/world/BlockTypes.js?v=7.0",
+        "/js/world/ChestSystem.js": "/js/world/ChestSystem.js?v=7.0",
+        "/js/world/CraftingRecipes.js": "/js/world/CraftingRecipes.js?v=7.0",
+        "/js/world/ItemTypes.js": "/js/world/ItemTypes.js?v=7.0",
+        "/js/world/WorldGenerator.js": "/js/world/WorldGenerator.js?v=7.0",
+        "/js/world/WorldManager.js": "/js/world/WorldManager.js?v=7.0"
+      }
+    }
+  </script>
   <!-- Phaser 3 Engine (Local first, CDN fallback) -->
   <script src="lib/phaser.min.js"></script>
   <script>
@@ -33,6 +68,6 @@
   </div>
 
   <!-- Game Bootstrap Module (Cache-busted) -->
-  <script type="module" src="js/main.js?v=5.3"></script>
+  <script type="module" src="js/main.js?v=7.0"></script>
 </body>
 </html>

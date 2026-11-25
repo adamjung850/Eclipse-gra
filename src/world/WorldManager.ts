@@ -50,12 +50,19 @@ export class WorldManager {
   // Callback when a block is broken: (tileX, tileY, blockId) => void
   public onBlockBroken?: (tileX: number, tileY: number, blockId: number) => void;
 
+  // Underground Darkness & Lighting Optimization
+  public surfaceYCache!: Int32Array;
+  public placedTorches: Set<number> = new Set();
+
   constructor(scene: Phaser.Scene, worldData: GeneratedWorldData) {
     this.scene = scene;
     this.width = worldData.width;
     this.height = worldData.height;
     this.foreground = worldData.foreground;
     this.background = worldData.background;
+
+    this.surfaceYCache = new Int32Array(this.width);
+    this.initSurfaceCache();
 
     // Initialize trees from procedural generation
     if (worldData.trees) {
@@ -76,6 +83,49 @@ export class WorldManager {
 
     this.createTilemaps();
     this.spawnInitialTreeCrowns();
+  }
+
+  public initSurfaceCache(): void {
+    for (let x = 0; x < this.width; x++) {
+      this.recomputeSurfaceY(x);
+      for (let y = 0; y < this.height; y++) {
+        if (this.foreground[x][y] === BlockId.TORCH) {
+          this.placedTorches.add(y * this.width + x);
+        }
+      }
+    }
+  }
+
+  public recomputeSurfaceY(x: number): void {
+    if (x < 0 || x >= this.width) return;
+    for (let y = 0; y < this.height; y++) {
+      const b = this.foreground[x][y];
+      if (
+        b === BlockId.GRASS ||
+        b === BlockId.DIRT ||
+        b === BlockId.STONE ||
+        b === BlockId.SAND ||
+        b === BlockId.SANDSTONE ||
+        b === BlockId.SNOW ||
+        b === BlockId.ICE ||
+        b === BlockId.DARK_GRASS ||
+        b === BlockId.DARK_DIRT ||
+        b === BlockId.MOSSY_STONE ||
+        b === BlockId.BRICK ||
+        b === BlockId.PLANK ||
+        b === BlockId.COPPER_ORE ||
+        b === BlockId.IRON_ORE ||
+        b === BlockId.COAL_ORE ||
+        b === BlockId.GOLD_ORE ||
+        b === BlockId.DIAMOND_ORE ||
+        b === BlockId.CRYSTAL_ORE ||
+        b === BlockId.BEDROCK
+      ) {
+        this.surfaceYCache[x] = y;
+        return;
+      }
+    }
+    this.surfaceYCache[x] = GAME_CONSTANTS.SURFACE_HEIGHT;
   }
 
   private createTilemaps(): void {
@@ -421,6 +471,11 @@ export class WorldManager {
     this.foregroundLayer.removeTileAt(tileX, tileY);
     this.clearDamage(tileX, tileY);
 
+    if (blockId === BlockId.TORCH) {
+      this.placedTorches.delete(tileY * this.width + tileX);
+    }
+    this.recomputeSurfaceY(tileX);
+
     // If breaking a leaf block of a tree, check if crown needs to be removed
     if (blockId === BlockId.LEAVES) {
       const treeIdx = this.activeTrees.findIndex(t => {
@@ -763,6 +818,11 @@ export class WorldManager {
           growTime: 12000 + Math.random() * 8000 // 12-20s growth time
         });
       }
+
+      if (blockId === BlockId.TORCH) {
+        this.placedTorches.add(tileY * this.width + tileX);
+      }
+      this.recomputeSurfaceY(tileX);
 
       if (def.isSolid) {
         this.updateCollisions();

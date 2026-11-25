@@ -53,8 +53,11 @@ export class CombatSystem {
                 return;
             this.handleProjectileHit(proj, enemy);
         });
-        // 3. Enemies collide with solid world blocks
-        this.scene.physics.add.collider(this.enemies, this.worldManager.foregroundLayer);
+        // 3. Enemies collide with solid world blocks (excluding burrowing worm segments)
+        this.scene.physics.add.collider(this.enemies, this.worldManager.foregroundLayer, undefined, (enemyObj) => {
+            const enemy = enemyObj;
+            return !enemy.isBurrowing;
+        });
         // 4. Enemy contact damage on player
         this.scene.physics.add.overlap(this.player, this.enemies, (pObj, eObj) => {
             const enemy = eObj;
@@ -82,19 +85,36 @@ export class CombatSystem {
         }
     }
     /**
-     * Attempts player weapon attack. Returns true if weapon attack was performed.
+     * Returns true if pointer is currently hovering an active enemy hitbox.
+     */
+    isPointerOverEnemy(pointer) {
+        const camera = this.scene.cameras.main;
+        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+        const enemyList = this.enemies.getChildren();
+        for (let i = 0; i < enemyList.length; i++) {
+            const e = enemyList[i];
+            if (!e || !e.active || !e.visible)
+                continue;
+            const bounds = e.getBounds();
+            if (worldPoint.x >= bounds.x - 10 &&
+                worldPoint.x <= bounds.right + 10 &&
+                worldPoint.y >= bounds.y - 10 &&
+                worldPoint.y <= bounds.bottom + 10) {
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
+     * Attempts player weapon, tool, or bare-hand punch attack. Returns true if an attack was performed.
      */
     handlePlayerAttack(time, pointer) {
         const selectedItem = this.player.getSelectedItem();
-        if (!selectedItem)
-            return false;
-        // Check if item is a weapon or tool capable of swinging
-        const isWeapon = selectedItem.category === ItemCategory.WEAPON;
-        const isTool = selectedItem.category === ItemCategory.TOOL;
-        if (!isWeapon && !isTool)
-            return false;
+        const isWeapon = selectedItem?.category === ItemCategory.WEAPON;
+        const isTool = selectedItem?.category === ItemCategory.TOOL;
+        const isBareHand = !isWeapon && !isTool;
         // Check attack speed cooldown
-        const cooldown = isWeapon ? 320 : 250;
+        const cooldown = isWeapon ? 320 : (isTool ? 250 : 260);
         if (time - this.lastAttackTime < cooldown)
             return false;
         this.lastAttackTime = time;
@@ -103,51 +123,57 @@ export class CombatSystem {
         // Flip player towards attack target
         this.player.isFacingLeft = worldPoint.x < this.player.x;
         this.player.setFlipX(this.player.isFacingLeft);
-        // Handle distinct weapon types
-        if (selectedItem.id === 'hunting_bow') {
+        // Handle distinct weapon types or bare-hand punch ("łapka")
+        if (selectedItem?.id === 'hunting_bow') {
             this.fireBow(worldPoint.x, worldPoint.y, selectedItem);
         }
-        else if (selectedItem.id === 'apprentice_staff') {
+        else if (selectedItem?.id === 'apprentice_staff') {
             this.castMagicStaff(worldPoint.x, worldPoint.y, selectedItem);
         }
         else {
-            // Melee Sword, Dagger, Spear, Pickaxe, Axe
-            this.performMeleeSwing(worldPoint.x, worldPoint.y, selectedItem);
+            // Melee Sword, Dagger, Spear, Pickaxe, Axe, or Bare Fist (null / non-weapon)
+            this.performMeleeSwing(worldPoint.x, worldPoint.y, isBareHand ? null : selectedItem);
         }
         return true;
     }
     performMeleeSwing(targetX, targetY, item) {
-        // Trigger arm swing
+        const isBareHand = !item;
+        // Trigger arm swing (or fist punch swoosh when unarmed)
         this.player.triggerToolSwing(targetX, targetY);
         this.sounds.play('sword_swing');
-        // Display crescent slash arc
-        const slashOffset = this.player.isFacingLeft ? -24 : 24;
+        // Display crescent slash/punch arc
+        const slashOffset = this.player.isFacingLeft ? -22 : 22;
         const slashAngle = Math.atan2(targetY - this.player.y, targetX - this.player.x);
+        const arcScale = isBareHand ? 0.65 : 1.0;
         this.slashSprite.setPosition(this.player.x + slashOffset, this.player.y - 2);
         this.slashSprite.setRotation(slashAngle);
         this.slashSprite.setFlipY(this.player.isFacingLeft);
+        this.slashSprite.setScale(arcScale, arcScale);
         this.slashSprite.setVisible(true);
-        this.slashSprite.setAlpha(0.9);
+        this.slashSprite.setAlpha(isBareHand ? 0.7 : 0.9);
         this.scene.tweens.add({
             targets: this.slashSprite,
             alpha: 0,
-            scaleX: 1.25,
-            scaleY: 1.25,
-            duration: 160,
+            scaleX: arcScale * 1.25,
+            scaleY: arcScale * 1.25,
+            duration: isBareHand ? 120 : 160,
             onComplete: () => {
                 this.slashSprite.setVisible(false);
                 this.slashSprite.setScale(1, 1);
             }
         });
-        // Check hit against enemies in front arc
-        const reach = (item.id === 'ancient_spear' ? 70 : 52);
+        // Check hit against enemies in front arc (accounting for large boss segment radius!)
+        const reach = item ? (item.id === 'ancient_spear' ? 70 : 54) : 50;
         const enemies = this.enemies.getChildren();
         for (const enemy of enemies) {
             if (!enemy.active || enemy.isInvulnerable)
                 continue;
+            const isBossSeg = !!enemy.boss;
+            const segRadius = isBossSeg ? (enemy.isHead ? 38 : 28) : 14;
+            const effectiveReach = reach + segRadius;
             const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y);
-            if (dist <= reach) {
-                const isClose = dist <= 34; // Always hit nearby enemies within swing radius
+            if (dist <= effectiveReach) {
+                const isClose = dist <= 36 + segRadius; // Always hit nearby enemies within swing/punch radius
                 const isEnemyInFront = (enemy.x < this.player.x) === this.player.isFacingLeft;
                 if (isClose || isEnemyInFront) {
                     this.applyDamageToEnemy(enemy, item);
@@ -210,13 +236,18 @@ export class CombatSystem {
         }
     }
     applyDamageToEnemy(enemy, weaponItem) {
-        const baseDamage = weaponItem.damage || 6;
-        const isCrit = Math.random() < (this.player.critChance + (weaponItem.critChance || 0));
-        const damage = isCrit ? Math.round(baseDamage * 1.8) : baseDamage;
+        const isBareHand = !weaponItem;
+        const baseDamage = weaponItem ? (weaponItem.damage || 6) : 2;
+        const critChance = this.player.critChance + (weaponItem?.critChance || 0);
+        const isCrit = Math.random() < critChance;
+        // Bare fist: 2 HP normal, 4 HP on crit! Weapons: 1.8x crit multiplier
+        const damage = isBareHand ? (isCrit ? 4 : 2) : (isCrit ? Math.round(baseDamage * 1.8) : baseDamage);
         const knockbackDir = this.player.isFacingLeft ? -1 : 1;
-        const knockbackX = knockbackDir * (isCrit ? 65 : 45);
-        const knockbackY = isCrit ? -155 : -135;
-        const result = enemy.takeDamage(damage, knockbackX, knockbackY);
+        const knockbackX = knockbackDir * (isBareHand ? (isCrit ? 42 : 28) : (isCrit ? 65 : 45));
+        const knockbackY = isBareHand ? -110 : (isCrit ? -155 : -135);
+        const result = enemy.boss
+            ? enemy.takeDamage(damage, knockbackX, knockbackY, isBareHand)
+            : enemy.takeDamage(damage, knockbackX, knockbackY, isBareHand);
         this.sparkEmitter.explode(10, enemy.x, enemy.y);
         if (result.finalDamage > 0) {
             if (isCrit) {
@@ -236,9 +267,9 @@ export class CombatSystem {
         const knockbackDir = enemy.x < this.player.x ? 1 : -1;
         const knockbackX = knockbackDir * 125;
         const result = this.player.takeDamage(enemy.damage, knockbackX, -145);
-        // Gently nudge enemy horizontally away, maintaining natural physics
+        // Gently nudge enemy horizontally away, maintaining natural physics (only for regular enemies)
         const enemyBody = enemy.body;
-        if (enemyBody) {
+        if (enemyBody && !enemy.isBurrowing) {
             enemyBody.setVelocityX(-knockbackDir * 28);
         }
         if (result.tookDamage) {
@@ -246,8 +277,12 @@ export class CombatSystem {
             this.showCombatFloatingText(this.player.x, this.player.y - 20, `-${result.damageDealt} PŻ`, '#ef4444', 13);
             if (result.isDead) {
                 this.sounds.play('player_hurt');
-                this.showCombatFloatingText(this.player.x, this.player.y - 35, 'ZGINĄŁEŚ! Odrodzono w punkcie startowym', '#f43f5e', 14);
-                this.player.respawn();
+                this.showCombatFloatingText(this.player.x, this.player.y - 35, 'ZGINĄŁEŚ!', '#f43f5e', 14);
+                // Ekran zgonu GTA-style w UIScene obsługuje slowmo, shake, sekwencję kolorów i respawn
+                const uiScene = this.scene.scene.get('UIScene');
+                if (uiScene && uiScene.showDeathScreen) {
+                    uiScene.showDeathScreen();
+                }
             }
         }
     }

@@ -30,18 +30,30 @@ export class UIScene extends Phaser.Scene {
     activeChestSlots = [];
     chestSlotContainers = [];
     chestPlayerSlotContainers = [];
-    // Boss Bar State (Minecraft/RPG Custom Style)
+    // Boss Bar State (Generated Pixel-Art RPG Boss Frame + Animated Fill)
     bossBarContainer;
-    bossBarFill;
+    bossBarFillSprite;
+    bossBarFrameImage;
+    bossBarTitleImage;
     bossBarNameText;
     bossBarHpText;
     bossBarCurrentHp = 750;
     bossBarMaxHp = 750;
-    bossBarTargetWidth = 380;
-    bossBarAnimWidth = 380;
-    bossBarWingsLeft;
-    bossBarWingsRight;
-    bossBarIcon;
+    bossBarTargetWidth = 473;
+    bossBarAnimWidth = 473;
+    // ── GTA-style ZGON Death Screen ──────────────────────────────────────────
+    // Phase 1 (0–700 ms):   Slowmo + red camera-tint builds in
+    // Phase 2 (700–1400 ms): Grayscale drain – white wash overlay
+    // Phase 3 (1400–2000 ms): Full red screen, pixel-art "ZGON" in WHITE fades in
+    // Phase 4 (2000–3100 ms): Background red → black, text WHITE → RED
+    // Phase 5 (3100 ms+):   Black + red text; respawn fires at 2800 ms
+    deathOverlay = null;
+    deathTextCanvas = null;
+    deathColorFx = null;
+    deathScreenActive = false;
+    deathPhase = 0;
+    deathPhaseTimer = 0;
+    deathRespawned = false;
     // Hand / Cursor Item
     cursorSlot = { item: null, count: 0 };
     cursorItemSprite;
@@ -1453,6 +1465,7 @@ export class UIScene extends Phaser.Scene {
         this.updateStatsBars();
         this.updateHotbarVisuals();
         this.updateDepthDisplay();
+        this.updateDeathScreen();
     }
     updateStatsBars() {
         this.hpBar.clear();
@@ -1532,95 +1545,127 @@ export class UIScene extends Phaser.Scene {
         this.depthText.setText(`[Biom: ${biome.polishName} | Głębokość: ${depthMeters}m] | Poziom ${this.player.level}${timeStr}`);
     }
     // =========================================================================
-    // ORNATE PIXEL ART BOSS BAR HUD (MINECRAFT / TERRARIA STYLE)
+    // ORNATE PIXEL ART BOSS BAR HUD (GENERATED FROM RAPPENEM-INSPIRED DESIGN)
     // =========================================================================
+    static BOSS_BAR_FRAME_W = 662;
+    static BOSS_BAR_FILL_W = 473;
+    static BOSS_BAR_FILL_H = 19;
+    static BOSS_BAR_FILL_X = -236.5;
+    static BOSS_BAR_FILL_Y = 3.5;
     createBossBar() {
         this.bossBarContainer = this.add.container(0, 0);
         this.bossBarContainer.setDepth(120);
         this.bossBarContainer.setVisible(false);
-        const barW = 380;
-        const barH = 12;
-        // Background bar graphics
+        // 1. Recessed obsidian empty track groove (visible behind cropped fill)
         const bgGraphics = this.add.graphics();
         bgGraphics.setName('barBg');
+        bgGraphics.fillStyle(0x090f1c, 0.94);
+        bgGraphics.fillRect(UIScene.BOSS_BAR_FILL_X, UIScene.BOSS_BAR_FILL_Y - UIScene.BOSS_BAR_FILL_H / 2, UIScene.BOSS_BAR_FILL_W, UIScene.BOSS_BAR_FILL_H);
+        bgGraphics.lineStyle(1, 0x162238, 0.9);
+        for (let i = 1; i < 10; i++) {
+            const divX = UIScene.BOSS_BAR_FILL_X + (UIScene.BOSS_BAR_FILL_W / 10) * i;
+            bgGraphics.lineBetween(divX, UIScene.BOSS_BAR_FILL_Y - UIScene.BOSS_BAR_FILL_H / 2 + 1, divX, UIScene.BOSS_BAR_FILL_Y + UIScene.BOSS_BAR_FILL_H / 2 - 1);
+        }
         this.bossBarContainer.add(bgGraphics);
-        // Dynamic health fill graphics
-        this.bossBarFill = this.add.graphics();
-        this.bossBarContainer.add(this.bossBarFill);
-        // Left & Right Ornaments
-        this.bossBarWingsLeft = this.add.image(0, 0, 'bossbar_ornament_left');
-        this.bossBarWingsLeft.setDisplaySize(48, 24);
-        this.bossBarContainer.add(this.bossBarWingsLeft);
-        this.bossBarWingsRight = this.add.image(0, 0, 'bossbar_ornament_right');
-        this.bossBarWingsRight.setDisplaySize(48, 24);
-        this.bossBarContainer.add(this.bossBarWingsRight);
-        // Center Vormak Icon Crest
-        this.bossBarIcon = this.add.image(0, 0, 'bossbar_icon_vormak');
-        this.bossBarIcon.setDisplaySize(32, 32);
-        this.bossBarContainer.add(this.bossBarIcon);
-        // Boss Name Text (Centered above)
-        this.bossBarNameText = this.add.text(0, 0, 'VORMAK, POŻERACZ ZIEMI', {
+        // 2. Dynamic generated segmented electric-cyan health fill sprite
+        this.bossBarFillSprite = this.add.image(UIScene.BOSS_BAR_FILL_X, UIScene.BOSS_BAR_FILL_Y, 'bossbar_vormak_fill');
+        this.bossBarFillSprite.setOrigin(0, 0.5);
+        this.bossBarContainer.add(this.bossBarFillSprite);
+        // 3. Generated ornate pixel-art frame overlay (central worm skull, horns, basalt wings & spine border)
+        this.bossBarFrameImage = this.add.image(0, 0, 'bossbar_vormak_frame');
+        this.bossBarFrameImage.setOrigin(0.5, 0.5);
+        this.bossBarContainer.add(this.bossBarFrameImage);
+        // 4. Hand-crafted crisp pixel-art serif "VORMAK" title sprite (zero blur box)
+        this.bossBarTitleImage = this.add.image(0, -66, 'bossbar_vormak_title');
+        this.bossBarTitleImage.setOrigin(0.5, 1);
+        this.bossBarContainer.add(this.bossBarTitleImage);
+        // Fallback text (hidden when displaying pixel title sprite for VORMAK)
+        this.bossBarNameText = this.add.text(0, -68, 'VORMAK', {
             fontFamily: 'monospace',
-            fontSize: '13px',
+            fontSize: '15px',
             color: '#38bdf8',
             fontStyle: 'bold',
-            stroke: '#030712',
-            strokeThickness: 3
+            stroke: '#060912',
+            strokeThickness: 4
         });
         this.bossBarNameText.setOrigin(0.5, 1);
+        this.bossBarNameText.setVisible(false);
         this.bossBarContainer.add(this.bossBarNameText);
-        // Boss HP Text (Centered below)
-        this.bossBarHpText = this.add.text(0, 0, '750 / 750 HP', {
+        // 5. Crisp HP readout centered cleanly under the central fangs
+        this.bossBarHpText = this.add.text(0, 61, '1000 / 1000 HP (100%)', {
             fontFamily: 'monospace',
-            fontSize: '10px',
+            fontSize: '13px',
             color: '#e2e8f0',
             fontStyle: 'bold',
-            stroke: '#030712',
-            strokeThickness: 2
+            stroke: '#040710',
+            strokeThickness: 3,
+            padding: { x: 4, y: 2 }
         });
         this.bossBarHpText.setOrigin(0.5, 0);
         this.bossBarContainer.add(this.bossBarHpText);
         this.repositionBossBar();
+        this.ensureBossBarTexturesLoaded();
+    }
+    ensureBossBarTexturesLoaded() {
+        const required = [
+            { key: 'bossbar_vormak_frame', url: 'assets/textures/bossbar_vormak_frame.png?v=6.9' },
+            { key: 'bossbar_vormak_fill', url: 'assets/textures/bossbar_vormak_fill.png?v=6.9' },
+            { key: 'bossbar_vormak_title', url: 'assets/textures/bossbar_vormak_title.png?v=6.9' }
+        ];
+        const missing = required.filter(item => !this.textures.exists(item.key));
+        if (missing.length === 0)
+            return;
+        // Prevent green __MISSING placeholder squares from flashing while loading
+        if (!this.textures.exists('bossbar_vormak_fill'))
+            this.bossBarFillSprite.setVisible(false);
+        if (!this.textures.exists('bossbar_vormak_frame'))
+            this.bossBarFrameImage.setVisible(false);
+        if (!this.textures.exists('bossbar_vormak_title'))
+            this.bossBarTitleImage.setVisible(false);
+        missing.forEach(item => this.load.image(item.key, item.url));
+        this.load.once('complete', () => {
+            if (this.textures.exists('bossbar_vormak_fill')) {
+                this.bossBarFillSprite.setTexture('bossbar_vormak_fill');
+                this.bossBarFillSprite.setVisible(true);
+            }
+            if (this.textures.exists('bossbar_vormak_frame')) {
+                this.bossBarFrameImage.setTexture('bossbar_vormak_frame');
+                this.bossBarFrameImage.setVisible(true);
+            }
+            if (this.textures.exists('bossbar_vormak_title')) {
+                this.bossBarTitleImage.setTexture('bossbar_vormak_title');
+                this.bossBarTitleImage.setVisible(true);
+            }
+            this.repositionBossBar();
+        });
+        this.load.start();
     }
     repositionBossBar() {
         if (!this.bossBarContainer)
             return;
-        const barW = 380;
-        const barH = 12;
+        const targetWidth = Math.min(580, this.scale.width * 0.72);
+        const barScale = Phaser.Math.Clamp(targetWidth / UIScene.BOSS_BAR_FRAME_W, 0.45, 0.92);
         const centerX = Math.floor(this.scale.width / 2);
-        const topY = 48;
-        this.bossBarContainer.setPosition(centerX, topY);
-        const bgGraphics = this.bossBarContainer.getByName('barBg');
-        if (bgGraphics) {
-            bgGraphics.clear();
-            // Outer dark shadow
-            bgGraphics.fillStyle(0x050811, 0.95);
-            bgGraphics.fillRoundedRect(-barW / 2 - 2, -barH / 2 - 2, barW + 4, barH + 4, 3);
-            // Slate casing
-            bgGraphics.fillStyle(0x0f172a, 0.9);
-            bgGraphics.lineStyle(1.5, 0x1e293b, 1);
-            bgGraphics.fillRoundedRect(-barW / 2, -barH / 2, barW, barH, 2);
-            bgGraphics.strokeRoundedRect(-barW / 2, -barH / 2, barW, barH, 2);
-            // Gold segment dividers every 10%
-            bgGraphics.lineStyle(1, 0xd97706, 0.6);
-            for (let i = 1; i < 10; i++) {
-                const divX = -barW / 2 + (barW / 10) * i;
-                bgGraphics.lineBetween(divX, -barH / 2, divX, barH / 2);
-            }
-        }
-        this.bossBarWingsLeft.setPosition(-barW / 2 - 18, 0);
-        this.bossBarWingsRight.setPosition(barW / 2 + 18, 0);
-        this.bossBarIcon.setPosition(0, -6);
-        this.bossBarNameText.setPosition(0, -20);
-        this.bossBarHpText.setPosition(0, barH / 2 + 4);
+        const posY = Math.floor(this.scale.height - 92 * barScale);
+        this.bossBarContainer.setScale(barScale);
+        this.bossBarContainer.setPosition(centerX, posY);
         this.renderBossBarFill();
     }
     showBossBar(bossName, currentHp, maxHp) {
-        this.bossBarNameText.setText(bossName.toUpperCase());
-        this.bossBarMaxHp = maxHp;
-        this.bossBarCurrentHp = currentHp;
-        this.bossBarAnimWidth = 380;
-        this.bossBarTargetWidth = 380;
+        const cleanName = (bossName || 'VORMAK').split(',')[0].trim().toUpperCase();
+        const isVormak = cleanName === 'VORMAK';
+        this.bossBarTitleImage.setVisible(isVormak);
+        this.bossBarNameText.setVisible(!isVormak);
+        if (!isVormak) {
+            this.bossBarNameText.setText(cleanName);
+        }
+        this.bossBarMaxHp = Math.max(1, maxHp);
+        this.bossBarCurrentHp = Phaser.Math.Clamp(currentHp, 0, this.bossBarMaxHp);
+        const ratio = this.bossBarCurrentHp / this.bossBarMaxHp;
+        this.bossBarAnimWidth = UIScene.BOSS_BAR_FILL_W * ratio;
+        this.bossBarTargetWidth = this.bossBarAnimWidth;
+        const pct = Math.round(ratio * 100);
+        this.bossBarHpText.setText(`${this.bossBarCurrentHp} / ${this.bossBarMaxHp} HP (${pct}%)`);
         this.bossBarContainer.setAlpha(0);
         this.bossBarContainer.setVisible(true);
         this.repositionBossBar();
@@ -1634,12 +1679,12 @@ export class UIScene extends Phaser.Scene {
     }
     updateBossBar(currentHp, maxHp) {
         this.bossBarCurrentHp = Math.max(0, currentHp);
-        this.bossBarMaxHp = maxHp;
+        this.bossBarMaxHp = Math.max(1, maxHp);
         const ratio = Phaser.Math.Clamp(this.bossBarCurrentHp / this.bossBarMaxHp, 0, 1);
-        this.bossBarTargetWidth = 380 * ratio;
+        this.bossBarTargetWidth = UIScene.BOSS_BAR_FILL_W * ratio;
         const pct = Math.round(ratio * 100);
         this.bossBarHpText.setText(`${this.bossBarCurrentHp} / ${this.bossBarMaxHp} HP (${pct}%)`);
-        // Smoothly animate the health fill reduction
+        // Smoothly animate the health fill crop reduction
         this.tweens.killTweensOf(this);
         this.tweens.add({
             targets: this,
@@ -1665,23 +1710,362 @@ export class UIScene extends Phaser.Scene {
             }
         });
     }
+    // ─────────────────────────────────────────────────────────────────────────
+    // GTA-STYLE "ZGON" DEATH SCREEN
+    // Sekwencja:
+    //   Faza 1 (0–700 ms):    Slowmo + shake + czerwony tint na GameScene camera
+    //   Faza 2 (700–1400 ms): Drain do B&W (tint → szary + biały wash)
+    //   Faza 3 (1400–2000 ms): Pełny czerwony overlay w UIScene + białe "ZGON" pojawia się
+    //   Faza 4 (2000–3100 ms): Tło czerwone → czarne, tekst biały → czerwony
+    //   Faza 5 (3100–3500 ms): Czarny ekran, czerwony napis; respawn już odpalony
+    // ─────────────────────────────────────────────────────────────────────────
+    showDeathScreen() {
+        if (this.deathScreenActive)
+            return;
+        this.deathScreenActive = true;
+        this.deathPhase = 1;
+        this.deathPhaseTimer = 0;
+        this.deathRespawned = false;
+        // Slowmo fizyki GameScene natychmiast + mocny shake kamery
+        this.applyDeathSlowmo(0.15);
+        const cam = this.gameScene?.cameras?.main;
+        if (cam) {
+            cam.shake(750, 0.016, true);
+            if (cam.postFX) {
+                if (this.deathColorFx) {
+                    cam.postFX.remove(this.deathColorFx);
+                    this.deathColorFx = null;
+                }
+                this.deathColorFx = cam.postFX.addColorMatrix();
+            }
+        }
+        // Zbuduj pixel-art teksturę "ZGON" (na początku alpha=0)
+        this.buildDeathTextTexture();
+        // Stwórz overlay graphics
+        if (this.deathOverlay) {
+            this.deathOverlay.destroy();
+            this.deathOverlay = null;
+        }
+        this.deathOverlay = this.add.graphics();
+        this.deathOverlay.setDepth(999);
+    }
+    applyDeathSlowmo(factor) {
+        const gs = this.gameScene;
+        if (gs?.physics?.world) {
+            gs.physics.world.timeScale = factor < 0.01 ? 999 : (1 / factor);
+        }
+    }
+    restoreAfterDeath() {
+        const gs = this.gameScene;
+        if (gs?.physics?.world) {
+            gs.physics.world.timeScale = 1;
+        }
+        const cam = gs?.cameras?.main;
+        if (cam?.postFX && this.deathColorFx) {
+            cam.postFX.remove(this.deathColorFx);
+            this.deathColorFx = null;
+        }
+    }
+    /**
+     * Buduje masywny pixel-artowy napis "ZGON" (styl GTA / RPG pixel-art z grubym obrysem,
+     * cieniem 3D i 3-tonowym cieniowaniem) na offscreen canvas i dodaje jako Phaser texture.
+     */
+    buildDeathTextTexture() {
+        const SCALE = 6; // px na piksel siatki (ostry pixel-art)
+        const BORDER = 2; // grubość czarnego obrysu w pikselach siatki
+        const SHADOW_Y = 2; // twardy cień 3D w dół
+        const LETTER_GAP = 2; // odstęp między literami w pikselach siatki
+        const GLYPHS = {
+            Z: [
+                '############',
+                '############',
+                '############',
+                '       #####',
+                '      ##### ',
+                '     #####  ',
+                '    #####   ',
+                '   #####    ',
+                '  #####     ',
+                ' #####      ',
+                '#####       ',
+                '############',
+                '############',
+                '############',
+            ],
+            G: [
+                '  ########  ',
+                ' ########## ',
+                '############',
+                '####    ####',
+                '####        ',
+                '####        ',
+                '####  ######',
+                '####  ######',
+                '####    ####',
+                '####    ####',
+                '####    ####',
+                '############',
+                ' ########## ',
+                '  ########  ',
+            ],
+            O: [
+                '  ########  ',
+                ' ########## ',
+                '############',
+                '####    ####',
+                '####    ####',
+                '####    ####',
+                '####    ####',
+                '####    ####',
+                '####    ####',
+                '####    ####',
+                '####    ####',
+                '############',
+                ' ########## ',
+                '  ########  ',
+            ],
+            N: [
+                '####    ####',
+                '#####   ####',
+                '######  ####',
+                '######  ####',
+                '####### ####',
+                '#### #######',
+                '#### #######',
+                '####  ######',
+                '####  ######',
+                '####   #####',
+                '####   #####',
+                '####    ####',
+                '####    ####',
+                '####    ####',
+            ],
+        };
+        const LETTERS = ['Z', 'G', 'O', 'N'];
+        const GLYPH_W = 12;
+        const GLYPH_H = 14;
+        const totalDotW = LETTERS.length * GLYPH_W + (LETTERS.length - 1) * LETTER_GAP + BORDER * 2;
+        const totalDotH = GLYPH_H + BORDER * 2 + SHADOW_Y;
+        const texW = totalDotW * SCALE;
+        const texH = totalDotH * SCALE;
+        const KEY = '__zgon_death_tex__';
+        if (this.textures.exists(KEY))
+            this.textures.remove(KEY);
+        const canvas = document.createElement('canvas');
+        canvas.width = texW;
+        canvas.height = texH;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        const drawDot = (dotX, dotY, color) => {
+            ctx.fillStyle = color;
+            ctx.fillRect(dotX * SCALE, dotY * SCALE, SCALE, SCALE);
+        };
+        const getPixel = (li, gx, gy) => {
+            const g = GLYPHS[LETTERS[li]];
+            if (!g || gy < 0 || gy >= GLYPH_H || gx < 0 || gx >= GLYPH_W)
+                return false;
+            return g[gy][gx] === '#';
+        };
+        // 1. Twardy cień 3D przesunięty w dół (SHADOW_Y) + obrys
+        for (let li = 0; li < LETTERS.length; li++) {
+            const baseX = BORDER + li * (GLYPH_W + LETTER_GAP);
+            for (let gy = -BORDER; gy < GLYPH_H + BORDER + SHADOW_Y; gy++) {
+                for (let gx = -BORDER; gx < GLYPH_W + BORDER; gx++) {
+                    let hitShadow = false;
+                    for (let dy = -BORDER; dy <= BORDER && !hitShadow; dy++) {
+                        for (let dx = -BORDER; dx <= BORDER && !hitShadow; dx++) {
+                            if (getPixel(li, gx + dx, gy - SHADOW_Y + dy))
+                                hitShadow = true;
+                        }
+                    }
+                    if (hitShadow)
+                        drawDot(baseX + gx, BORDER + gy, '#090202');
+                }
+            }
+        }
+        // 2. Pełny czarny obrys 8-kierunkowy wokół liter
+        for (let li = 0; li < LETTERS.length; li++) {
+            const baseX = BORDER + li * (GLYPH_W + LETTER_GAP);
+            for (let gy = -BORDER; gy < GLYPH_H + BORDER; gy++) {
+                for (let gx = -BORDER; gx < GLYPH_W + BORDER; gx++) {
+                    if (getPixel(li, gx, gy))
+                        continue;
+                    let outline = false;
+                    for (let dy = -BORDER; dy <= BORDER && !outline; dy++) {
+                        for (let dx = -BORDER; dx <= BORDER && !outline; dx++) {
+                            if (dx === 0 && dy === 0)
+                                continue;
+                            if (getPixel(li, gx + dx, gy + dy))
+                                outline = true;
+                        }
+                    }
+                    if (outline)
+                        drawDot(baseX + gx, BORDER + gy, '#000000');
+                }
+            }
+        }
+        // 3. Wypełnienie z 3-tonowym cieniowaniem (ładnie współgra z setTint biały -> czerwony)
+        for (let li = 0; li < LETTERS.length; li++) {
+            const baseX = BORDER + li * (GLYPH_W + LETTER_GAP);
+            for (let gy = 0; gy < GLYPH_H; gy++) {
+                let shade = '#ededed';
+                if (gy <= 2)
+                    shade = '#ffffff';
+                else if (gy >= 10 && gy <= 11)
+                    shade = '#d4d4d4';
+                else if (gy >= 12)
+                    shade = '#b8b8b8';
+                for (let gx = 0; gx < GLYPH_W; gx++) {
+                    if (getPixel(li, gx, gy))
+                        drawDot(baseX + gx, BORDER + gy, shade);
+                }
+            }
+        }
+        this.textures.addCanvas(KEY, canvas);
+        this.textures.get(KEY)?.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        if (this.deathTextCanvas) {
+            this.deathTextCanvas.destroy();
+            this.deathTextCanvas = null;
+        }
+        this.deathTextCanvas = this.add.image(this.scale.width / 2, this.scale.height / 2, KEY);
+        this.deathTextCanvas.setDepth(1001);
+        this.deathTextCanvas.setAlpha(0);
+        this.deathTextCanvas.setOrigin(0.5, 0.5);
+        this.deathTextCanvas.setTint(0xffffff);
+    }
+    /**
+     * Wywoływane z update() — steruje całą sekwencją ekranu zgonu.
+     */
+    updateDeathScreen() {
+        if (!this.deathScreenActive)
+            return;
+        const delta = this.game.loop.delta;
+        this.deathPhaseTimer += delta;
+        const t = this.deathPhaseTimer;
+        const W = this.scale.width;
+        const H = this.scale.height;
+        if (!this.deathOverlay || !this.deathTextCanvas)
+            return;
+        // ── Faza 1 (0–700 ms): Slowmo + shake + czerwony ekran ────────────────
+        if (t < 700) {
+            const p = t / 700;
+            this.deathOverlay.clear();
+            this.deathOverlay.fillStyle(0xcc0000, p * 0.52);
+            this.deathOverlay.fillRect(0, 0, W, H);
+            // ── Faza 2 (700–1400 ms): Przejście w czarno-biały ────────────────────
+        }
+        else if (t < 1400) {
+            const p = (t - 700) / 700;
+            if (this.deathPhase < 2)
+                this.deathPhase = 2;
+            // Świat gry staje się czarno-biały
+            if (this.deathColorFx) {
+                this.deathColorFx.grayscale(p);
+            }
+            // Czerwony odcień z fazy 1 zanika do lekkiego B&W wash
+            this.deathOverlay.clear();
+            const redAlpha = 0.52 * (1 - p);
+            if (redAlpha > 0.01) {
+                this.deathOverlay.fillStyle(0xcc0000, redAlpha);
+                this.deathOverlay.fillRect(0, 0, W, H);
+            }
+            this.deathOverlay.fillStyle(0xd8d8d8, p * 0.16);
+            this.deathOverlay.fillRect(0, 0, W, H);
+            // ── Faza 3 (1400–2050 ms): Czerwony ekran + białe "ZGON" + shake ──────
+        }
+        else if (t < 2050) {
+            const p = (t - 1400) / 650;
+            if (this.deathPhase < 3) {
+                this.deathPhase = 3;
+                this.cameras.main.shake(200, 0.007, true);
+            }
+            if (this.deathColorFx) {
+                this.deathColorFx.grayscale(1);
+            }
+            // Głęboki czerwony ekran (widać pod nim czarno-biały świat jak w GTA, pod koniec prawie pełny czerwony)
+            this.deathOverlay.clear();
+            this.deathOverlay.fillStyle(0xbb0000, 0.68 + Math.min(p, 1) * 0.28);
+            this.deathOverlay.fillRect(0, 0, W, H);
+            // "ZGON" pojawia się białe (z lekkim uderzeniem skali)
+            const pop = 1 + (1 - Math.min(p * 2.5, 1)) * 0.12;
+            this.deathTextCanvas.setScale(pop);
+            this.deathTextCanvas.setAlpha(Math.min(p * 2.2, 1.0));
+            this.deathTextCanvas.setTint(0xffffff);
+            // ── Faza 4 (2050–3100 ms): Tło czerwone→czarne, tekst biały→czerwony ───
+        }
+        else if (t < 3100) {
+            const p = (t - 2050) / 1050;
+            if (this.deathPhase < 4)
+                this.deathPhase = 4;
+            // Tło: czerwone (0xbb0000) → całkowicie czarne (0x000000, alpha 1.0 - nic nie widać)
+            const r = Math.round(187 * (1 - p));
+            const bgAlpha = 0.96 + p * 0.04;
+            this.deathOverlay.clear();
+            this.deathOverlay.fillStyle((r << 16) >>> 0, bgAlpha);
+            this.deathOverlay.fillRect(0, 0, W, H);
+            // Tekst: biały → czerwony
+            const tG = Math.round(255 * (1 - p));
+            const tB = Math.round(255 * (1 - p));
+            this.deathTextCanvas.setScale(1);
+            this.deathTextCanvas.setAlpha(1);
+            this.deathTextCanvas.setTint(Phaser.Display.Color.GetColor(255, tG, tB));
+            // Respawn w połowie fazy 4 pod czarną kurtyną
+            if (!this.deathRespawned && t >= 2800) {
+                this.deathRespawned = true;
+                this.player.respawn();
+                this.restoreAfterDeath();
+            }
+            // ── Faza 5 (3100+ ms): Czarny ekran + czerwony napis → fade-out ────────
+        }
+        else {
+            this.deathOverlay.clear();
+            this.deathOverlay.fillStyle(0x000000, 1.0);
+            this.deathOverlay.fillRect(0, 0, W, H);
+            this.deathTextCanvas.setAlpha(1);
+            this.deathTextCanvas.setTint(0xff2222);
+            if (t > 3600) {
+                this.hideDeathScreen();
+            }
+        }
+    }
+    /**
+     * Chowa ekran zgonu (fade-out). Wywoływane automatycznie po fazie 5.
+     */
+    hideDeathScreen() {
+        if (!this.deathScreenActive)
+            return;
+        this.deathScreenActive = false;
+        this.deathPhase = 0;
+        this.deathPhaseTimer = 0;
+        this.restoreAfterDeath();
+        if (this.deathOverlay) {
+            this.tweens.add({
+                targets: this.deathOverlay, alpha: 0, duration: 500, ease: 'Sine.easeOut',
+                onComplete: () => { if (this.deathOverlay) {
+                    this.deathOverlay.destroy();
+                    this.deathOverlay = null;
+                } }
+            });
+        }
+        if (this.deathTextCanvas) {
+            this.tweens.add({
+                targets: this.deathTextCanvas, alpha: 0, duration: 400, ease: 'Sine.easeOut',
+                onComplete: () => { if (this.deathTextCanvas) {
+                    this.deathTextCanvas.destroy();
+                    this.deathTextCanvas = null;
+                } }
+            });
+        }
+    }
     renderBossBarFill() {
-        if (!this.bossBarFill)
+        if (!this.bossBarFillSprite)
             return;
-        this.bossBarFill.clear();
-        const barW = 380;
-        const barH = 12;
-        const w = Phaser.Math.Clamp(this.bossBarAnimWidth, 0, barW);
-        if (w <= 0)
+        const cropW = Math.round(Phaser.Math.Clamp(this.bossBarAnimWidth, 0, UIScene.BOSS_BAR_FILL_W));
+        if (cropW < 1) {
+            this.bossBarFillSprite.setVisible(false);
             return;
-        // Glowing cyan-emerald gradient health bar
-        this.bossBarFill.fillStyle(0x06b6d4, 1);
-        this.bossBarFill.fillRoundedRect(-barW / 2 + 1, -barH / 2 + 1, w - 2, barH - 2, 2);
-        // Inner bright cyan highlight sheen
-        this.bossBarFill.fillStyle(0x67e8f9, 0.85);
-        this.bossBarFill.fillRect(-barW / 2 + 2, -barH / 2 + 2, Math.max(0, w - 4), 3);
-        // Soft emerald secondary gradient (bottom half)
-        this.bossBarFill.fillStyle(0x10b981, 0.6);
-        this.bossBarFill.fillRect(-barW / 2 + 2, 0, Math.max(0, w - 4), barH / 2 - 2);
+        }
+        this.bossBarFillSprite.setVisible(true);
+        this.bossBarFillSprite.setCrop(0, 0, cropW, UIScene.BOSS_BAR_FILL_H);
     }
 }

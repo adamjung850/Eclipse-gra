@@ -26,5 +26,5 @@ export function createGame() {
 }
 // Auto-boot on load
 window.addEventListener('DOMContentLoaded', () => {
-    createGame();
+    window.game = createGame();
 });

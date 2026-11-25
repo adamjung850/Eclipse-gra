@@ -35,15 +35,21 @@ export class EnemySpawner {
         }
     }
     update(delta) {
-        // 1. Despawn distant enemies (> 1050px away from player)
+        // 1. Despawn distant regular enemies (> 1050px away from player) - NEVER despawn boss segments!
         const enemyList = this.enemies.getChildren();
+        let activeRegularCount = 0;
         for (let i = enemyList.length - 1; i >= 0; i--) {
             const e = enemyList[i];
-            if (e && e.active) {
-                const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
-                if (dist > 1050) {
-                    e.die();
-                }
+            if (!e || !e.active)
+                continue;
+            if (e.boss)
+                continue;
+            const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
+            if (dist > 1050) {
+                e.die();
+            }
+            else {
+                activeRegularCount++;
             }
         }
         // 2. Periodic Spawn Check
@@ -51,14 +57,13 @@ export class EnemySpawner {
         if (this.spawnCooldownTimer <= 0) {
             const isNight = this.dayNightSystem?.isNight() ?? false;
             const maxEnemies = this.getMaxAliveEnemies();
-            const activeCount = this.enemies.countActive(true);
             // Balanced spawn intervals so the player is never swarmed:
             // Day: 4.5s - 7.0s
             // Night: 2.8s - 4.5s
             const baseCooldown = isNight ? 2800 : 4500;
             const varCooldown = isNight ? 1700 : 2500;
             this.spawnCooldownTimer = baseCooldown + Math.random() * varCooldown;
-            if (activeCount < maxEnemies) {
+            if (activeRegularCount < maxEnemies) {
                 this.attemptProceduralSpawn();
             }
         }

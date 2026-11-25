@@ -29,5 +29,5 @@ export function createGame(): Phaser.Game {
 
 // Auto-boot on load
 window.addEventListener('DOMContentLoaded', () => {
-  createGame();
+  (window as any).game = createGame();
 });

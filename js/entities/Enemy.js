@@ -98,6 +98,25 @@ export const ENEMY_TYPES = {
         behavior: 'crawler',
         flying: true,
         drops: []
+    },
+    vormak_larva: {
+        id: 'vormak_larva',
+        name: 'Larwa Vormaka',
+        texture: 'enemy_vormak_larva',
+        width: 24,
+        height: 14,
+        bodyWidth: 20,
+        bodyHeight: 12,
+        maxHp: 45,
+        damage: 12,
+        defense: 3,
+        speed: 80,
+        xpReward: 35,
+        behavior: 'crawler',
+        drops: [
+            { itemId: 'stone', min: 1, max: 2, chance: 0.8 },
+            { itemId: 'copper_ore', min: 1, max: 1, chance: 0.3 }
+        ]
     }
 };
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
@@ -563,12 +582,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             }
         }
     }
-    takeDamage(amount, knockbackX = 0, knockbackY = -140) {
+    takeDamage(amount, knockbackX = 0, knockbackY = -140, bypassDefense = false) {
         if (this.isInvulnerable) {
             return { finalDamage: 0, isDead: false };
         }
-        // Armor damage mitigation
-        const defReduction = Math.floor(this.defense * 0.5);
+        // Armor damage mitigation (bypassed when unarmed punch sets exact damage)
+        const defReduction = bypassDefense ? 0 : Math.floor(this.defense * 0.5);
         const finalDamage = Math.max(1, amount - defReduction);
         this.hp -= finalDamage;
         this.isInvulnerable = true;

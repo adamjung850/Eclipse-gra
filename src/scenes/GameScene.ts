@@ -11,6 +11,7 @@ import { CombatSystem } from '../systems/CombatSystem.js';
 import { EnemySpawner } from '../systems/EnemySpawner.js';
 import { CursorManager } from '../systems/CursorManager.js';
 import { DayNightSystem } from '../systems/DayNightSystem.js';
+import { DarknessSystem } from '../systems/DarknessSystem.js';
 import { BLOCK_DEFINITIONS } from '../world/BlockTypes.js';
 import { ITEM_REGISTRY } from '../world/ItemTypes.js';
 import { ChestSystem } from '../world/ChestSystem.js';
@@ -32,6 +33,7 @@ export class GameScene extends Phaser.Scene {
   public sounds!: SoundSynthesizer;
   public cursorManager!: CursorManager;
   public dayNightSystem!: DayNightSystem;
+  public darknessSystem!: DarknessSystem;
 
   constructor() {
     super('GameScene');
@@ -121,7 +123,12 @@ export class GameScene extends Phaser.Scene {
     // 7. Setup Physics Collisions
     this.physics.add.collider(this.player, this.worldManager.foregroundLayer);
     this.physics.add.collider(this.droppedItems, this.worldManager.foregroundLayer);
-    this.physics.add.collider(this.enemies, this.worldManager.foregroundLayer);
+    this.physics.add.collider(
+      this.enemies,
+      this.worldManager.foregroundLayer,
+      undefined,
+      (enemyObj) => !(enemyObj as any).isBurrowing
+    );
 
     // 8. Block Broken Hook & Item Drops
     this.worldManager.onBlockBroken = (tileX: number, tileY: number, blockId: number) => {
@@ -166,6 +173,9 @@ export class GameScene extends Phaser.Scene {
       this.worldManager,
       this.dayNightSystem
     );
+
+    // 10. Subterranean Fog-of-War & Darkness Lighting System
+    this.darknessSystem = new DarknessSystem(this, this.worldManager, this.player);
 
     this.inputManager = new InputManager(this, this.player);
     this.inputManager.onDropItem = () => {
@@ -257,7 +267,7 @@ export class GameScene extends Phaser.Scene {
       );
     });
 
-    // 12. Dev Test Spawn: Vormak Boss Battle Encounter
+    // 12. Dev Test Spawn: Vormak Boss Battle Encounter (Spawns right beside player)
     this.time.delayedCall(700, () => {
       this.vormakBoss = new VormakBoss(
         this,
@@ -269,8 +279,28 @@ export class GameScene extends Phaser.Scene {
       this.showWorldFloatingText(
         this.player.x,
         this.player.y - 50,
-        '⚠️ Ziemia drży... Vormak nadchodzi!',
+        '⚠️ VORMAK POWSTAJE! [B: Przywołaj ponownie]',
         '#ef4444'
+      );
+    });
+
+    // 13. Re-summon Boss Key [B] for instant testing
+    this.input.keyboard?.on('keydown-B', () => {
+      if (this.vormakBoss && !this.vormakBoss.isDead) {
+        this.vormakBoss.destroy();
+      }
+      this.vormakBoss = new VormakBoss(
+        this,
+        this.worldManager,
+        this.player,
+        this.sounds,
+        this.enemies
+      );
+      this.showWorldFloatingText(
+        this.player.x,
+        this.player.y - 50,
+        '⚠️ Przywołano Vormaka obok gracza!',
+        '#f97316'
       );
     });
   }
@@ -318,6 +348,9 @@ export class GameScene extends Phaser.Scene {
     // 1.1 Update World (Sapling growth, falling trees)
     this.worldManager.update(delta);
 
+    // 1.2 Subterranean Darkness & Fog-of-War Lighting
+    this.darknessSystem.update();
+
     // 2. Input & Player update
     this.inputManager.update(delta);
 
@@ -342,19 +375,20 @@ export class GameScene extends Phaser.Scene {
       this.vormakBoss.update(time, delta);
     }
 
-    // 4. Mining, Building & Attack handling
+    // 4. Mining, Building & Attack handling (supports weapons, tools, and bare-hand punching!)
     if (this.input.activePointer.isDown) {
       const selectedItem = this.player.getSelectedItem();
       const isWeapon = selectedItem?.category === ItemCategory.WEAPON;
+      const aimingAtEnemy = this.combatSystem.isPointerOverEnemy(this.input.activePointer);
 
-      if (isWeapon) {
-        // Weapon attack takes top priority when wielding a weapon
+      if (isWeapon || aimingAtEnemy) {
+        // Weapon attack or clicking directly on an enemy (including bare fist!) takes priority
         this.combatSystem.handlePlayerAttack(time, this.input.activePointer);
       } else {
         // Otherwise attempt mining/placement
         const didMine = this.miningSystem.update(time, delta, this.input.activePointer);
-        // If not targeting a mineable block, allow swinging tool for defensive hit
-        if (!didMine && selectedItem?.category === ItemCategory.TOOL) {
+        // If not targeting a mineable/placeable tile, allow swinging tool or punching with bare hand!
+        if (!didMine) {
           this.combatSystem.handlePlayerAttack(time, this.input.activePointer);
         }
       }

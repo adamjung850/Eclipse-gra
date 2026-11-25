@@ -2971,81 +2971,80 @@ export class TextureGenerator {
                 canvas.refresh();
             }
         }
-        // 2. VORMAK BODY SEGMENT (68x68) - Armored mossy stone ring with fissures & spikes
+        // 2. VORMAK BODY SEGMENT (68x68) - Ancient Stone Earthworm Ring with Cyan Neon Joint Sockets
         if (!scene.textures.exists('boss_vormak_body')) {
             const canvas = scene.textures.createCanvas('boss_vormak_body', 68, 68);
             if (canvas) {
                 const ctx = canvas.context;
                 ctx.imageSmoothingEnabled = false;
-                // Dark back shadow
-                ctx.fillStyle = '#0f172a';
+                // Dark monolithic stone base (earthworm cylinder silhouette)
+                ctx.fillStyle = '#0b0f19';
                 ctx.beginPath();
-                ctx.arc(34, 34, 32, 0, Math.PI * 2);
+                ctx.ellipse(34, 34, 32, 28, 0, 0, Math.PI * 2);
                 ctx.fill();
-                // Main rocky carapace
+                // Main ancient bedrock plate
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
-                ctx.arc(34, 34, 28, 0, Math.PI * 2);
+                ctx.ellipse(34, 34, 28, 24, 0, 0, Math.PI * 2);
                 ctx.fill();
-                // Segment plates / ridge lines
+                // Distinct earthworm segment annuli (ribbed transverse rings)
                 ctx.fillStyle = '#334155';
-                ctx.fillRect(14, 22, 40, 24);
+                ctx.fillRect(16, 14, 8, 40);
+                ctx.fillRect(30, 12, 9, 44);
+                ctx.fillRect(45, 14, 8, 40);
                 ctx.fillStyle = '#475569';
-                ctx.fillRect(18, 24, 32, 6);
-                ctx.fillRect(16, 36, 36, 5);
-                // Side rocky spikes / armored ridges
-                ctx.fillStyle = '#1e293b';
-                ctx.beginPath();
-                ctx.moveTo(8, 34);
-                ctx.lineTo(18, 24);
-                ctx.lineTo(18, 44);
-                ctx.closePath();
-                ctx.fill();
-                ctx.moveTo(60, 34);
-                ctx.lineTo(50, 24);
-                ctx.lineTo(50, 44);
-                ctx.closePath();
-                ctx.fill();
-                // Spikes highlight
-                ctx.fillStyle = '#334155';
-                ctx.fillRect(12, 32, 6, 4);
-                ctx.fillRect(50, 32, 6, 4);
-                // Glowing cyan energy fissures cutting through rock
-                ctx.strokeStyle = '#06b6d4';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(10, 34);
-                ctx.lineTo(24, 28);
-                ctx.lineTo(44, 34);
-                ctx.lineTo(58, 30);
-                ctx.moveTo(30, 28);
-                ctx.lineTo(36, 48);
-                ctx.lineTo(50, 52);
-                ctx.stroke();
-                ctx.fillStyle = '#67e8f9';
-                ctx.fillRect(23, 27, 3, 3);
-                ctx.fillRect(43, 33, 3, 3);
-                ctx.fillRect(35, 47, 3, 3);
+                ctx.fillRect(18, 16, 4, 36);
+                ctx.fillRect(32, 14, 5, 40);
+                ctx.fillRect(47, 16, 4, 36);
+                // Craggy stone bevels
+                ctx.fillStyle = '#64748b';
+                ctx.fillRect(33, 16, 3, 10);
+                ctx.fillRect(19, 18, 2, 8);
+                ctx.fillRect(48, 18, 2, 8);
+                // Glowing electric cyan neon connection sockets on front and rear joints!
+                // Left joint socket (connects to previous segment)
+                ctx.fillStyle = '#030712';
+                ctx.fillRect(4, 29, 8, 10);
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(5, 30, 6, 8);
+                ctx.fillStyle = '#00e5ff';
+                ctx.fillRect(6, 31, 4, 6);
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(24, 28, 2, 2);
-                ctx.fillRect(44, 34, 2, 2);
-                // Moss layer over upper stone plate
+                ctx.fillRect(7, 32, 2, 4);
+                // Right joint socket (connects to next segment)
+                ctx.fillStyle = '#030712';
+                ctx.fillRect(56, 29, 8, 10);
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(57, 30, 6, 8);
+                ctx.fillStyle = '#00e5ff';
+                ctx.fillRect(58, 31, 4, 6);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(59, 32, 2, 4);
+                // Glowing cyan energy fissures cutting through stone carapace
+                ctx.strokeStyle = '#00e5ff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(12, 34);
+                ctx.lineTo(24, 26);
+                ctx.lineTo(38, 32);
+                ctx.lineTo(54, 34);
+                ctx.moveTo(24, 26);
+                ctx.lineTo(30, 46);
+                ctx.lineTo(44, 42);
+                ctx.stroke();
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(23, 25, 2, 2);
+                ctx.fillRect(37, 31, 2, 2);
+                ctx.fillRect(29, 45, 2, 2);
+                // Weathered moss patches clinging to stone
                 ctx.fillStyle = '#14532d';
-                ctx.fillRect(16, 8, 36, 9);
-                ctx.fillRect(22, 5, 24, 6);
+                ctx.fillRect(20, 10, 28, 6);
+                ctx.fillRect(24, 8, 20, 4);
                 ctx.fillStyle = '#16a34a';
-                ctx.fillRect(18, 9, 32, 6);
-                ctx.fillRect(24, 6, 18, 5);
+                ctx.fillRect(22, 11, 24, 4);
+                ctx.fillRect(26, 9, 16, 2);
                 ctx.fillStyle = '#4ade80';
-                ctx.fillRect(22, 8, 8, 3);
-                ctx.fillRect(36, 7, 9, 3);
-                ctx.fillStyle = '#86efac';
-                ctx.fillRect(24, 9, 4, 1);
-                ctx.fillRect(38, 8, 4, 1);
-                // Hanging moss tendrils
-                ctx.fillStyle = '#15803d';
-                ctx.fillRect(18, 16, 2, 4);
-                ctx.fillRect(48, 16, 2, 4);
+                ctx.fillRect(28, 10, 10, 2);
                 canvas.refresh();
             }
         }
@@ -3172,139 +3171,609 @@ export class TextureGenerator {
                 canvas.refresh();
             }
         }
-        // 6. BOSS BAR ORNAMENTS & ICON (Minecraft/RPG Style)
-        // 6.1 Miniature Vormak Head Icon (32x32)
-        if (!scene.textures.exists('bossbar_icon_vormak')) {
-            const canvas = scene.textures.createCanvas('bossbar_icon_vormak', 32, 32);
+        // 5.1 BOSS PROJECTILE: Earth Spike (20x10) - Aerodynamic ancient stone shard with glowing cyan rune
+        if (!scene.textures.exists('proj_earth_spike')) {
+            const canvas = scene.textures.createCanvas('proj_earth_spike', 20, 10);
             if (canvas) {
                 const ctx = canvas.context;
                 ctx.imageSmoothingEnabled = false;
-                // Dark emblem background circle
-                ctx.fillStyle = '#090d16';
+                // Dark stone base silhouette
+                ctx.fillStyle = '#0f172a';
                 ctx.beginPath();
-                ctx.arc(16, 16, 15, 0, Math.PI * 2);
+                ctx.moveTo(2, 5);
+                ctx.lineTo(8, 1);
+                ctx.lineTo(19, 5);
+                ctx.lineTo(8, 9);
+                ctx.closePath();
                 ctx.fill();
+                // Upper lit rock facet
+                ctx.fillStyle = '#475569';
+                ctx.beginPath();
+                ctx.moveTo(3, 5);
+                ctx.lineTo(8, 2);
+                ctx.lineTo(18, 5);
+                ctx.closePath();
+                ctx.fill();
+                // Highlight rim
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillRect(7, 2, 3, 2);
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(16, 4, 2, 1);
+                // Lower shadowed facet
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.moveTo(3, 5);
+                ctx.lineTo(18, 5);
+                ctx.lineTo(8, 8);
+                ctx.closePath();
+                ctx.fill();
+                // Glowing cyan energy spine
                 ctx.strokeStyle = '#06b6d4';
                 ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(4, 5);
+                ctx.lineTo(16, 5);
                 ctx.stroke();
-                // Miniature skull
-                ctx.fillStyle = '#1e293b';
+                ctx.fillStyle = '#a5f3fc';
+                ctx.fillRect(8, 4, 5, 2);
+                canvas.refresh();
+            }
+        }
+        // 5.2 BOSS PROJECTILE: Volcanic / Acid Spore (14x14) - Pulsating subterranean magma spore
+        if (!scene.textures.exists('proj_toxic_spore')) {
+            const canvas = scene.textures.createCanvas('proj_toxic_spore', 14, 14);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Outer dark rim
+                ctx.fillStyle = '#450a0a';
                 ctx.beginPath();
-                ctx.ellipse(16, 14, 11, 8, -0.1, 0, Math.PI * 2);
+                ctx.arc(7, 7, 6, 0, Math.PI * 2);
                 ctx.fill();
-                // Miniature lower jaw
-                ctx.fillStyle = '#1e293b';
+                // Molten body
+                ctx.fillStyle = '#dc2626';
                 ctx.beginPath();
-                ctx.ellipse(18, 22, 8, 5, 0.2, 0, Math.PI * 2);
+                ctx.arc(7, 7, 4.5, 0, Math.PI * 2);
                 ctx.fill();
-                // Mouth gap
-                ctx.fillStyle = '#090d16';
-                ctx.fillRect(14, 16, 10, 4);
-                // Teeth
+                // Inner incandescent core
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.arc(6, 6, 2.5, 0, Math.PI * 2);
+                ctx.fill();
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(15, 16, 2, 2);
-                ctx.fillRect(19, 16, 2, 2);
-                ctx.fillRect(17, 19, 2, 2);
-                // Moss
+                ctx.fillRect(5, 5, 2, 2);
+                canvas.refresh();
+            }
+        }
+        // 5.2b BOSS PROJECTILE: Cyan Neon Plasma Orb (20x20) - Electric cyan plasma discharge
+        if (!scene.textures.exists('proj_cyan_plasma')) {
+            const canvas = scene.textures.createCanvas('proj_cyan_plasma', 20, 20);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Outer electric cyan glow corona
+                const grad = ctx.createRadialGradient(10, 10, 2, 10, 10, 10);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, '#38bdf8');
+                grad.addColorStop(0.7, '#0284c7');
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(10, 10, 9, 0, Math.PI * 2);
+                ctx.fill();
+                // Solid cyan plasma core
+                ctx.fillStyle = '#00e5ff';
+                ctx.beginPath();
+                ctx.arc(10, 10, 5, 0, Math.PI * 2);
+                ctx.fill();
+                // White hot center
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(10, 10, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+                // Electric tendrils
+                ctx.strokeStyle = '#67e8f9';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(10, 1);
+                ctx.lineTo(10, 4);
+                ctx.moveTo(19, 10);
+                ctx.lineTo(16, 10);
+                ctx.moveTo(10, 19);
+                ctx.lineTo(10, 16);
+                ctx.moveTo(1, 10);
+                ctx.lineTo(4, 10);
+                ctx.stroke();
+                canvas.refresh();
+            }
+        }
+        // 5.2c BOSS ATTACK: Subterranean Jagged Stalagmite Spike (24x48) - Bedrock spike erupting from earth
+        if (!scene.textures.exists('proj_stalagmite_spike')) {
+            const canvas = scene.textures.createCanvas('proj_stalagmite_spike', 24, 48);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Dark monolithic silhouette
+                ctx.fillStyle = '#060911';
+                ctx.beginPath();
+                ctx.moveTo(0, 48);
+                ctx.lineTo(4, 28);
+                ctx.lineTo(8, 14);
+                ctx.lineTo(12, 0); // Needle apex
+                ctx.lineTo(16, 12);
+                ctx.lineTo(20, 26);
+                ctx.lineTo(24, 48);
+                ctx.closePath();
+                ctx.fill();
+                // Main ancient slate rock
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.moveTo(2, 48);
+                ctx.lineTo(5, 29);
+                ctx.lineTo(9, 15);
+                ctx.lineTo(12, 2);
+                ctx.lineTo(15, 13);
+                ctx.lineTo(19, 27);
+                ctx.lineTo(22, 48);
+                ctx.closePath();
+                ctx.fill();
+                // Facets & rock cleavage
+                ctx.fillStyle = '#334155';
+                ctx.beginPath();
+                ctx.moveTo(12, 2);
+                ctx.lineTo(6, 28);
+                ctx.lineTo(12, 48);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#475569';
+                ctx.beginPath();
+                ctx.moveTo(12, 2);
+                ctx.lineTo(10, 16);
+                ctx.lineTo(12, 34);
+                ctx.closePath();
+                ctx.fill();
+                // Lit apex rim
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillRect(11, 2, 2, 4);
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(11, 0, 2, 2);
+                // Glowing cyan energy fissures bursting through rock
+                ctx.strokeStyle = '#00e5ff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(12, 4);
+                ctx.lineTo(14, 18);
+                ctx.lineTo(9, 32);
+                ctx.lineTo(12, 46);
+                ctx.stroke();
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(11, 17, 2, 3);
+                ctx.fillRect(9, 31, 2, 2);
+                canvas.refresh();
+            }
+        }
+        // 5.3 BOSS PROJECTILE: Ground Shockwave (24x16) - Crushing earth crest surging along terrain
+        if (!scene.textures.exists('proj_shockwave')) {
+            const canvas = scene.textures.createCanvas('proj_shockwave', 24, 16);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Dark jagged stone teeth
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.moveTo(0, 16);
+                ctx.lineTo(4, 8);
+                ctx.lineTo(8, 14);
+                ctx.lineTo(14, 2);
+                ctx.lineTo(18, 10);
+                ctx.lineTo(24, 6);
+                ctx.lineTo(24, 16);
+                ctx.closePath();
+                ctx.fill();
+                // Stone midtone
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(2, 11, 4, 4);
+                ctx.fillRect(10, 7, 5, 8);
+                ctx.fillRect(17, 10, 5, 5);
+                // Lit crests
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillRect(3, 8, 2, 2);
+                ctx.fillRect(13, 2, 2, 3);
+                ctx.fillRect(22, 6, 2, 2);
+                // Ground dust specks
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillRect(1, 14, 2, 2);
+                ctx.fillRect(7, 13, 2, 2);
+                ctx.fillRect(19, 13, 2, 2);
+                canvas.refresh();
+            }
+        }
+        // 5.4 BOSS MINION: Vormak Larva (24x14) - Armored subterranean rock grub
+        if (!scene.textures.exists('enemy_vormak_larva')) {
+            const canvas = scene.textures.createCanvas('enemy_vormak_larva', 24, 14);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Dark body silhouette
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.ellipse(12, 7, 11, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // 3 stone armor shell segments
+                ctx.fillStyle = '#334155';
+                ctx.beginPath();
+                ctx.ellipse(6, 7, 4, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(12, 7, 4, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(18, 7, 4, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Shell highlights
+                ctx.fillStyle = '#64748b';
+                ctx.fillRect(5, 3, 2, 3);
+                ctx.fillRect(11, 3, 2, 3);
+                ctx.fillRect(17, 3, 2, 3);
+                // Glowing red predator eye
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(20, 5, 3, 3);
+                ctx.fillStyle = '#fee2e2';
+                ctx.fillRect(21, 6, 1, 1);
+                // Moss tufts
                 ctx.fillStyle = '#16a34a';
-                ctx.fillRect(8, 7, 12, 3);
+                ctx.fillRect(9, 2, 4, 2);
+                ctx.fillRect(15, 2, 3, 2);
+                canvas.refresh();
+            }
+        }
+        // 6. BOSS BAR ORNAMENTS (INSPIRED BY MINECRAFT RPG REFORGE BOSS BARS)
+        // 6.1 Center Vormak Crest / Horned Skull (52x36)
+        if (!scene.textures.exists('bossbar_icon_vormak')) {
+            const canvas = scene.textures.createCanvas('bossbar_icon_vormak', 52, 36);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Dark outer silhouette
+                ctx.fillStyle = '#060911';
+                ctx.beginPath();
+                // Left horn
+                ctx.moveTo(26, 18);
+                ctx.lineTo(16, 8);
+                ctx.lineTo(4, 2);
+                ctx.lineTo(2, 6);
+                ctx.lineTo(10, 14);
+                ctx.lineTo(18, 22);
+                // Bottom mandibles
+                ctx.lineTo(14, 34);
+                ctx.lineTo(20, 32);
+                ctx.lineTo(26, 35);
+                ctx.lineTo(32, 32);
+                ctx.lineTo(38, 34);
+                // Right horn
+                ctx.lineTo(34, 22);
+                ctx.lineTo(42, 14);
+                ctx.lineTo(50, 6);
+                ctx.lineTo(48, 2);
+                ctx.lineTo(36, 8);
+                ctx.lineTo(26, 18);
+                ctx.closePath();
+                ctx.fill();
+                // Main ancient stone horned skull body
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.moveTo(26, 16);
+                ctx.lineTo(18, 10);
+                ctx.lineTo(6, 4);
+                ctx.lineTo(5, 7);
+                ctx.lineTo(12, 15);
+                ctx.lineTo(20, 22);
+                ctx.lineTo(16, 32);
+                ctx.lineTo(22, 30);
+                ctx.lineTo(26, 33);
+                ctx.lineTo(30, 30);
+                ctx.lineTo(36, 32);
+                ctx.lineTo(32, 22);
+                ctx.lineTo(40, 15);
+                ctx.lineTo(47, 7);
+                ctx.lineTo(46, 4);
+                ctx.lineTo(34, 10);
+                ctx.lineTo(26, 16);
+                ctx.closePath();
+                ctx.fill();
+                // Stone ridges and facets
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(20, 16, 12, 10);
+                ctx.fillRect(22, 14, 8, 3);
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(23, 15, 6, 2);
+                ctx.fillRect(10, 8, 8, 3);
+                ctx.fillRect(34, 8, 8, 3);
+                // Ancient moss tufts on horns
+                ctx.fillStyle = '#15803d';
+                ctx.fillRect(8, 4, 6, 2);
+                ctx.fillRect(38, 4, 6, 2);
                 ctx.fillStyle = '#4ade80';
-                ctx.fillRect(10, 6, 6, 2);
-                // Glowing eye
+                ctx.fillRect(10, 3, 3, 1);
+                ctx.fillRect(40, 3, 3, 1);
+                // Sharp stone fangs
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(18, 27, 2, 4);
+                ctx.fillRect(22, 28, 2, 5);
+                ctx.fillRect(28, 28, 2, 5);
+                ctx.fillRect(32, 27, 2, 4);
+                // Central Glowing Cyan Eye / Core (Cyclopean Titan Core)
+                ctx.fillStyle = '#030712';
+                ctx.fillRect(21, 18, 10, 7);
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(22, 19, 8, 5);
+                ctx.fillStyle = '#00e5ff';
+                ctx.fillRect(23, 20, 6, 3);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(25, 20, 2, 3); // Vertical pupil slit
+                // Cyan energy glow bleeding from horn bases
                 ctx.fillStyle = '#22d3ee';
-                ctx.fillRect(20, 11, 3, 2);
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(21, 11, 1, 1);
+                ctx.fillRect(15, 14, 3, 2);
+                ctx.fillRect(34, 14, 3, 2);
                 canvas.refresh();
             }
         }
-        // 6.2 Left Ornate Wing/Horn (48x24)
+        // 6.2 Left Ornate Dragon/Worm Wing (76x34)
         if (!scene.textures.exists('bossbar_ornament_left')) {
-            const canvas = scene.textures.createCanvas('bossbar_ornament_left', 48, 24);
+            const canvas = scene.textures.createCanvas('bossbar_ornament_left', 76, 34);
             if (canvas) {
                 const ctx = canvas.context;
                 ctx.imageSmoothingEnabled = false;
-                // Carved stone wing arching leftwards
-                ctx.fillStyle = '#0b0f19';
+                // Dark slate outer frame
+                ctx.fillStyle = '#060911';
                 ctx.beginPath();
-                ctx.moveTo(48, 4);
-                ctx.lineTo(24, 2);
-                ctx.lineTo(8, 8);
-                ctx.lineTo(0, 18);
-                ctx.lineTo(8, 22);
-                ctx.lineTo(20, 18);
-                ctx.lineTo(34, 20);
-                ctx.lineTo(48, 16);
+                ctx.moveTo(76, 6);
+                ctx.lineTo(54, 2);
+                ctx.lineTo(34, 5);
+                ctx.lineTo(16, 2);
+                ctx.lineTo(0, 10);
+                ctx.lineTo(6, 18);
+                ctx.lineTo(2, 26);
+                ctx.lineTo(14, 24);
+                ctx.lineTo(24, 32);
+                ctx.lineTo(36, 25);
+                ctx.lineTo(50, 28);
+                ctx.lineTo(64, 22);
+                ctx.lineTo(76, 24);
                 ctx.closePath();
                 ctx.fill();
+                // Stone wing body
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
-                ctx.moveTo(48, 6);
-                ctx.lineTo(26, 4);
-                ctx.lineTo(10, 10);
-                ctx.lineTo(2, 18);
-                ctx.lineTo(8, 20);
-                ctx.lineTo(20, 16);
-                ctx.lineTo(34, 18);
-                ctx.lineTo(48, 14);
+                ctx.moveTo(76, 8);
+                ctx.lineTo(55, 4);
+                ctx.lineTo(35, 7);
+                ctx.lineTo(18, 4);
+                ctx.lineTo(3, 11);
+                ctx.lineTo(8, 17);
+                ctx.lineTo(5, 24);
+                ctx.lineTo(15, 22);
+                ctx.lineTo(24, 29);
+                ctx.lineTo(35, 23);
+                ctx.lineTo(49, 26);
+                ctx.lineTo(63, 20);
+                ctx.lineTo(76, 22);
                 ctx.closePath();
                 ctx.fill();
-                // Moss frills along top ridge
+                // Wing rib ridges
+                ctx.fillStyle = '#334155';
+                ctx.beginPath();
+                ctx.moveTo(76, 10);
+                ctx.lineTo(44, 10);
+                ctx.lineTo(18, 6);
+                ctx.lineTo(4, 12);
+                ctx.lineTo(10, 16);
+                ctx.lineTo(32, 16);
+                ctx.lineTo(76, 14);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(40, 6, 22, 3);
+                ctx.fillRect(20, 8, 14, 2);
+                // Ancient moss along top spine
                 ctx.fillStyle = '#15803d';
-                ctx.fillRect(14, 5, 18, 3);
+                ctx.fillRect(32, 4, 26, 3);
+                ctx.fillRect(16, 3, 12, 2);
                 ctx.fillStyle = '#4ade80';
-                ctx.fillRect(18, 4, 10, 2);
-                // Cyan glow gem / fissure
-                ctx.fillStyle = '#06b6d4';
-                ctx.fillRect(28, 10, 8, 3);
+                ctx.fillRect(36, 3, 16, 2);
+                ctx.fillRect(18, 2, 6, 1);
+                // Glowing cyan energy gem and fissure at wing knuckle
+                ctx.fillStyle = '#030712';
+                ctx.fillRect(44, 12, 10, 8);
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(45, 13, 8, 6);
+                ctx.fillStyle = '#00e5ff';
+                ctx.fillRect(46, 14, 6, 4);
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(31, 11, 3, 1);
+                ctx.fillRect(48, 15, 2, 2);
+                // Cyan energy veins radiating through stone wing
+                ctx.strokeStyle = '#22d3ee';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(44, 16);
+                ctx.lineTo(26, 15);
+                ctx.lineTo(12, 19);
+                ctx.lineTo(4, 23);
+                ctx.moveTo(35, 15);
+                ctx.lineTo(24, 25);
+                ctx.moveTo(54, 16);
+                ctx.lineTo(68, 15);
+                ctx.stroke();
                 canvas.refresh();
             }
         }
-        // 6.3 Right Ornate Wing/Horn (48x24) - Mirrored
+        // 6.3 Right Ornate Dragon/Worm Wing (76x34) - Horizontally Mirrored
         if (!scene.textures.exists('bossbar_ornament_right')) {
-            const canvas = scene.textures.createCanvas('bossbar_ornament_right', 48, 24);
+            const canvas = scene.textures.createCanvas('bossbar_ornament_right', 76, 34);
             if (canvas) {
                 const ctx = canvas.context;
                 ctx.imageSmoothingEnabled = false;
-                ctx.translate(48, 0);
+                ctx.translate(76, 0);
                 ctx.scale(-1, 1);
-                // Same as left, horizontally flipped
-                ctx.fillStyle = '#0b0f19';
+                // Dark slate outer frame
+                ctx.fillStyle = '#060911';
                 ctx.beginPath();
-                ctx.moveTo(48, 4);
-                ctx.lineTo(24, 2);
-                ctx.lineTo(8, 8);
-                ctx.lineTo(0, 18);
-                ctx.lineTo(8, 22);
-                ctx.lineTo(20, 18);
-                ctx.lineTo(34, 20);
-                ctx.lineTo(48, 16);
+                ctx.moveTo(76, 6);
+                ctx.lineTo(54, 2);
+                ctx.lineTo(34, 5);
+                ctx.lineTo(16, 2);
+                ctx.lineTo(0, 10);
+                ctx.lineTo(6, 18);
+                ctx.lineTo(2, 26);
+                ctx.lineTo(14, 24);
+                ctx.lineTo(24, 32);
+                ctx.lineTo(36, 25);
+                ctx.lineTo(50, 28);
+                ctx.lineTo(64, 22);
+                ctx.lineTo(76, 24);
                 ctx.closePath();
                 ctx.fill();
+                // Stone wing body
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
-                ctx.moveTo(48, 6);
-                ctx.lineTo(26, 4);
-                ctx.lineTo(10, 10);
-                ctx.lineTo(2, 18);
-                ctx.lineTo(8, 20);
-                ctx.lineTo(20, 16);
-                ctx.lineTo(34, 18);
-                ctx.lineTo(48, 14);
+                ctx.moveTo(76, 8);
+                ctx.lineTo(55, 4);
+                ctx.lineTo(35, 7);
+                ctx.lineTo(18, 4);
+                ctx.lineTo(3, 11);
+                ctx.lineTo(8, 17);
+                ctx.lineTo(5, 24);
+                ctx.lineTo(15, 22);
+                ctx.lineTo(24, 29);
+                ctx.lineTo(35, 23);
+                ctx.lineTo(49, 26);
+                ctx.lineTo(63, 20);
+                ctx.lineTo(76, 22);
                 ctx.closePath();
                 ctx.fill();
-                // Moss frills
+                // Wing rib ridges
+                ctx.fillStyle = '#334155';
+                ctx.beginPath();
+                ctx.moveTo(76, 10);
+                ctx.lineTo(44, 10);
+                ctx.lineTo(18, 6);
+                ctx.lineTo(4, 12);
+                ctx.lineTo(10, 16);
+                ctx.lineTo(32, 16);
+                ctx.lineTo(76, 14);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(40, 6, 22, 3);
+                ctx.fillRect(20, 8, 14, 2);
+                // Ancient moss along top spine
                 ctx.fillStyle = '#15803d';
-                ctx.fillRect(14, 5, 18, 3);
+                ctx.fillRect(32, 4, 26, 3);
+                ctx.fillRect(16, 3, 12, 2);
                 ctx.fillStyle = '#4ade80';
-                ctx.fillRect(18, 4, 10, 2);
-                // Cyan glow gem / fissure
-                ctx.fillStyle = '#06b6d4';
-                ctx.fillRect(28, 10, 8, 3);
+                ctx.fillRect(36, 3, 16, 2);
+                ctx.fillRect(18, 2, 6, 1);
+                // Glowing cyan energy gem and fissure at wing knuckle
+                ctx.fillStyle = '#030712';
+                ctx.fillRect(44, 12, 10, 8);
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(45, 13, 8, 6);
+                ctx.fillStyle = '#00e5ff';
+                ctx.fillRect(46, 14, 6, 4);
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(31, 11, 3, 1);
+                ctx.fillRect(48, 15, 2, 2);
+                // Cyan energy veins radiating through stone wing
+                ctx.strokeStyle = '#22d3ee';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(44, 16);
+                ctx.lineTo(26, 15);
+                ctx.lineTo(12, 19);
+                ctx.lineTo(4, 23);
+                ctx.moveTo(35, 15);
+                ctx.lineTo(24, 25);
+                ctx.moveTo(54, 16);
+                ctx.lineTo(68, 15);
+                ctx.stroke();
+                canvas.refresh();
+            }
+        }
+        // 7. BOSS ATTACK TELEGRAPH: Ground Crack Fissure (40x16)
+        if (!scene.textures.exists('telegraph_spike_crack')) {
+            const canvas = scene.textures.createCanvas('telegraph_spike_crack', 40, 16);
+            if (canvas) {
+                const ctx = canvas.context;
+                ctx.imageSmoothingEnabled = false;
+                // Dark fracture shadow
+                ctx.fillStyle = '#05070e';
+                ctx.beginPath();
+                ctx.moveTo(2, 8);
+                ctx.lineTo(8, 5);
+                ctx.lineTo(14, 11);
+                ctx.lineTo(22, 4);
+                ctx.lineTo(29, 12);
+                ctx.lineTo(38, 7);
+                ctx.lineTo(35, 14);
+                ctx.lineTo(24, 15);
+                ctx.lineTo(16, 14);
+                ctx.lineTo(6, 13);
+                ctx.closePath();
+                ctx.fill();
+                // Broken stone rubble chips
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(4, 3, 3, 3);
+                ctx.fillRect(17, 2, 4, 3);
+                ctx.fillRect(28, 3, 3, 3);
+                ctx.fillRect(34, 4, 3, 3);
+                ctx.fillStyle = '#64748b';
+                ctx.fillRect(5, 4, 2, 1);
+                ctx.fillRect(18, 3, 2, 1);
+                ctx.fillRect(29, 4, 2, 1);
+                // Burning hot glowing fissure lines (deep crimson / orange / bright yellow)
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(3, 8);
+                ctx.lineTo(9, 6);
+                ctx.lineTo(15, 12);
+                ctx.lineTo(22, 5);
+                ctx.lineTo(28, 11);
+                ctx.lineTo(37, 8);
+                ctx.stroke();
+                ctx.strokeStyle = '#f97316';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(5, 8);
+                ctx.lineTo(10, 7);
+                ctx.lineTo(15, 11);
+                ctx.lineTo(22, 6);
+                ctx.lineTo(27, 10);
+                ctx.lineTo(35, 8);
+                ctx.stroke();
+                // White-hot molten core sparks
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(9, 6, 3, 2);
+                ctx.fillRect(21, 6, 3, 2);
+                ctx.fillRect(26, 9, 2, 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(10, 7, 1, 1);
+                ctx.fillRect(22, 7, 1, 1);
+                canvas.refresh();
+            }
+        }
+        // 8. LIGHT RADIAL MASK FOR SUBTERRANEAN LIGHTING & DARKNESS (256x256)
+        if (!scene.textures.exists('light_radial_mask')) {
+            const canvas = scene.textures.createCanvas('light_radial_mask', 256, 256);
+            if (canvas) {
+                const ctx = canvas.context;
+                const rad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+                rad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+                rad.addColorStop(0.25, 'rgba(255, 255, 255, 0.92)');
+                rad.addColorStop(0.55, 'rgba(255, 255, 255, 0.55)');
+                rad.addColorStop(0.82, 'rgba(255, 255, 255, 0.18)');
+                rad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+                ctx.fillStyle = rad;
+                ctx.fillRect(0, 0, 256, 256);
                 canvas.refresh();
             }
         }
