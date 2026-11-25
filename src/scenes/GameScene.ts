@@ -448,7 +448,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     // 4. Mining, Building, Summoning & Attack handling
-    if (this.input.activePointer.isDown && !this.isIntroCameraMoving && this.inputLockTimer <= 0) {
+    const isUiBlockingWorld =
+      Boolean(uiScene?.isInventoryOpen) ||
+      Boolean(uiScene?.isChestOpen) ||
+      Boolean(uiScene?.isPauseMenuOpen) ||
+      this.cursorManager?.isUIHovered() ||
+      this.cursorManager?.isItemHeld();
+
+    if (this.input.activePointer.isDown && !this.isIntroCameraMoving && this.inputLockTimer <= 0 && !isUiBlockingWorld) {
       const selectedItem = this.player.getSelectedItem();
       if (selectedItem?.id === 'vormak_totem') {
         this.useVormakTotem();

@@ -8,6 +8,7 @@ export class UIScene extends Phaser.Scene {
     gameScene;
     cursorManager;
     // HUD Top Elements
+    hotbarBg;
     hotbarSlots = [];
     slotHighlight;
     hpBar;
@@ -16,8 +17,11 @@ export class UIScene extends Phaser.Scene {
     manaText;
     xpBar;
     levelText;
+    depthBg;
     depthText;
+    itemTooltipBg;
     itemTooltipText;
+    craftTabVisuals = [];
     // Inventory & Crafting Window State
     isInventoryOpen = false;
     invContainer;
@@ -64,6 +68,7 @@ export class UIScene extends Phaser.Scene {
     pauseSliderUp = null;
     // Hand / Cursor Item
     cursorSlot = { item: null, count: 0 };
+    dragOrigin = null;
     cursorItemSprite;
     cursorItemText;
     // Tooltip Box
@@ -133,17 +138,22 @@ export class UIScene extends Phaser.Scene {
                 this.cursorItemText.setPosition(pointer.x + 10, pointer.y + 10);
             }
             if (this.tooltipBox.visible) {
-                this.tooltipBox.setPosition(Math.min(this.scale.width - 230, pointer.x + 14), Math.min(this.scale.height - 200, pointer.y + 14));
+                this.tooltipBox.setPosition(Math.min(this.scale.width - 252, pointer.x + 14), Math.min(this.scale.height - 172, pointer.y + 14));
             }
         });
         // Drop holding item if clicked in world background while inventory is open
         this.input.on('pointerdown', (pointer) => {
             if (this.isInventoryOpen && this.cursorSlot.item) {
-                // If clicked outside inventory modal panels
-                if (pointer.y > 660 || pointer.x < 40 || pointer.x > this.scale.width - 40) {
+                const panelW = 1040;
+                const leftX = Math.max(20, Math.floor((this.scale.width - panelW) / 2));
+                const topY = Math.max(92, Math.floor((this.scale.height - 560) / 2));
+                if (pointer.x < leftX || pointer.x > leftX + panelW || pointer.y < topY || pointer.y > topY + 560) {
                     this.dropCursorItem();
                 }
             }
+        });
+        this.input.on('pointerup', () => {
+            this.dragOrigin = null;
         });
     }
     toggleInventory(forceState) {
@@ -165,91 +175,185 @@ export class UIScene extends Phaser.Scene {
             this.cursorManager.setHoldingItem(false);
             this.cursorManager.setUIHover(false);
             this.hideTooltip();
+            if (this.gameScene)
+                this.gameScene.inputLockTimer = 200;
+        }
+        this.syncControlsOverlayForModals();
+    }
+    syncControlsOverlayForModals() {
+        const uiOverlay = document.getElementById('ui-overlay');
+        if (!uiOverlay)
+            return;
+        if (this.isInventoryOpen || this.isChestOpen) {
+            uiOverlay.style.display = 'none';
+        }
+        else if (!this.gameScene.isPaused && !this.gameScene.controlsHudExpired) {
+            let showHud = true;
+            try {
+                const saved = localStorage.getItem('delveria_settings');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.controlsHud !== undefined)
+                        showHud = Boolean(parsed.controlsHud);
+                }
+            }
+            catch { /* ignore */ }
+            uiOverlay.style.display = showHud ? '' : 'none';
         }
     }
     // =========================================================================
-    // HUD (TOP BARS & HOTBAR)
+    // HUD (TOP BARS & HOTBAR) — STYL DELVERII
     // =========================================================================
+    drawCrystalPanel(g, x, y, w, h, borderColor = 0x1e3a5f, cornerColor = 0x38bdf8, alpha = 0.92, radius = 8) {
+        g.fillStyle(0x070b14, alpha);
+        g.fillRoundedRect(x, y, w, h, radius);
+        // Subtelny górny połysk szkła
+        g.fillStyle(0xffffff, 0.04);
+        g.fillRoundedRect(x + 2, y + 2, w - 4, Math.min(18, h * 0.35), { tl: radius - 1, tr: radius - 1, bl: 0, br: 0 });
+        // Zewnętrzna i wewnętrzna ramka
+        g.lineStyle(2, borderColor, 0.95);
+        g.strokeRoundedRect(x, y, w, h, radius);
+        g.lineStyle(1, cornerColor, 0.28);
+        g.strokeRoundedRect(x + 2, y + 2, w - 4, h - 4, Math.max(2, radius - 2));
+        // Ozdobne krystaliczne narożniki
+        const c = 6;
+        g.lineStyle(2, cornerColor, 0.85);
+        // Lewy górny
+        g.lineBetween(x + 1, y + c, x + 1, y + 1);
+        g.lineBetween(x + 1, y + 1, x + c, y + 1);
+        // Prawy górny
+        g.lineBetween(x + w - c, y + 1, x + w - 1, y + 1);
+        g.lineBetween(x + w - 1, y + 1, x + w - 1, y + c);
+        // Lewy dolny
+        g.lineBetween(x + 1, y + h - c, x + 1, y + h - 1);
+        g.lineBetween(x + 1, y + h - 1, x + c, y + h - 1);
+        // Prawy dolny
+        g.lineBetween(x + w - c, y + h - 1, x + w - 1, y + h - 1);
+        g.lineBetween(x + w - 1, y + h - c, x + w - 1, y + h - 1);
+    }
+    addSlotHitbox(container, slotSize, onDown, onUp, onOver, onOut) {
+        const hit = this.add.rectangle(slotSize / 2, slotSize / 2, slotSize, slotSize, 0x000000, 0)
+            .setInteractive({ useHandCursor: true });
+        hit.on('pointerdown', onDown);
+        if (onUp)
+            hit.on('pointerup', onUp);
+        hit.on('pointerover', onOver);
+        hit.on('pointerout', onOut);
+        container.add(hit);
+    }
+    drawCrystalSlot(g, size, borderColor = 0x26354d, accentAlpha = 0.16, bgColor = 0x0b111e) {
+        g.clear();
+        g.fillStyle(bgColor, 0.94);
+        g.fillRoundedRect(0, 0, size, size, 5);
+        // Wewnętrzny cień u góry
+        g.fillStyle(0x03050a, 0.55);
+        g.fillRoundedRect(2, 2, size - 4, 5, 2);
+        // Zewnętrzna ramka + subtelny akcent
+        g.lineStyle(1.5, borderColor, 0.95);
+        g.strokeRoundedRect(0, 0, size, size, 5);
+        g.lineStyle(1, 0x38bdf8, accentAlpha);
+        g.strokeRoundedRect(2, 2, size - 4, size - 4, 3);
+    }
     createHealthAndMana() {
         const bg = this.add.graphics();
-        bg.fillStyle(0x0e1117, 0.88);
-        bg.lineStyle(2, 0x2e384d, 1);
-        bg.fillRoundedRect(16, 14, 210, 72, 6);
-        bg.strokeRoundedRect(16, 14, 210, 72, 6);
+        this.drawCrystalPanel(bg, 14, 14, 240, 92, 0x1e3a5f, 0x38bdf8, 0.92, 8);
+        // Etykiety / odznaki po lewej stronie pasków
+        this.add.text(24, 22, '♥', {
+            fontFamily: 'Segoe UI, sans-serif',
+            fontSize: '12px',
+            color: '#fb7185',
+            fontStyle: 'bold'
+        });
+        this.add.text(24, 47, '✦', {
+            fontFamily: 'Segoe UI, sans-serif',
+            fontSize: '12px',
+            color: '#38bdf8',
+            fontStyle: 'bold'
+        });
+        this.add.text(24, 72, '★', {
+            fontFamily: 'Segoe UI, sans-serif',
+            fontSize: '11px',
+            color: '#fbbf24',
+            fontStyle: 'bold'
+        });
         this.hpBar = this.add.graphics();
-        this.hpText = this.add.text(26, 18, '100 / 100 HP', {
-            fontFamily: 'monospace',
-            fontSize: '11px',
-            color: '#ffc4c4',
-            fontStyle: 'bold'
-        });
-        this.manaBar = this.add.graphics();
-        this.manaText = this.add.text(26, 39, '50 / 50 MP', {
-            fontFamily: 'monospace',
-            fontSize: '11px',
-            color: '#b8e2ff',
-            fontStyle: 'bold'
-        });
-        this.xpBar = this.add.graphics();
-        this.levelText = this.add.text(26, 60, 'Lv. 1 [0 / 100 XP]', {
-            fontFamily: 'monospace',
+        this.hpText = this.add.text(242, 22, '100 / 100', {
+            fontFamily: 'Consolas, monospace',
             fontSize: '10px',
-            color: '#facc15',
-            fontStyle: 'bold'
+            color: '#ffe4e6',
+            fontStyle: 'bold',
+            stroke: '#03050a',
+            strokeThickness: 2
+        }).setOrigin(1, 0);
+        this.manaBar = this.add.graphics();
+        this.manaText = this.add.text(242, 47, '50 / 50', {
+            fontFamily: 'Consolas, monospace',
+            fontSize: '10px',
+            color: '#e0f2fe',
+            fontStyle: 'bold',
+            stroke: '#03050a',
+            strokeThickness: 2
+        }).setOrigin(1, 0);
+        this.xpBar = this.add.graphics();
+        this.levelText = this.add.text(42, 72, 'Poz. 1  •  0 / 100 XP', {
+            fontFamily: 'Consolas, monospace',
+            fontSize: '10px',
+            color: '#fde68a',
+            fontStyle: 'bold',
+            stroke: '#03050a',
+            strokeThickness: 2
         });
     }
     createHotbar() {
         const slotSize = 46;
-        const padding = 5;
+        const padding = 6;
         const totalWidth = GAME_CONSTANTS.HOTBAR_SLOTS * (slotSize + padding) - padding;
-        const startX = Math.max(240, Math.floor((this.scale.width - totalWidth) / 2));
-        const startY = 16;
+        const startX = Math.max(272, Math.floor((this.scale.width - totalWidth) / 2));
+        const startY = 18;
+        this.hotbarBg = this.add.graphics();
+        this.drawCrystalPanel(this.hotbarBg, startX - 10, startY - 7, totalWidth + 20, slotSize + 14, 0x1e3a5f, 0x38bdf8, 0.9, 8);
         this.hotbarSlots = [];
         for (let i = 0; i < GAME_CONSTANTS.HOTBAR_SLOTS; i++) {
             const slotX = startX + i * (slotSize + padding);
             const slotContainer = this.add.container(slotX, startY);
             const box = this.add.graphics();
-            box.fillStyle(0x131722, 0.92);
-            box.lineStyle(2, 0x313d54, 1);
-            box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
-            box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+            this.drawCrystalSlot(box, slotSize, 0x2a3b55, 0.14, 0x0b111e);
             slotContainer.add(box);
             const numLabel = this.add.text(4, 3, `${i + 1}`, {
-                fontFamily: 'monospace',
-                fontSize: '10px',
-                color: '#6e7f9e'
+                fontFamily: 'Consolas, monospace',
+                fontSize: '9px',
+                color: '#64748b',
+                fontStyle: 'bold'
             });
             slotContainer.add(numLabel);
-            const icon = this.add.image(slotSize / 2, slotSize / 2, 'icon_pickaxe');
+            const icon = this.add.image(slotSize / 2, slotSize / 2 + 1, 'icon_pickaxe');
             icon.setDisplaySize(28, 28);
             icon.setVisible(false);
             icon.setName('icon');
             slotContainer.add(icon);
-            const countLabel = this.add.text(slotSize - 5, slotSize - 5, '', {
-                fontFamily: 'monospace',
+            const countLabel = this.add.text(slotSize - 4, slotSize - 3, '', {
+                fontFamily: 'Consolas, monospace',
                 fontSize: '11px',
                 color: '#ffffff',
-                fontStyle: 'bold'
+                fontStyle: 'bold',
+                stroke: '#03050a',
+                strokeThickness: 3
             });
             countLabel.setOrigin(1, 1);
             countLabel.setName('count');
             slotContainer.add(countLabel);
-            slotContainer.setSize(slotSize, slotSize);
-            slotContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
-            slotContainer.on('pointerdown', (pointer) => {
+            this.addSlotHitbox(slotContainer, slotSize, (pointer) => {
                 if (!this.isInventoryOpen) {
                     this.player.selectedSlot = i;
                 }
                 else {
                     this.handleSlotClick(i, pointer.rightButtonDown());
                 }
-            });
-            slotContainer.on('pointerover', () => {
+            }, null, () => {
                 const item = this.player.inventory[i]?.item;
                 if (item)
                     this.showTooltip(item);
-            });
-            slotContainer.on('pointerout', () => {
+            }, () => {
                 this.hideTooltip();
             });
             this.hotbarSlots.push(slotContainer);
@@ -257,27 +361,30 @@ export class UIScene extends Phaser.Scene {
         this.slotHighlight = this.add.graphics();
     }
     createDepthInfo() {
-        this.depthText = this.add.text(16, 80, 'Wysokość: Powierzchnia', {
-            fontFamily: 'monospace',
-            fontSize: '12px',
-            color: '#e0e6ed',
-            backgroundColor: 'rgba(14, 17, 23, 0.8)',
-            padding: { x: 8, y: 4 }
-        });
+        this.depthBg = this.add.graphics();
+        this.drawCrystalPanel(this.depthBg, 14, 112, 240, 28, 0x1e293b, 0x38bdf8, 0.88, 6);
+        this.depthText = this.add.text(24, 126, 'Zielone Równiny • 0m', {
+            fontFamily: 'Consolas, monospace',
+            fontSize: '10px',
+            color: '#cbd5e1',
+            fontStyle: 'bold'
+        }).setOrigin(0, 0.5);
     }
     createItemTooltip() {
         const slotSize = 46;
-        const padding = 5;
+        const padding = 6;
         const totalWidth = GAME_CONSTANTS.HOTBAR_SLOTS * (slotSize + padding) - padding;
-        const startX = Math.max(240, Math.floor((this.scale.width - totalWidth) / 2));
-        this.itemTooltipText = this.add.text(startX, 70, '', {
-            fontFamily: 'monospace',
-            fontSize: '12px',
-            color: '#f5c838',
+        const startX = Math.max(272, Math.floor((this.scale.width - totalWidth) / 2));
+        const centerX = startX + totalWidth / 2;
+        this.itemTooltipBg = this.add.graphics();
+        this.itemTooltipText = this.add.text(centerX, 82, '', {
+            fontFamily: 'Consolas, monospace',
+            fontSize: '11px',
+            color: '#fde047',
             fontStyle: 'bold',
-            backgroundColor: 'rgba(14, 17, 23, 0.85)',
-            padding: { x: 8, y: 4 }
-        });
+            stroke: '#03050a',
+            strokeThickness: 2
+        }).setOrigin(0.5, 0.5);
     }
     // =========================================================================
     // FULL INVENTORY & CRAFTING MODAL WINDOW (KEY 'E')
@@ -288,58 +395,81 @@ export class UIScene extends Phaser.Scene {
         this.invContainer.setVisible(false);
         // Dim overlay
         const overlay = this.add.graphics();
-        overlay.fillStyle(0x04060a, 0.75);
+        overlay.fillStyle(0x03050a, 0.72);
         overlay.fillRect(0, 0, 3000, 2000);
         this.invContainer.add(overlay);
         // --- LEFT PANEL: PLAYER, EQUIPMENT & BACKPACK ---
-        const panelX = 40;
-        const panelY = 80;
         const panelW = 540;
+        const craftW = 480;
+        const gap = 20;
+        const totalW = panelW + gap + craftW;
+        const panelX = Math.max(20, Math.floor((this.scale.width - totalW) / 2));
+        const panelY = Math.max(92, Math.floor((this.scale.height - 560) / 2));
         const panelH = 560;
         const leftPanelBg = this.add.graphics();
-        leftPanelBg.fillStyle(0x0d111a, 0.96);
-        leftPanelBg.lineStyle(2, 0x2e384d, 1);
-        leftPanelBg.fillRoundedRect(panelX, panelY, panelW, panelH, 8);
-        leftPanelBg.strokeRoundedRect(panelX, panelY, panelW, panelH, 8);
+        this.drawCrystalPanel(leftPanelBg, panelX, panelY, panelW, panelH, 0x1e3a5f, 0x38bdf8, 0.96, 10);
+        // Pasek nagłówka
+        leftPanelBg.fillStyle(0x0f1a2d, 0.9);
+        leftPanelBg.fillRoundedRect(panelX + 4, panelY + 4, panelW - 8, 36, { tl: 7, tr: 7, bl: 0, br: 0 });
+        leftPanelBg.lineStyle(1, 0x38bdf8, 0.25);
+        leftPanelBg.lineBetween(panelX + 8, panelY + 40, panelX + panelW - 8, panelY + 40);
         this.invContainer.add(leftPanelBg);
         // Title
-        const title = this.add.text(panelX + 20, panelY + 16, 'POSTAĆ & EKWIPUNEK [E - Zamknij]', {
-            fontFamily: 'monospace',
+        const title = this.add.text(panelX + 18, panelY + 22, 'POSTAĆ & EKWIPUNEK', {
+            fontFamily: 'Consolas, monospace',
             fontSize: '14px',
-            color: '#38bdf8',
+            color: '#e0f2fe',
             fontStyle: 'bold'
-        });
+        }).setOrigin(0, 0.5);
         this.invContainer.add(title);
-        // Close Button [✖]
-        const btnClose = this.add.text(panelX + panelW - 32, panelY + 14, '✖', {
-            fontFamily: 'monospace',
-            fontSize: '14px',
-            color: '#ef4444',
+        const hintClose = this.add.text(panelX + panelW - 52, panelY + 22, '[E]', {
+            fontFamily: 'Consolas, monospace',
+            fontSize: '11px',
+            color: '#64748b',
             fontStyle: 'bold'
-        });
-        btnClose.setInteractive({ useHandCursor: true });
-        btnClose.on('pointerdown', () => this.toggleInventory(false));
-        this.invContainer.add(btnClose);
+        }).setOrigin(1, 0.5);
+        this.invContainer.add(hintClose);
+        // Close Button [✕] w ramce
+        const closeCont = this.add.container(panelX + panelW - 26, panelY + 22);
+        const closeBg = this.add.graphics();
+        const drawClose = (hover) => {
+            closeBg.clear();
+            closeBg.fillStyle(hover ? 0x7f1d1d : 0x141d2f, 0.95);
+            closeBg.lineStyle(1.5, hover ? 0xf87171 : 0x334155, 1);
+            closeBg.fillRoundedRect(-12, -12, 24, 24, 5);
+            closeBg.strokeRoundedRect(-12, -12, 24, 24, 5);
+        };
+        drawClose(false);
+        const btnClose = this.add.text(0, 0, '✕', {
+            fontFamily: 'Segoe UI, sans-serif',
+            fontSize: '12px',
+            color: '#fca5a5',
+            fontStyle: 'bold'
+        }).setOrigin(0.5, 0.5);
+        closeCont.add([closeBg, btnClose]);
+        closeCont.setSize(24, 24);
+        closeCont.setInteractive({ useHandCursor: true });
+        closeCont.on('pointerover', () => drawClose(true));
+        closeCont.on('pointerout', () => drawClose(false));
+        closeCont.on('pointerdown', () => this.toggleInventory(false));
+        this.invContainer.add(closeCont);
         // Stats Box
-        this.createCharacterStatsSection(panelX + 20, panelY + 44);
+        this.createCharacterStatsSection(panelX + 18, panelY + 48);
         // Equipment Slots (8 slots)
-        this.createEquipmentSlotsSection(panelX + 255, panelY + 44);
+        this.createEquipmentSlotsSection(panelX + 254, panelY + 48);
         // Full 45 Slots: Hotbar (0-8) + Backpack (9-44)
-        this.createAllInventorySlotsSection(panelX + 20, panelY + 215);
+        this.createAllInventorySlotsSection(panelX + 18, panelY + 224);
         // --- RIGHT PANEL: CRAFTING WORKSHOP ---
-        this.createCraftingPanel(panelX + panelW + 20, panelY, 480, panelH);
+        this.createCraftingPanel(panelX + panelW + gap, panelY, craftW, panelH);
     }
     createCharacterStatsSection(x, y) {
         const box = this.add.graphics();
-        box.fillStyle(0x131722, 0.85);
-        box.lineStyle(1, 0x232c3d, 1);
-        box.fillRoundedRect(x, y, 225, 170, 6);
-        box.strokeRoundedRect(x, y, 225, 170, 6);
+        this.drawCrystalPanel(box, x, y, 224, 166, 0x26354d, 0x38bdf8, 0.85, 6);
         this.invContainer.add(box);
         const statsHeader = this.add.text(x + 12, y + 10, 'PARAMETRY BOJOWE', {
-            fontFamily: 'monospace',
+            fontFamily: 'Consolas, monospace',
             fontSize: '11px',
-            color: '#f59e0b',
+            color: '#fbbf24',
             fontStyle: 'bold'
         });
         this.invContainer.add(statsHeader);
@@ -353,8 +483,8 @@ export class UIScene extends Phaser.Scene {
             'Siła kopania: 25'
         ];
         statLabels.forEach((label, idx) => {
-            const txt = this.add.text(x + 12, y + 30 + idx * 19, label, {
-                fontFamily: 'monospace',
+            const txt = this.add.text(x + 12, y + 30 + idx * 18.5, label, {
+                fontFamily: 'Consolas, monospace',
                 fontSize: '11px',
                 color: '#cbd5e1'
             });
@@ -365,27 +495,24 @@ export class UIScene extends Phaser.Scene {
     createEquipmentSlotsSection(x, y) {
         const equipDefs = [
             { slot: EquipSlotType.HELMET, label: 'Hełm', ox: 0, oy: 0 },
-            { slot: EquipSlotType.CHEST, label: 'Zbroja', ox: 70, oy: 0 },
-            { slot: EquipSlotType.LEGS, label: 'Spodnie', ox: 140, oy: 0 },
-            { slot: EquipSlotType.BOOTS, label: 'Buty', ox: 210, oy: 0 },
-            { slot: EquipSlotType.RING_1, label: 'Pierścień 1', ox: 0, oy: 85 },
-            { slot: EquipSlotType.RING_2, label: 'Pierścień 2', ox: 70, oy: 85 },
-            { slot: EquipSlotType.AMULET, label: 'Amulet', ox: 140, oy: 85 },
-            { slot: EquipSlotType.CAPE, label: 'Peleryna', ox: 210, oy: 85 }
+            { slot: EquipSlotType.CHEST, label: 'Zbroja', ox: 68, oy: 0 },
+            { slot: EquipSlotType.LEGS, label: 'Spodnie', ox: 136, oy: 0 },
+            { slot: EquipSlotType.BOOTS, label: 'Buty', ox: 204, oy: 0 },
+            { slot: EquipSlotType.RING_1, label: 'Pierść. 1', ox: 0, oy: 84 },
+            { slot: EquipSlotType.RING_2, label: 'Pierść. 2', ox: 68, oy: 84 },
+            { slot: EquipSlotType.AMULET, label: 'Amulet', ox: 136, oy: 84 },
+            { slot: EquipSlotType.CAPE, label: 'Peleryna', ox: 204, oy: 84 }
         ];
-        const slotSize = 48;
+        const slotSize = 50;
         equipDefs.forEach((def) => {
             const container = this.add.container(x + def.ox, y + def.oy);
             const box = this.add.graphics();
-            box.fillStyle(0x141824, 0.95);
-            box.lineStyle(2, 0x475569, 1);
-            box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
-            box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+            this.drawCrystalSlot(box, slotSize, 0x3b4d6b, 0.2, 0x0b1220);
             container.add(box);
-            const placeholderLabel = this.add.text(slotSize / 2, slotSize / 2, def.label, {
-                fontFamily: 'monospace',
+            const placeholderLabel = this.add.text(slotSize / 2, slotSize + 10, def.label, {
+                fontFamily: 'Consolas, monospace',
                 fontSize: '9px',
-                color: '#475569',
+                color: '#64748b',
                 align: 'center'
             });
             placeholderLabel.setOrigin(0.5, 0.5);
@@ -396,51 +523,39 @@ export class UIScene extends Phaser.Scene {
             icon.setVisible(false);
             icon.setName('icon');
             container.add(icon);
-            container.setSize(slotSize, slotSize);
-            container.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
-            container.on('pointerdown', (pointer) => {
-                this.handleEquipSlotClick(def.slot);
-            });
-            container.on('pointerover', () => {
+            this.addSlotHitbox(container, slotSize, (pointer) => this.onSlotPointerDown('equip', def.slot, pointer), (pointer) => this.onSlotPointerUp('equip', def.slot, pointer), () => {
                 const item = this.player.equipment[def.slot]?.item;
                 if (item)
                     this.showTooltip(item);
-            });
-            container.on('pointerout', () => {
-                this.hideTooltip();
-            });
+            }, () => this.hideTooltip());
             this.invContainer.add(container);
             this.equipSlots[def.slot] = container;
         });
     }
     createAllInventorySlotsSection(x, y) {
         const slotSize = 48;
-        const padding = 6;
+        const padding = 8;
         this.invSlots = new Array(GAME_CONSTANTS.TOTAL_INVENTORY_SLOTS);
         // --- 1. HOTBAR SECTION (Sloty 1 - 9, index 0..8) ---
-        const hotbarLabel = this.add.text(x, y - 2, '⚡ PAS SZYBKIEGO WYBORU (Sloty 1 - 9)', {
-            fontFamily: 'monospace',
+        const hotbarLabel = this.add.text(x, y - 4, 'PAS SZYBKIEGO WYBORU (1 - 9)', {
+            fontFamily: 'Consolas, monospace',
             fontSize: '11px',
-            color: '#f59e0b',
+            color: '#fbbf24',
             fontStyle: 'bold'
         });
         this.invContainer.add(hotbarLabel);
-        const hotbarY = y + 16;
+        const hotbarY = y + 14;
         for (let col = 0; col < 9; col++) {
             const slotIdx = col;
             const slotX = x + col * (slotSize + padding);
             const container = this.add.container(slotX, hotbarY);
             const box = this.add.graphics();
-            box.fillStyle(0x1a1e2b, 0.96);
-            box.lineStyle(1.8, 0xd97706, 0.9); // Gold amber border for hotbar
-            box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
-            box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+            this.drawCrystalSlot(box, slotSize, 0xd97706, 0.16, 0x0f1523);
             container.add(box);
-            // Slot number index indicator (1..9)
             const numLabel = this.add.text(4, 3, `${col + 1}`, {
-                fontFamily: 'monospace',
+                fontFamily: 'Consolas, monospace',
                 fontSize: '9px',
-                color: '#f59e0b',
+                color: '#fbbf24',
                 fontStyle: 'bold'
             });
             container.add(numLabel);
@@ -449,41 +564,35 @@ export class UIScene extends Phaser.Scene {
             icon.setVisible(false);
             icon.setName('icon');
             container.add(icon);
-            const countLabel = this.add.text(slotSize - 4, slotSize - 4, '', {
-                fontFamily: 'monospace',
+            const countLabel = this.add.text(slotSize - 4, slotSize - 3, '', {
+                fontFamily: 'Consolas, monospace',
                 fontSize: '11px',
                 color: '#ffffff',
-                fontStyle: 'bold'
+                fontStyle: 'bold',
+                stroke: '#03050a',
+                strokeThickness: 3
             });
             countLabel.setOrigin(1, 1);
             countLabel.setName('count');
             container.add(countLabel);
-            container.setSize(slotSize, slotSize);
-            container.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
-            container.on('pointerdown', (pointer) => {
-                this.handleSlotClick(slotIdx, pointer.rightButtonDown());
-            });
-            container.on('pointerover', () => {
+            this.addSlotHitbox(container, slotSize, (pointer) => this.onSlotPointerDown('inv', slotIdx, pointer), (pointer) => this.onSlotPointerUp('inv', slotIdx, pointer), () => {
                 const item = this.player.inventory[slotIdx]?.item;
                 if (item)
                     this.showTooltip(item);
-            });
-            container.on('pointerout', () => {
-                this.hideTooltip();
-            });
+            }, () => this.hideTooltip());
             this.invContainer.add(container);
             this.invSlots[slotIdx] = container;
         }
         // --- 2. BACKPACK SECTION (Sloty 10 - 45, index 9..44) ---
         const backpackLabelY = hotbarY + slotSize + 12;
-        const bpLabel = this.add.text(x, backpackLabelY, '🎒 GŁÓWNY PLECAK (Sloty 10 - 45)', {
-            fontFamily: 'monospace',
+        const bpLabel = this.add.text(x, backpackLabelY, 'GŁÓWNY PLECAK', {
+            fontFamily: 'Consolas, monospace',
             fontSize: '11px',
-            color: '#94a3b8',
+            color: '#7dd3fc',
             fontStyle: 'bold'
         });
         this.invContainer.add(bpLabel);
-        const bpSlotsY = backpackLabelY + 18;
+        const bpSlotsY = backpackLabelY + 16;
         for (let row = 0; row < 4; row++) {
             for (let col = 0; col < 9; col++) {
                 const slotIdx = 9 + row * 9 + col;
@@ -491,38 +600,29 @@ export class UIScene extends Phaser.Scene {
                 const slotY = bpSlotsY + row * (slotSize + padding);
                 const container = this.add.container(slotX, slotY);
                 const box = this.add.graphics();
-                box.fillStyle(0x131722, 0.95);
-                box.lineStyle(1.5, 0x2e384d, 1);
-                box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
-                box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+                this.drawCrystalSlot(box, slotSize, 0x26354d, 0.14, 0x0b111e);
                 container.add(box);
                 const icon = this.add.image(slotSize / 2, slotSize / 2, 'icon_pickaxe');
                 icon.setDisplaySize(28, 28);
                 icon.setVisible(false);
                 icon.setName('icon');
                 container.add(icon);
-                const countLabel = this.add.text(slotSize - 4, slotSize - 4, '', {
-                    fontFamily: 'monospace',
+                const countLabel = this.add.text(slotSize - 4, slotSize - 3, '', {
+                    fontFamily: 'Consolas, monospace',
                     fontSize: '11px',
                     color: '#ffffff',
-                    fontStyle: 'bold'
+                    fontStyle: 'bold',
+                    stroke: '#03050a',
+                    strokeThickness: 3
                 });
                 countLabel.setOrigin(1, 1);
                 countLabel.setName('count');
                 container.add(countLabel);
-                container.setSize(slotSize, slotSize);
-                container.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
-                container.on('pointerdown', (pointer) => {
-                    this.handleSlotClick(slotIdx, pointer.rightButtonDown());
-                });
-                container.on('pointerover', () => {
+                this.addSlotHitbox(container, slotSize, (pointer) => this.onSlotPointerDown('inv', slotIdx, pointer), (pointer) => this.onSlotPointerUp('inv', slotIdx, pointer), () => {
                     const item = this.player.inventory[slotIdx]?.item;
                     if (item)
                         this.showTooltip(item);
-                });
-                container.on('pointerout', () => {
-                    this.hideTooltip();
-                });
+                }, () => this.hideTooltip());
                 this.invContainer.add(container);
                 this.invSlots[slotIdx] = container;
             }
@@ -533,26 +633,27 @@ export class UIScene extends Phaser.Scene {
     // =========================================================================
     createCraftingPanel(x, y, w, h) {
         const bg = this.add.graphics();
-        bg.fillStyle(0x0d111a, 0.96);
-        bg.lineStyle(2, 0x2e384d, 1);
-        bg.fillRoundedRect(x, y, w, h, 8);
-        bg.strokeRoundedRect(x, y, w, h, 8);
+        this.drawCrystalPanel(bg, x, y, w, h, 0x1e3a5f, 0x38bdf8, 0.96, 10);
+        bg.fillStyle(0x0f1a2d, 0.9);
+        bg.fillRoundedRect(x + 4, y + 4, w - 8, 36, { tl: 7, tr: 7, bl: 0, br: 0 });
+        bg.lineStyle(1, 0x38bdf8, 0.25);
+        bg.lineBetween(x + 8, y + 40, x + w - 8, y + 40);
         this.invContainer.add(bg);
-        const title = this.add.text(x + 20, y + 16, 'WARSZTAT RZEMIEŚLNICZY', {
-            fontFamily: 'monospace',
+        const title = this.add.text(x + 18, y + 22, 'WARSZTAT RZEMIEŚLNICZY', {
+            fontFamily: 'Consolas, monospace',
             fontSize: '14px',
-            color: '#f59e0b',
+            color: '#fde047',
             fontStyle: 'bold'
-        });
+        }).setOrigin(0, 0.5);
         this.invContainer.add(title);
         // Active station detection indicator
-        this.craftStationText = this.add.text(x + 20, y + 42, '[Stacja: Podręczny crafting]', {
-            fontFamily: 'monospace',
+        this.craftStationText = this.add.text(x + 18, y + 52, 'Aktywne stacje: Podręczny', {
+            fontFamily: 'Consolas, monospace',
             fontSize: '11px',
-            color: '#38bdf8'
+            color: '#7dd3fc'
         });
         this.invContainer.add(this.craftStationText);
-        // Category Tabs
+        // Category Tabs (stylowe przyciski z podświetleniem aktywnej zakładki)
         const categories = [
             { id: 'all', label: 'Wszystko' },
             { id: 'tools', label: 'Narzędzia' },
@@ -561,30 +662,46 @@ export class UIScene extends Phaser.Scene {
             { id: 'blocks', label: 'Bloki' },
             { id: 'consumables', label: 'Mikstury' }
         ];
+        this.craftTabVisuals = [];
+        const tabW = 71;
+        const tabH = 24;
+        const tabGap = 4;
         categories.forEach((cat, idx) => {
-            const tabX = x + 16 + idx * 74;
-            const tabY = y + 68;
-            const tab = this.add.text(tabX, tabY, cat.label, {
-                fontFamily: 'monospace',
+            const tabX = x + 16 + idx * (tabW + tabGap);
+            const tabY = y + 74;
+            const tabBg = this.add.graphics();
+            const tabLabel = this.add.text(tabX + tabW / 2, tabY + tabH / 2, cat.label, {
+                fontFamily: 'Consolas, monospace',
                 fontSize: '10px',
-                color: this.craftCategory === cat.id ? '#f59e0b' : '#94a3b8',
-                backgroundColor: '#161c28',
-                padding: { x: 6, y: 4 }
-            });
-            tab.setInteractive();
-            tab.on('pointerdown', () => {
+                color: '#cbd5e1',
+                fontStyle: 'bold'
+            }).setOrigin(0.5, 0.5);
+            const hit = this.add.rectangle(tabX + tabW / 2, tabY + tabH / 2, tabW, tabH, 0x000000, 0)
+                .setInteractive({ useHandCursor: true });
+            hit.on('pointerdown', () => {
                 this.craftCategory = cat.id;
                 this.refreshCraftingRecipes();
             });
-            this.invContainer.add(tab);
+            this.invContainer.add([tabBg, tabLabel, hit]);
+            this.craftTabVisuals.push({ id: cat.id, bg: tabBg, label: tabLabel, x: tabX, y: tabY, w: tabW, h: tabH });
         });
         // Recipe List Scrollable Container
-        this.recipeListContainer = this.add.container(x + 16, y + 104);
+        this.recipeListContainer = this.add.container(x + 16, y + 108);
         this.invContainer.add(this.recipeListContainer);
     }
     refreshCraftingRecipes() {
         if (!this.player || !this.gameScene)
             return;
+        // Odśwież wygląd zakładek kategorii
+        for (const t of this.craftTabVisuals) {
+            const active = t.id === this.craftCategory;
+            t.bg.clear();
+            t.bg.fillStyle(active ? 0x1e3a5f : 0x0d1422, 0.95);
+            t.bg.lineStyle(1.5, active ? 0x38bdf8 : 0x26354d, 1);
+            t.bg.fillRoundedRect(t.x, t.y, t.w, t.h, 5);
+            t.bg.strokeRoundedRect(t.x, t.y, t.w, t.h, 5);
+            t.label.setColor(active ? '#fde047' : '#94a3b8');
+        }
         // Detect nearby stations
         this.activeStationSet = this.player.getNearbyStations(this.gameScene.worldManager);
         const stationNames = ['Podręczny'];
@@ -594,7 +711,7 @@ export class UIScene extends Phaser.Scene {
             stationNames.push('Piec hutniczy');
         if (this.activeStationSet.has(CraftingStation.ANVIL))
             stationNames.push('Kowadło');
-        this.craftStationText.setText(`[Aktywne stacje: ${stationNames.join(' + ')}]`);
+        this.craftStationText.setText(`Aktywne stacje: ${stationNames.join(' • ')}`);
         // Clear old list items
         this.recipeListContainer.removeAll(true);
         // Filter recipes by station and category
@@ -609,26 +726,31 @@ export class UIScene extends Phaser.Scene {
             const itemResult = ITEM_REGISTRY[recipe.resultItemId];
             if (!itemResult)
                 return;
-            const rowY = idx * (itemH + 4);
+            const rowY = idx * (itemH + 5);
             const row = this.add.container(0, rowY);
             // Check if player has all ingredients
             const canCraft = recipe.ingredients.every((ing) => this.player.hasItem(ing.itemId, ing.count));
             // Row background
             const rowBg = this.add.graphics();
-            rowBg.fillStyle(canCraft ? 0x162033 : 0x11141c, 0.9);
-            rowBg.lineStyle(1, canCraft ? 0x2563eb : 0x222736, 1);
-            rowBg.fillRoundedRect(0, 0, 444, itemH, 4);
-            rowBg.strokeRoundedRect(0, 0, 444, itemH, 4);
+            rowBg.fillStyle(canCraft ? 0x0f1d33 : 0x0b101b, 0.92);
+            rowBg.lineStyle(1.5, canCraft ? 0x38bdf8 : 0x1e293b, canCraft ? 0.65 : 0.8);
+            rowBg.fillRoundedRect(0, 0, 448, itemH, 6);
+            rowBg.strokeRoundedRect(0, 0, 448, itemH, 6);
             row.add(rowBg);
+            // Slot pod ikonę wyniku
+            const iconSlot = this.add.graphics();
+            this.drawCrystalSlot(iconSlot, 40, canCraft ? 0x38bdf8 : 0x26354d, 0.14, 0x070b14);
+            iconSlot.setPosition(10, 9);
+            row.add(iconSlot);
             // Result Icon
-            const icon = this.add.image(28, itemH / 2, itemResult.iconTexture);
-            icon.setDisplaySize(30, 30);
+            const icon = this.add.image(30, itemH / 2, itemResult.iconTexture);
+            icon.setDisplaySize(28, 28);
             row.add(icon);
             // Result Name & Quantity
             const nameColor = RARITY_COLORS[itemResult.rarity] || '#ffffff';
-            const nameText = this.add.text(54, 8, `${itemResult.name} ${recipe.resultCount > 1 ? `(x${recipe.resultCount})` : ''}`, {
-                fontFamily: 'monospace',
-                fontSize: '11px',
+            const nameText = this.add.text(60, 10, `${itemResult.name}${recipe.resultCount > 1 ? ` ×${recipe.resultCount}` : ''}`, {
+                fontFamily: 'Consolas, monospace',
+                fontSize: '12px',
                 color: nameColor,
                 fontStyle: 'bold'
             });
@@ -637,42 +759,55 @@ export class UIScene extends Phaser.Scene {
             const ingTexts = recipe.ingredients
                 .map((ing) => {
                 const ingData = ITEM_REGISTRY[ing.itemId];
-                const has = this.player.hasItem(ing.itemId, ing.count);
                 const ingName = ingData ? ingData.name : ing.itemId;
                 return `${ingName}: ${ing.count}`;
             })
-                .join(' | ');
-            const reqText = this.add.text(54, 24, `Składniki: ${ingTexts}`, {
-                fontFamily: 'monospace',
-                fontSize: '9px',
+                .join('  •  ');
+            const reqText = this.add.text(60, 29, ingTexts, {
+                fontFamily: 'Consolas, monospace',
+                fontSize: '10px',
                 color: canCraft ? '#86efac' : '#94a3b8',
-                wordWrap: { width: 280 }
+                wordWrap: { width: 290 }
             });
             row.add(reqText);
             // CRAFT BUTTON
-            const btn = this.add.container(380, itemH / 2);
+            const btn = this.add.container(396, itemH / 2);
             const btnBg = this.add.graphics();
-            btnBg.fillStyle(canCraft ? 0x16a34a : 0x334155, 1);
-            btnBg.fillRoundedRect(-38, -14, 76, 28, 4);
+            const drawCraftBtn = (hover) => {
+                btnBg.clear();
+                if (canCraft) {
+                    btnBg.fillStyle(hover ? 0x15803d : 0x166534, 1);
+                    btnBg.lineStyle(1.5, hover ? 0x86efac : 0x22c55e, 1);
+                }
+                else {
+                    btnBg.fillStyle(0x161d2b, 0.9);
+                    btnBg.lineStyle(1, 0x334155, 0.8);
+                }
+                btnBg.fillRoundedRect(-40, -15, 80, 30, 5);
+                btnBg.strokeRoundedRect(-40, -15, 80, 30, 5);
+            };
+            drawCraftBtn(false);
             btn.add(btnBg);
             const btnLabel = this.add.text(0, 0, 'WYTWÓRZ', {
-                fontFamily: 'monospace',
+                fontFamily: 'Consolas, monospace',
                 fontSize: '10px',
-                color: canCraft ? '#ffffff' : '#64748b',
+                color: canCraft ? '#f0fdf4' : '#64748b',
                 fontStyle: 'bold'
             });
             btnLabel.setOrigin(0.5, 0.5);
             btn.add(btnLabel);
             if (canCraft) {
-                btn.setSize(76, 28);
-                btn.setInteractive();
+                btn.setSize(80, 30);
+                btn.setInteractive({ useHandCursor: true });
+                btn.on('pointerover', () => drawCraftBtn(true));
+                btn.on('pointerout', () => drawCraftBtn(false));
                 btn.on('pointerdown', () => {
                     this.executeCraft(recipe);
                 });
             }
             row.add(btn);
             // Tooltip on row hover
-            rowBg.setInteractive(new Phaser.Geom.Rectangle(0, 0, 370, itemH), Phaser.Geom.Rectangle.Contains);
+            rowBg.setInteractive(new Phaser.Geom.Rectangle(0, 0, 352, itemH), Phaser.Geom.Rectangle.Contains);
             rowBg.on('pointerover', () => {
                 this.showTooltip(itemResult);
             });
@@ -682,8 +817,8 @@ export class UIScene extends Phaser.Scene {
             this.recipeListContainer.add(row);
         });
         if (validRecipes.length === 0) {
-            const emptyText = this.add.text(20, 20, 'Brak receptur w tej kategorii przy obecnej stacji.', {
-                fontFamily: 'monospace',
+            const emptyText = this.add.text(20, 24, 'Brak receptur w tej kategorii przy obecnej stacji.', {
+                fontFamily: 'Consolas, monospace',
                 fontSize: '11px',
                 color: '#64748b'
             });
@@ -717,20 +852,133 @@ export class UIScene extends Phaser.Scene {
     // =========================================================================
     // INVENTORY INTERACTION & CURSOR ITEM SWAPPING
     // =========================================================================
+    onSlotPointerDown(kind, index, pointer, refreshChest = false) {
+        const wasHolding = Boolean(this.cursorSlot.item);
+        const isRight = pointer.rightButtonDown();
+        if (kind === 'inv') {
+            this.handleSlotClick(index, isRight);
+            if (refreshChest)
+                this.refreshChestPlayerSlotsUI();
+        }
+        else if (kind === 'equip') {
+            this.handleEquipSlotClick(index);
+        }
+        else if (kind === 'chest') {
+            this.handleChestSlotClick(index, isRight);
+        }
+        if (!wasHolding && this.cursorSlot.item && !isRight) {
+            this.dragOrigin = { kind, index, x: pointer.x, y: pointer.y };
+        }
+        else {
+            this.dragOrigin = null;
+        }
+    }
+    onSlotPointerUp(kind, index, pointer, refreshChest = false) {
+        if (!this.dragOrigin || !this.cursorSlot.item)
+            return;
+        const movedFar = Phaser.Math.Distance.Between(this.dragOrigin.x, this.dragOrigin.y, pointer.x, pointer.y) > 8;
+        const differentSlot = this.dragOrigin.kind !== kind || this.dragOrigin.index !== index;
+        if (differentSlot || movedFar) {
+            if (kind === 'inv') {
+                this.handleSlotClick(index, false);
+                if (refreshChest)
+                    this.refreshChestPlayerSlotsUI();
+            }
+            else if (kind === 'equip') {
+                this.handleEquipSlotClick(index);
+            }
+            else if (kind === 'chest') {
+                this.handleChestSlotClick(index, false);
+            }
+        }
+        this.dragOrigin = null;
+    }
+    isEquipSlotCompatible(itemEquipSlot, targetEquipSlot) {
+        if (!itemEquipSlot)
+            return false;
+        if (itemEquipSlot === targetEquipSlot)
+            return true;
+        const isRingItem = itemEquipSlot === EquipSlotType.RING_1 || itemEquipSlot === EquipSlotType.RING_2;
+        const isRingTarget = targetEquipSlot === EquipSlotType.RING_1 || targetEquipSlot === EquipSlotType.RING_2;
+        return isRingItem && isRingTarget;
+    }
     handleSlotClick(slotIndex, isRightClick) {
         const slot = this.player.inventory[slotIndex];
         if (!slot)
             return;
-        // Shift-Click: Instant Equip or Transfer
+        // Shift-Click: Szybkie zakładanie uzbrojenia, użycie mikstury lub przeniesienie między pasem/plecakiem/skrzynią
         const isShift = this.keyShift ? this.keyShift.isDown : false;
         if (isShift && slot.item) {
+            if (this.isChestOpen && this.activeChestSlots) {
+                // Przenieś przedmiot z plecaka do pierwszego wolnego/pasującego slotu w skrzyni
+                for (let ci = 0; ci < this.activeChestSlots.length; ci++) {
+                    const cs = this.activeChestSlots[ci];
+                    if (cs.item && cs.item.id === slot.item.id && cs.count < cs.item.maxStack) {
+                        const add = Math.min(cs.item.maxStack - cs.count, slot.count);
+                        cs.count += add;
+                        slot.count -= add;
+                        if (slot.count <= 0) {
+                            slot.item = null;
+                            slot.count = 0;
+                            break;
+                        }
+                    }
+                }
+                if (slot.count > 0 && slot.item) {
+                    for (let ci = 0; ci < this.activeChestSlots.length; ci++) {
+                        const cs = this.activeChestSlots[ci];
+                        if (!cs.item) {
+                            cs.item = slot.item;
+                            cs.count = slot.count;
+                            slot.item = null;
+                            slot.count = 0;
+                            break;
+                        }
+                    }
+                }
+                this.refreshChestUI();
+                this.refreshChestPlayerSlotsUI();
+                this.refreshInventoryUI();
+                return;
+            }
             if (slot.item.equipSlot) {
                 this.player.equipItem(slotIndex);
             }
             else if (slot.item.category === ItemCategory.CONSUMABLE) {
                 this.player.useConsumable(slotIndex);
             }
+            else {
+                // Szybkie przeniesienie między Pasem (0..8) a Plecakiem (9..44)
+                const targetStart = slotIndex < 9 ? 9 : 0;
+                const targetEnd = slotIndex < 9 ? GAME_CONSTANTS.TOTAL_INVENTORY_SLOTS : 9;
+                for (let ti = targetStart; ti < targetEnd; ti++) {
+                    const ts = this.player.inventory[ti];
+                    if (ts.item && ts.item.id === slot.item.id && ts.count < ts.item.maxStack) {
+                        const add = Math.min(ts.item.maxStack - ts.count, slot.count);
+                        ts.count += add;
+                        slot.count -= add;
+                        if (slot.count <= 0) {
+                            slot.item = null;
+                            slot.count = 0;
+                            break;
+                        }
+                    }
+                }
+                if (slot.count > 0 && slot.item) {
+                    for (let ti = targetStart; ti < targetEnd; ti++) {
+                        const ts = this.player.inventory[ti];
+                        if (!ts.item) {
+                            ts.item = slot.item;
+                            ts.count = slot.count;
+                            slot.item = null;
+                            slot.count = 0;
+                            break;
+                        }
+                    }
+                }
+            }
             this.refreshInventoryUI();
+            this.refreshCraftingRecipes();
             return;
         }
         // Case 1: Cursor is empty
@@ -805,8 +1053,19 @@ export class UIScene extends Phaser.Scene {
     }
     handleEquipSlotClick(equipSlotType) {
         const currentEquip = this.player.equipment[equipSlotType];
-        // If cursor holds matching equippable item
-        if (this.cursorSlot.item && this.cursorSlot.item.equipSlot === equipSlotType) {
+        const isShift = this.keyShift ? this.keyShift.isDown : false;
+        // Shift-Click: zdejmij założony przedmiot prosto do plecaka
+        if (isShift && currentEquip.item && !this.cursorSlot.item) {
+            if (this.player.addItem(currentEquip.item.id, 1)) {
+                currentEquip.item = null;
+                currentEquip.count = 0;
+                this.player.recalculateStats();
+                this.refreshInventoryUI();
+            }
+            return;
+        }
+        // Jeśli kursor trzyma pasujący element uzbrojenia
+        if (this.cursorSlot.item && this.isEquipSlotCompatible(this.cursorSlot.item.equipSlot, equipSlotType)) {
             const temp = currentEquip.item;
             currentEquip.item = this.cursorSlot.item;
             currentEquip.count = 1;
@@ -851,75 +1110,93 @@ export class UIScene extends Phaser.Scene {
         this.chestContainer.setVisible(false);
         // Dim overlay
         const overlay = this.add.graphics();
-        overlay.fillStyle(0x04060a, 0.75);
+        overlay.fillStyle(0x03050a, 0.72);
         overlay.fillRect(0, 0, 3000, 2000);
         this.chestContainer.add(overlay);
         const slotSize = 48;
         const padding = 6;
-        const panelW = 560;
-        const panelH = 590;
+        const panelW = 568;
+        const panelH = 602;
         const panelX = Math.floor((this.scale.width - panelW) / 2);
-        const panelY = 55;
-        // Panel background
+        const panelY = Math.max(82, Math.floor((this.scale.height - panelH) / 2));
+        // Panel background w stylu Delverii ze złotym akcentem skrzyni
         const bg = this.add.graphics();
-        bg.fillStyle(0x0d111a, 0.96);
-        bg.lineStyle(2, 0xd97706, 1); // Gold amber chest border
-        bg.fillRoundedRect(panelX, panelY, panelW, panelH, 8);
-        bg.strokeRoundedRect(panelX, panelY, panelW, panelH, 8);
+        this.drawCrystalPanel(bg, panelX, panelY, panelW, panelH, 0xb45309, 0xfbbf24, 0.96, 10);
+        bg.fillStyle(0x1a150b, 0.9);
+        bg.fillRoundedRect(panelX + 4, panelY + 4, panelW - 8, 38, { tl: 7, tr: 7, bl: 0, br: 0 });
+        bg.lineStyle(1, 0xfbbf24, 0.3);
+        bg.lineBetween(panelX + 8, panelY + 42, panelX + panelW - 8, panelY + 42);
         this.chestContainer.add(bg);
         // Header Title
-        const title = this.add.text(panelX + 20, panelY + 16, '📦 SKRZYNIA SKARBÓW [ESC / E - Zamknij]', {
-            fontFamily: 'monospace',
+        const title = this.add.text(panelX + 18, panelY + 23, 'SKRZYNIA SKARBÓW', {
+            fontFamily: 'Consolas, monospace',
             fontSize: '14px',
-            color: '#f59e0b',
+            color: '#fde047',
             fontStyle: 'bold'
-        });
+        }).setOrigin(0, 0.5);
         this.chestContainer.add(title);
-        // Buttons: Loot All & Deposit Matching & Close
-        const btnLoot = this.add.text(panelX + 260, panelY + 14, '📥 Weź wszystko', {
-            fontFamily: 'monospace',
-            fontSize: '11px',
-            color: '#ffffff',
-            backgroundColor: '#1e3a5f',
-            padding: { x: 8, y: 4 }
-        });
-        btnLoot.setInteractive({ useHandCursor: true });
-        btnLoot.on('pointerdown', () => this.lootAllChest());
-        btnLoot.on('pointerover', () => btnLoot.setBackgroundColor('#2563eb'));
-        btnLoot.on('pointerout', () => btnLoot.setBackgroundColor('#1e3a5f'));
-        this.chestContainer.add(btnLoot);
-        const btnDeposit = this.add.text(panelX + 380, panelY + 14, '📤 Odłóż pasujące', {
-            fontFamily: 'monospace',
-            fontSize: '11px',
-            color: '#ffffff',
-            backgroundColor: '#164e63',
-            padding: { x: 8, y: 4 }
-        });
-        btnDeposit.setInteractive({ useHandCursor: true });
-        btnDeposit.on('pointerdown', () => this.depositMatchingToChest());
-        btnDeposit.on('pointerover', () => btnDeposit.setBackgroundColor('#0891b2'));
-        btnDeposit.on('pointerout', () => btnDeposit.setBackgroundColor('#164e63'));
-        this.chestContainer.add(btnDeposit);
-        const btnClose = this.add.text(panelX + panelW - 32, panelY + 14, '✖', {
-            fontFamily: 'monospace',
-            fontSize: '14px',
-            color: '#ef4444',
+        // Stylowe przyciski: Weź wszystko & Odłóż pasujące & Zamknij
+        const makeChestBtn = (bx, by, bw, label, fill, stroke, hoverFill, onClick) => {
+            const c = this.add.container(bx, by);
+            const bbg = this.add.graphics();
+            const drawB = (hover) => {
+                bbg.clear();
+                bbg.fillStyle(hover ? hoverFill : fill, 0.95);
+                bbg.lineStyle(1.5, stroke, 1);
+                bbg.fillRoundedRect(-bw / 2, -13, bw, 26, 5);
+                bbg.strokeRoundedRect(-bw / 2, -13, bw, 26, 5);
+            };
+            drawB(false);
+            const txt = this.add.text(0, 0, label, {
+                fontFamily: 'Consolas, monospace',
+                fontSize: '10px',
+                color: '#f8fafc',
+                fontStyle: 'bold'
+            }).setOrigin(0.5, 0.5);
+            c.add([bbg, txt]);
+            c.setSize(bw, 26);
+            c.setInteractive({ useHandCursor: true });
+            c.on('pointerover', () => drawB(true));
+            c.on('pointerout', () => drawB(false));
+            c.on('pointerdown', onClick);
+            this.chestContainer.add(c);
+        };
+        makeChestBtn(panelX + panelW - 224, panelY + 23, 112, 'WEŹ WSZYSTKO', 0x1e3a5f, 0x38bdf8, 0x2563eb, () => this.lootAllChest());
+        makeChestBtn(panelX + panelW - 102, panelY + 23, 116, 'ODŁÓŻ PASUJĄCE', 0x134e4a, 0x2dd4bf, 0x0f766e, () => this.depositMatchingToChest());
+        const closeCont = this.add.container(panelX + panelW - 24, panelY + 23);
+        const closeBg = this.add.graphics();
+        const drawClose = (hover) => {
+            closeBg.clear();
+            closeBg.fillStyle(hover ? 0x7f1d1d : 0x1c1917, 0.95);
+            closeBg.lineStyle(1.5, hover ? 0xf87171 : 0x78350f, 1);
+            closeBg.fillRoundedRect(-12, -12, 24, 24, 5);
+            closeBg.strokeRoundedRect(-12, -12, 24, 24, 5);
+        };
+        drawClose(false);
+        const btnClose = this.add.text(0, 0, '✕', {
+            fontFamily: 'Segoe UI, sans-serif',
+            fontSize: '12px',
+            color: '#fca5a5',
             fontStyle: 'bold'
-        });
-        btnClose.setInteractive({ useHandCursor: true });
-        btnClose.on('pointerdown', () => this.closeChestModal());
-        this.chestContainer.add(btnClose);
+        }).setOrigin(0.5, 0.5);
+        closeCont.add([closeBg, btnClose]);
+        closeCont.setSize(24, 24);
+        closeCont.setInteractive({ useHandCursor: true });
+        closeCont.on('pointerover', () => drawClose(true));
+        closeCont.on('pointerout', () => drawClose(false));
+        closeCont.on('pointerdown', () => this.closeChestModal());
+        this.chestContainer.add(closeCont);
         // --- 1. CHEST SLOTS SECTION (20 SLOTS: 2 rows x 10 cols) ---
-        const chestLabel = this.add.text(panelX + 20, panelY + 48, 'ZAWARTOŚĆ SKRZYNI (20 Slotów)', {
-            fontFamily: 'monospace',
+        const chestLabel = this.add.text(panelX + 18, panelY + 52, 'ZAWARTOŚĆ SKRZYNI (20 Slotów)', {
+            fontFamily: 'Consolas, monospace',
             fontSize: '11px',
-            color: '#f59e0b',
+            color: '#fbbf24',
             fontStyle: 'bold'
         });
         this.chestContainer.add(chestLabel);
         this.chestSlotContainers = [];
         const chestSlotsStartX = panelX + (panelW - (10 * slotSize + 9 * padding)) / 2;
-        const chestSlotsStartY = panelY + 68;
+        const chestSlotsStartY = panelY + 72;
         for (let row = 0; row < 2; row++) {
             for (let col = 0; col < 10; col++) {
                 const slotIdx = row * 10 + col;
@@ -927,10 +1204,7 @@ export class UIScene extends Phaser.Scene {
                 const slotY = chestSlotsStartY + row * (slotSize + padding);
                 const container = this.add.container(slotX, slotY);
                 const box = this.add.graphics();
-                box.fillStyle(0x1a1a24, 0.95);
-                box.lineStyle(1.5, 0xd97706, 0.85); // Gold slot outline
-                box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
-                box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+                this.drawCrystalSlot(box, slotSize, 0xd97706, 0.14, 0x12100d);
                 container.add(box);
                 const icon = this.add.image(slotSize / 2, slotSize / 2, 'icon_pickaxe');
                 icon.setDisplaySize(28, 28);
@@ -946,19 +1220,11 @@ export class UIScene extends Phaser.Scene {
                 countLabel.setOrigin(1, 1);
                 countLabel.setName('count');
                 container.add(countLabel);
-                container.setSize(slotSize, slotSize);
-                container.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
-                container.on('pointerdown', (pointer) => {
-                    this.handleChestSlotClick(slotIdx, pointer.rightButtonDown());
-                });
-                container.on('pointerover', () => {
+                this.addSlotHitbox(container, slotSize, (pointer) => this.onSlotPointerDown('chest', slotIdx, pointer), (pointer) => this.onSlotPointerUp('chest', slotIdx, pointer), () => {
                     const item = this.activeChestSlots[slotIdx]?.item;
                     if (item)
                         this.showTooltip(item);
-                });
-                container.on('pointerout', () => {
-                    this.hideTooltip();
-                });
+                }, () => this.hideTooltip());
                 this.chestContainer.add(container);
                 this.chestSlotContainers.push(container);
             }
@@ -966,10 +1232,10 @@ export class UIScene extends Phaser.Scene {
         // --- 2. PLAYER INVENTORY INSIDE CHEST MODAL ---
         const invSectionY = chestSlotsStartY + 2 * (slotSize + padding) + 16;
         // Hotbar row (0..8)
-        const pHotbarLabel = this.add.text(panelX + 20, invSectionY, '⚡ TWÓJ PAS SZYBKIEGO WYBORU (Sloty 1 - 9)', {
-            fontFamily: 'monospace',
+        const pHotbarLabel = this.add.text(panelX + 18, invSectionY, 'PAS SZYBKIEGO WYBORU (1 - 9)', {
+            fontFamily: 'Consolas, monospace',
             fontSize: '11px',
-            color: '#f59e0b',
+            color: '#fbbf24',
             fontStyle: 'bold'
         });
         this.chestContainer.add(pHotbarLabel);
@@ -981,10 +1247,7 @@ export class UIScene extends Phaser.Scene {
             const slotX = pSlotsStartX + col * (slotSize + padding);
             const container = this.add.container(slotX, pHotbarY);
             const box = this.add.graphics();
-            box.fillStyle(0x1a1e2b, 0.96);
-            box.lineStyle(1.8, 0xd97706, 0.9);
-            box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
-            box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+            this.drawCrystalSlot(box, slotSize, 0xd97706, 0.16, 0x0f1523);
             container.add(box);
             const numLabel = this.add.text(4, 3, `${col + 1}`, {
                 fontFamily: 'monospace',
@@ -1007,29 +1270,20 @@ export class UIScene extends Phaser.Scene {
             countLabel.setOrigin(1, 1);
             countLabel.setName('count');
             container.add(countLabel);
-            container.setSize(slotSize, slotSize);
-            container.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
-            container.on('pointerdown', (pointer) => {
-                this.handleSlotClick(slotIdx, pointer.rightButtonDown());
-                this.refreshChestPlayerSlotsUI();
-            });
-            container.on('pointerover', () => {
+            this.addSlotHitbox(container, slotSize, (pointer) => this.onSlotPointerDown('inv', slotIdx, pointer, true), (pointer) => this.onSlotPointerUp('inv', slotIdx, pointer, true), () => {
                 const item = this.player.inventory[slotIdx]?.item;
                 if (item)
                     this.showTooltip(item);
-            });
-            container.on('pointerout', () => {
-                this.hideTooltip();
-            });
+            }, () => this.hideTooltip());
             this.chestContainer.add(container);
             this.chestPlayerSlotContainers[slotIdx] = container;
         }
         // Backpack rows (9..44)
         const pBpLabelY = pHotbarY + slotSize + 10;
-        const pBpLabel = this.add.text(panelX + 20, pBpLabelY, '🎒 TWÓJ GŁÓWNY PLECAK (Sloty 10 - 45)', {
-            fontFamily: 'monospace',
+        const pBpLabel = this.add.text(panelX + 18, pBpLabelY, 'GŁÓWNY PLECAK', {
+            fontFamily: 'Consolas, monospace',
             fontSize: '11px',
-            color: '#94a3b8',
+            color: '#7dd3fc',
             fontStyle: 'bold'
         });
         this.chestContainer.add(pBpLabel);
@@ -1041,10 +1295,7 @@ export class UIScene extends Phaser.Scene {
                 const slotY = pBpSlotsY + row * (slotSize + padding);
                 const container = this.add.container(slotX, slotY);
                 const box = this.add.graphics();
-                box.fillStyle(0x131722, 0.95);
-                box.lineStyle(1.5, 0x2e384d, 1);
-                box.fillRoundedRect(0, 0, slotSize, slotSize, 4);
-                box.strokeRoundedRect(0, 0, slotSize, slotSize, 4);
+                this.drawCrystalSlot(box, slotSize, 0x26354d, 0.14, 0x0b111e);
                 container.add(box);
                 const icon = this.add.image(slotSize / 2, slotSize / 2, 'icon_pickaxe');
                 icon.setDisplaySize(28, 28);
@@ -1060,20 +1311,11 @@ export class UIScene extends Phaser.Scene {
                 countLabel.setOrigin(1, 1);
                 countLabel.setName('count');
                 container.add(countLabel);
-                container.setSize(slotSize, slotSize);
-                container.setInteractive(new Phaser.Geom.Rectangle(0, 0, slotSize, slotSize), Phaser.Geom.Rectangle.Contains);
-                container.on('pointerdown', (pointer) => {
-                    this.handleSlotClick(slotIdx, pointer.rightButtonDown());
-                    this.refreshChestPlayerSlotsUI();
-                });
-                container.on('pointerover', () => {
+                this.addSlotHitbox(container, slotSize, (pointer) => this.onSlotPointerDown('inv', slotIdx, pointer, true), (pointer) => this.onSlotPointerUp('inv', slotIdx, pointer, true), () => {
                     const item = this.player.inventory[slotIdx]?.item;
                     if (item)
                         this.showTooltip(item);
-                });
-                container.on('pointerout', () => {
-                    this.hideTooltip();
-                });
+                }, () => this.hideTooltip());
                 this.chestContainer.add(container);
                 this.chestPlayerSlotContainers[slotIdx] = container;
             }
@@ -1089,6 +1331,7 @@ export class UIScene extends Phaser.Scene {
         this.chestContainer.setVisible(true);
         this.refreshChestUI();
         this.refreshChestPlayerSlotsUI();
+        this.syncControlsOverlayForModals();
     }
     closeChestModal() {
         if (!this.isChestOpen)
@@ -1105,6 +1348,9 @@ export class UIScene extends Phaser.Scene {
         this.activeChestSlots = [];
         this.hideTooltip();
         this.refreshInventoryUI();
+        this.syncControlsOverlayForModals();
+        if (this.gameScene)
+            this.gameScene.inputLockTimer = 200;
     }
     handleChestSlotClick(slotIdx, isRightClick) {
         if (!this.activeChestSlots || !this.activeChestSlots[slotIdx])
@@ -1386,10 +1632,10 @@ export class UIScene extends Phaser.Scene {
         this.tooltipDesc.setText(`"${item.description}"`);
         this.tooltipObtain.setText(`Źródło: ${item.obtainInfo}`);
         this.tooltipBg.clear();
-        this.tooltipBg.fillStyle(0x0c0f17, 0.96);
-        this.tooltipBg.lineStyle(2, Phaser.Display.Color.HexStringToColor(color).color, 1);
-        this.tooltipBg.fillRoundedRect(0, 0, boxW, boxH, 6);
-        this.tooltipBg.strokeRoundedRect(0, 0, boxW, boxH, 6);
+        const rarityHex = Phaser.Display.Color.HexStringToColor(color).color;
+        this.drawCrystalPanel(this.tooltipBg, 0, 0, boxW, boxH, rarityHex, rarityHex, 0.96, 8);
+        const ptr = this.input.activePointer;
+        this.tooltipBox.setPosition(Math.min(this.scale.width - (boxW + 12), ptr.x + 14), Math.min(this.scale.height - (boxH + 12), ptr.y + 14));
         this.tooltipBox.setVisible(true);
     }
     hideTooltip() {
@@ -1459,15 +1705,19 @@ export class UIScene extends Phaser.Scene {
     }
     repositionUI() {
         const slotSize = 46;
-        const padding = 5;
+        const padding = 6;
         const totalWidth = GAME_CONSTANTS.HOTBAR_SLOTS * (slotSize + padding) - padding;
-        const startX = Math.max(240, Math.floor((this.scale.width - totalWidth) / 2));
-        const startY = 16;
+        const startX = Math.max(272, Math.floor((this.scale.width - totalWidth) / 2));
+        const startY = 18;
+        if (this.hotbarBg) {
+            this.hotbarBg.clear();
+            this.drawCrystalPanel(this.hotbarBg, startX - 10, startY - 7, totalWidth + 20, slotSize + 14, 0x1e3a5f, 0x38bdf8, 0.9, 8);
+        }
         for (let i = 0; i < this.hotbarSlots.length; i++) {
             this.hotbarSlots[i].setPosition(startX + i * (slotSize + padding), startY);
         }
         if (this.itemTooltipText) {
-            this.itemTooltipText.setPosition(startX, 70);
+            this.itemTooltipText.setPosition(startX + totalWidth / 2, 84);
         }
         this.repositionBossBar();
     }
@@ -1489,34 +1739,60 @@ export class UIScene extends Phaser.Scene {
         }
     }
     updateStatsBars() {
+        const barX = 42;
+        const barW = 200;
+        // HP Bar
         this.hpBar.clear();
-        this.hpBar.fillStyle(0x3a141a, 0.9);
-        this.hpBar.fillRoundedRect(24, 29, 194, 7, 3);
+        this.hpBar.fillStyle(0x2a0f18, 0.95);
+        this.hpBar.fillRoundedRect(barX, 34, barW, 8, 3);
         const hpRatio = Phaser.Math.Clamp(this.player.hp / this.player.maxHp, 0, 1);
-        this.hpBar.fillStyle(0xe63946, 1);
-        this.hpBar.fillRoundedRect(24, 29, 194 * hpRatio, 7, 3);
+        const hpW = Math.max(hpRatio > 0 ? 4 : 0, barW * hpRatio);
+        if (hpW > 0) {
+            this.hpBar.fillStyle(0xe11d48, 1);
+            this.hpBar.fillRoundedRect(barX, 34, hpW, 8, 3);
+            this.hpBar.fillStyle(0xfda4af, 0.45);
+            this.hpBar.fillRoundedRect(barX + 1, 35, Math.max(0, hpW - 2), 2, 1);
+        }
+        this.hpBar.lineStyle(1, 0x881337, 0.8);
+        this.hpBar.strokeRoundedRect(barX, 34, barW, 8, 3);
         this.hpText.setText(`${Math.ceil(this.player.hp)} / ${this.player.maxHp} HP`);
+        // Mana Bar
         this.manaBar.clear();
-        this.manaBar.fillStyle(0x132a40, 0.9);
-        this.manaBar.fillRoundedRect(24, 50, 194, 7, 3);
+        this.manaBar.fillStyle(0x0c1e33, 0.95);
+        this.manaBar.fillRoundedRect(barX, 59, barW, 8, 3);
         const manaRatio = Phaser.Math.Clamp(this.player.mana / this.player.maxMana, 0, 1);
-        this.manaBar.fillStyle(0x38bdf8, 1);
-        this.manaBar.fillRoundedRect(24, 50, 194 * manaRatio, 7, 3);
+        const manaW = Math.max(manaRatio > 0 ? 4 : 0, barW * manaRatio);
+        if (manaW > 0) {
+            this.manaBar.fillStyle(0x0ea5e9, 1);
+            this.manaBar.fillRoundedRect(barX, 59, manaW, 8, 3);
+            this.manaBar.fillStyle(0xbae6fd, 0.5);
+            this.manaBar.fillRoundedRect(barX + 1, 60, Math.max(0, manaW - 2), 2, 1);
+        }
+        this.manaBar.lineStyle(1, 0x075985, 0.8);
+        this.manaBar.strokeRoundedRect(barX, 59, barW, 8, 3);
         this.manaText.setText(`${Math.ceil(this.player.mana)} / ${this.player.maxMana} MP`);
+        // XP Bar
         this.xpBar.clear();
-        this.xpBar.fillStyle(0x382c10, 0.9);
-        this.xpBar.fillRoundedRect(24, 73, 194, 5, 2);
+        this.xpBar.fillStyle(0x281e0b, 0.95);
+        this.xpBar.fillRoundedRect(barX, 87, barW, 6, 2);
         const xpRatio = Phaser.Math.Clamp(this.player.xp / this.player.maxXp, 0, 1);
-        this.xpBar.fillStyle(0xfacc15, 1);
-        this.xpBar.fillRoundedRect(24, 73, 194 * xpRatio, 5, 2);
-        this.levelText.setText(`Lv. ${this.player.level} [${this.player.xp} / ${this.player.maxXp} XP]`);
+        const xpW = Math.max(xpRatio > 0 ? 4 : 0, barW * xpRatio);
+        if (xpW > 0) {
+            this.xpBar.fillStyle(0xf59e0b, 1);
+            this.xpBar.fillRoundedRect(barX, 87, xpW, 6, 2);
+            this.xpBar.fillStyle(0xfef08a, 0.55);
+            this.xpBar.fillRoundedRect(barX + 1, 88, Math.max(0, xpW - 2), 2, 1);
+        }
+        this.xpBar.lineStyle(1, 0x78350f, 0.8);
+        this.xpBar.strokeRoundedRect(barX, 87, barW, 6, 2);
+        this.levelText.setText(`Poz. ${this.player.level}  •  ${this.player.xp} / ${this.player.maxXp} XP`);
     }
     updateHotbarVisuals() {
         const slotSize = 46;
-        const padding = 5;
+        const padding = 6;
         const totalWidth = GAME_CONSTANTS.HOTBAR_SLOTS * (slotSize + padding) - padding;
-        const startX = Math.max(240, Math.floor((this.scale.width - totalWidth) / 2));
-        const startY = 16;
+        const startX = Math.max(272, Math.floor((this.scale.width - totalWidth) / 2));
+        const startY = 18;
         for (let i = 0; i < GAME_CONSTANTS.HOTBAR_SLOTS; i++) {
             const slotContainer = this.hotbarSlots[i];
             if (!slotContainer)
@@ -1542,18 +1818,34 @@ export class UIScene extends Phaser.Scene {
         }
         const activeX = startX + this.player.selectedSlot * (slotSize + padding);
         this.slotHighlight.clear();
-        this.slotHighlight.lineStyle(3, 0xf5c838, 1);
-        this.slotHighlight.strokeRoundedRect(activeX - 2, startY - 2, slotSize + 4, slotSize + 4, 5);
+        // Subtelna zewnętrzna poświata wybranego slotu + złota ramka z krystalicznymi narożnikami
+        this.slotHighlight.lineStyle(4, 0xfbbf24, 0.25);
+        this.slotHighlight.strokeRoundedRect(activeX - 3, startY - 3, slotSize + 6, slotSize + 6, 6);
+        this.slotHighlight.lineStyle(2, 0xfbbf24, 1);
+        this.slotHighlight.strokeRoundedRect(activeX - 1, startY - 1, slotSize + 2, slotSize + 2, 5);
         const activeItem = this.player.getSelectedItem();
+        this.itemTooltipBg.clear();
         if (activeItem) {
             const color = RARITY_COLORS[activeItem.rarity] || '#ffffff';
             this.itemTooltipText.setColor(color);
             const count = this.player.getSelectedItemCount();
-            this.itemTooltipText.setText(`${activeItem.name} ${count > 1 ? `(x${count})` : ''} - [${activeItem.category}]`);
+            this.itemTooltipText.setText(`${activeItem.name}${count > 1 ? ` ×${count}` : ''}  •  ${activeItem.category}`);
+            const centerX = startX + totalWidth / 2;
+            this.itemTooltipText.setPosition(centerX, 84);
             this.itemTooltipText.setVisible(true);
+            const pillW = Math.max(120, this.itemTooltipText.width + 24);
+            const pillH = 22;
+            const px = centerX - pillW / 2;
+            const py = 84 - pillH / 2;
+            this.itemTooltipBg.fillStyle(0x070b14, 0.88);
+            this.itemTooltipBg.fillRoundedRect(px, py, pillW, pillH, 6);
+            this.itemTooltipBg.lineStyle(1.5, Phaser.Display.Color.HexStringToColor(color).color, 0.65);
+            this.itemTooltipBg.strokeRoundedRect(px, py, pillW, pillH, 6);
+            this.itemTooltipBg.setVisible(true);
         }
         else {
             this.itemTooltipText.setVisible(false);
+            this.itemTooltipBg.setVisible(false);
         }
     }
     updateDepthDisplay() {
@@ -1562,8 +1854,8 @@ export class UIScene extends Phaser.Scene {
         const tileY = Math.floor(this.player.y / T);
         const biome = BiomeSystem.getBiomeAt(tileX, tileY);
         const depthMeters = (tileY - GAME_CONSTANTS.SURFACE_HEIGHT) * 2;
-        const timeStr = this.gameScene.dayNightSystem ? ` | ${this.gameScene.dayNightSystem.getTimeString()}` : '';
-        this.depthText.setText(`[Biom: ${biome.polishName} | Głębokość: ${depthMeters}m] | Poziom ${this.player.level}${timeStr}`);
+        const timeStr = this.gameScene.dayNightSystem ? ` • ${this.gameScene.dayNightSystem.getTimeString()}` : '';
+        this.depthText.setText(`${biome.polishName} • ${depthMeters}m${timeStr}`);
     }
     // =========================================================================
     // ORNATE PIXEL ART BOSS BAR HUD (GENERATED FROM RAPPENEM-INSPIRED DESIGN)

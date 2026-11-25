@@ -893,60 +893,55 @@ export class TextureGenerator {
         ctx.fillRect(m.x + 2, m.y + 1, 1, 1);
       });
     });
-    // 37. CACTUS (szczegółowy pixel-artowy kaktus saguaro z żebrami 3D, ramionami i igiełkami)
+    // 37. CACTUS (czysty, spójny segment łodygi kaktusa z żebrami 3D i kolcami — bez powielonych ramion)
     drawTile(`tile_${BlockId.CACTUS}`, (ctx) => {
       ctx.clearRect(0, 0, T, T);
 
-      // Kontur głównego pnia
-      ctx.fillStyle = '#183310';
-      ctx.fillRect(7, 0, 10, T);
+      // Ciemny kontur zewnętrzny łodygi (x: 5..18)
+      ctx.fillStyle = '#142e0c';
+      ctx.fillRect(5, 0, 14, T);
 
-      // Wypełnienie + cieniowanie 3D żeber
-      ctx.fillStyle = '#2d5c1c';
-      ctx.fillRect(8, 0, 8, T);
-      ctx.fillStyle = '#47872a';
+      // Głębokie żebrowanie 3D (od lewej ciemniejsze, w środku jasne wypukłe żebro)
+      ctx.fillStyle = '#255216';
+      ctx.fillRect(6, 0, 12, T);
+
+      // Lewa bruzda
+      ctx.fillStyle = '#1b3f10';
+      ctx.fillRect(8, 0, 1, T);
+
+      // Środkowe jasne żebra
+      ctx.fillStyle = '#3f7e24';
       ctx.fillRect(9, 0, 6, T);
-      ctx.fillStyle = '#68ad3b';
-      ctx.fillRect(10, 0, 2, T);
-      ctx.fillStyle = '#89cc52';
-      ctx.fillRect(13, 0, 1, T);
+      ctx.fillStyle = '#5ca334';
+      ctx.fillRect(10, 0, 4, T);
+      ctx.fillStyle = '#7ec84b';
+      ctx.fillRect(11, 0, 2, T);
 
-      // Lewe ramię kaktusa (wygięte ku górze)
-      ctx.fillStyle = '#183310';
-      ctx.fillRect(2, 6, 6, 4);
-      ctx.fillRect(2, 3, 4, 5);
-      ctx.fillStyle = '#387022';
-      ctx.fillRect(3, 7, 5, 2);
-      ctx.fillRect(3, 4, 2, 4);
-      ctx.fillStyle = '#68ad3b';
-      ctx.fillRect(3, 4, 1, 3);
+      // Prawa bruzda i cień
+      ctx.fillStyle = '#1b3f10';
+      ctx.fillRect(15, 0, 1, T);
+      ctx.fillStyle = '#2f651d';
+      ctx.fillRect(16, 0, 2, T);
 
-      // Prawe ramię kaktusa (niżej)
-      ctx.fillStyle = '#183310';
-      ctx.fillRect(16, 13, 6, 4);
-      ctx.fillRect(18, 9, 4, 6);
-      ctx.fillStyle = '#387022';
-      ctx.fillRect(16, 14, 5, 2);
-      ctx.fillRect(19, 10, 2, 5);
-      ctx.fillStyle = '#89cc52';
-      ctx.fillRect(19, 10, 1, 4);
+      // Subtelne poziome prążki faktury roślinnej
+      ctx.fillStyle = '#4c8e2b';
+      ctx.fillRect(10, 5, 3, 1);
+      ctx.fillRect(11, 14, 2, 1);
+      ctx.fillRect(9, 20, 3, 1);
 
-      // Jasne pustynne kolce (igiełki)
+      // Jasne pustynne kolce (igiełki) wzdłuż krawędzi i żeber
       ctx.fillStyle = '#fef3c7';
-      ctx.fillRect(6, 3, 1, 1);
-      ctx.fillRect(17, 5, 1, 1);
-      ctx.fillRect(1, 5, 1, 1);
-      ctx.fillRect(22, 11, 1, 1);
-      ctx.fillRect(6, 15, 1, 1);
-      ctx.fillRect(17, 20, 1, 1);
-      ctx.fillRect(11, 9, 1, 1);
-      ctx.fillRect(13, 18, 1, 1);
+      ctx.fillRect(4, 3, 1, 1);
+      ctx.fillRect(4, 12, 1, 1);
+      ctx.fillRect(4, 21, 1, 1);
 
-      // Mały kwiatek kaktusa na prawym ramieniu (detal)
-      ctx.fillStyle = '#f43f5e';
-      ctx.fillRect(19, 8, 2, 1);
-      ctx.fillStyle = '#fde047';
-      ctx.fillRect(19, 7, 1, 1);
+      ctx.fillRect(19, 6, 1, 1);
+      ctx.fillRect(19, 16, 1, 1);
+
+      ctx.fillRect(8, 7, 1, 1);
+      ctx.fillRect(15, 11, 1, 1);
+      ctx.fillRect(11, 17, 1, 1);
+      ctx.fillRect(12, 2, 1, 1);
     });
 
     // 38. CRYSTAL BLOCK

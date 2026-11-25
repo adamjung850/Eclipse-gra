@@ -526,21 +526,10 @@ export class WorldGenerator {
                         lastFloraX = x;
                     }
                     else {
-                        // Prickly Desert Cactus with arms
+                        // Pustynny kaktus (jednolita kolumna bez lewitujących bloków bocznych)
                         const cactusHeight = 2 + Math.floor(Math.random() * 3); // 2 to 4 blocks tall
                         for (let ty = surfaceY - 1; ty >= surfaceY - cactusHeight; ty--) {
                             grid[x][ty] = BlockId.CACTUS;
-                        }
-                        if (cactusHeight >= 3 && Math.random() < 0.6) {
-                            const side = Math.random() < 0.5 ? -1 : 1;
-                            const armX = x + side;
-                            const armY = surfaceY - 2;
-                            if (armX >= 0 && armX < width && grid[armX][armY] === BlockId.AIR) {
-                                grid[armX][armY] = BlockId.CACTUS;
-                                if (grid[armX][armY - 1] === BlockId.AIR) {
-                                    grid[armX][armY - 1] = BlockId.CACTUS;
-                                }
-                            }
                         }
                         lastFloraX = x;
                     }
