@@ -64,3 +64,9 @@ wyslij_gre.bat
 *.zip
 *.tar.gz
 *.rar
+
+# Build outputs (TypeScript, Tauri / Rust)
+dist/
+build/
+src-tauri/target/
+scratch/

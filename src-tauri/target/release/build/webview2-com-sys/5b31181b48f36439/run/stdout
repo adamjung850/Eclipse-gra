@@ -1,2 +1,0 @@
-cargo:rustc-link-search=native=C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\webview2-com-sys/5b31181b48f36439\out\x64
-cargo:rustc-link-lib=advapi32
