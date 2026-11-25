@@ -1,0 +1,16 @@
+[package]
+name = "eclipse-the-lost-world"
+version = "0.1.0"
+description = "Eclipse – The Lost World 2D Sandbox RPG"
+authors = ["Eclipse Dev Team"]
+edition = "2021"
+
+[lib]
+name = "eclipse_the_lost_world_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }

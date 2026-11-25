@@ -54,6 +54,14 @@ export class UIScene extends Phaser.Scene {
     deathPhase = 0;
     deathPhaseTimer = 0;
     deathRespawned = false;
+    // Pause Menu (ESC)
+    isPauseMenuOpen = false;
+    pauseMenuContainer = null;
+    pauseSettingsModal = null;
+    pauseListeningKey = null;
+    pauseKeyListener = null;
+    pauseSliderMove = null;
+    pauseSliderUp = null;
     // Hand / Cursor Item
     cursorSlot = { item: null, count: 0 };
     cursorItemSprite;
@@ -78,6 +86,9 @@ export class UIScene extends Phaser.Scene {
     create(data) {
         this.player = data.player;
         this.gameScene = this.scene.get('GameScene');
+        if (this.gameScene.isIntroCameraMoving) {
+            this.cameras.main.setAlpha(0);
+        }
         // 1. Create Top HUD
         this.createHealthAndMana();
         this.createHotbar();
@@ -1467,6 +1478,15 @@ export class UIScene extends Phaser.Scene {
         this.updateHotbarVisuals();
         this.updateDepthDisplay();
         this.updateDeathScreen();
+        // Bezpiecznik kursora: jeśli element UI lub overlay HTML zniknął pod kursorem (brak gameobjectout/mouseleave),
+        // natychmiast przywracamy normalne wykrywanie kursora świata.
+        if (this.cursorManager && this.cursorManager.isUIHovered()) {
+            const hits = this.input.hitTestPointer(this.input.activePointer);
+            const domHover = typeof document !== 'undefined' && document.querySelector('.interactive:hover') !== null;
+            if (hits.length === 0 && !domHover) {
+                this.cursorManager.setUIHover(false);
+            }
+        }
     }
     updateStatsBars() {
         this.hpBar.clear();
@@ -2088,5 +2108,577 @@ export class UIScene extends Phaser.Scene {
         }
         this.bossBarFillSprite.setVisible(true);
         this.bossBarFillSprite.setCrop(0, 0, cropW, UIScene.BOSS_BAR_FILL_H);
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+    // MENU PAUZY POD ESC (styl Main Menu: WZNÓW, USTAWIENIA, WRÓĆ DO MENU, WYJDŹ)
+    // ─────────────────────────────────────────────────────────────────────────
+    togglePauseMenu(forceState) {
+        if (this.deathScreenActive)
+            return;
+        const next = forceState !== undefined ? forceState : !this.isPauseMenuOpen;
+        if (next === this.isPauseMenuOpen)
+            return;
+        if (next) {
+            this.openPauseMenu();
+        }
+        else {
+            this.closePauseMenu();
+        }
+    }
+    openPauseMenu() {
+        this.isPauseMenuOpen = true;
+        if (this.gameScene) {
+            this.gameScene.isPaused = true;
+            this.gameScene.physics.pause();
+        }
+        // Panel sterowania w prawym górnym rogu pojawia się z powrotem pod ESC
+        const uiOverlay = document.getElementById('ui-overlay');
+        if (uiOverlay) {
+            const hudAllowed = localStorage.getItem('delveria_controls_hud') !== '0';
+            uiOverlay.style.display = hudAllowed ? '' : 'none';
+        }
+        const W = this.scale.width;
+        const H = this.scale.height;
+        const root = this.add.container(0, 0).setDepth(900);
+        const backdrop = this.add.rectangle(W / 2, H / 2, W * 2, H * 2, 0x010308, 0.74)
+            .setInteractive();
+        const title = this.add.text(W / 2, H * 0.27, 'PAUZA', {
+            fontFamily: 'Consolas, "Courier New", monospace',
+            fontSize: '42px',
+            fontStyle: 'bold',
+            color: '#7dd3fc',
+            stroke: '#02040a',
+            strokeThickness: 6,
+            letterSpacing: 8,
+        }).setOrigin(0.5, 0.5);
+        const gap = 58;
+        const startY = H * 0.44;
+        const items = [
+            { label: 'WZNÓW', primary: true, onClick: () => this.closePauseMenu() },
+            { label: 'USTAWIENIA', primary: false, onClick: () => this.openPauseSettingsModal('sound') },
+            { label: 'WRÓĆ DO MENU', primary: false, onClick: () => this.returnToMainMenu() },
+            { label: 'WYJDŹ Z GRY', primary: false, onClick: () => this.quitFromPause() },
+        ];
+        root.add([backdrop, title]);
+        items.forEach((item, idx) => {
+            const btn = this.createPauseMenuButton(W / 2, startY + idx * gap, 276, 46, item.label, item.primary, item.onClick);
+            root.add(btn);
+        });
+        this.pauseMenuContainer = root;
+    }
+    closePauseMenu() {
+        this.isPauseMenuOpen = false;
+        this.closePauseSettingsModal();
+        if (this.pauseMenuContainer) {
+            this.pauseMenuContainer.destroy();
+            this.pauseMenuContainer = null;
+        }
+        if (this.gameScene) {
+            this.gameScene.isPaused = false;
+            this.gameScene.inputLockTimer = 280; // Blokuje przypadkowy atak po kliknięciu WZNÓW
+            this.gameScene.physics.resume();
+            // Jeśli minęło już 15 sekund gry, chowamy z powrotem panel sterowania
+            if (this.gameScene.controlsHudExpired) {
+                const uiOverlay = document.getElementById('ui-overlay');
+                if (uiOverlay)
+                    uiOverlay.style.display = 'none';
+            }
+        }
+    }
+    returnToMainMenu() {
+        this.closePauseSettingsModal();
+        if (this.pauseMenuContainer) {
+            this.pauseMenuContainer.destroy();
+            this.pauseMenuContainer = null;
+        }
+        this.isPauseMenuOpen = false;
+        if (this.gameScene) {
+            this.gameScene.isPaused = false;
+            this.gameScene.physics.resume();
+        }
+        const uiOverlay = document.getElementById('ui-overlay');
+        if (uiOverlay)
+            uiOverlay.style.display = 'none';
+        this.scene.stop('GameScene');
+        this.scene.stop('UIScene');
+        this.scene.start('MainMenuScene');
+    }
+    async quitFromPause() {
+        try {
+            const tauri = window.__TAURI__;
+            if (tauri?.core?.invoke) {
+                await tauri.core.invoke('quit_app');
+                return;
+            }
+        }
+        catch {
+            // Fallback
+        }
+        window.close();
+    }
+    createPauseMenuButton(x, y, width, height, text, primary, onClick) {
+        const container = this.add.container(x, y);
+        const bg = this.add.graphics();
+        const label = this.add.text(0, 0, text, {
+            fontFamily: 'Consolas, "Courier New", monospace',
+            fontSize: primary ? '20px' : '16px',
+            fontStyle: 'bold',
+            color: primary ? '#e0f2fe' : '#cbd5e1',
+            stroke: '#02040a',
+            strokeThickness: 4,
+            letterSpacing: 3,
+        }).setOrigin(0.5, 0.5);
+        const ornaments = this.add.text(0, 0, `◆   ${' '.repeat(text.length + 2)}   ◆`, {
+            fontFamily: 'Consolas, "Courier New", monospace',
+            fontSize: '14px',
+            color: '#7dd3fc',
+        }).setOrigin(0.5, 0.5).setAlpha(0);
+        const drawBg = (hovered) => {
+            const hw = width / 2;
+            const hh = height / 2;
+            bg.clear();
+            const fillMain = primary ? (hovered ? 0x0e2d4d : 0x081a30) : (hovered ? 0x131d33 : 0x070b15);
+            const borderMain = primary ? (hovered ? 0x7dd3fc : 0x38bdf8) : (hovered ? 0xc084fc : 0x334155);
+            const gemColor = primary ? 0x7dd3fc : (hovered ? 0xe879f9 : 0x475569);
+            bg.fillStyle(0x02040a, 0.98);
+            bg.fillRect(-hw - 3, -hh - 3, width + 6, height + 6);
+            bg.fillStyle(fillMain, 0.94);
+            bg.fillRect(-hw, -hh, width, height);
+            bg.fillStyle(0xffffff, hovered ? 0.16 : 0.06);
+            bg.fillRect(-hw + 2, -hh + 2, width - 4, 3);
+            bg.fillStyle(0x000000, 0.35);
+            bg.fillRect(-hw + 2, hh - 4, width - 4, 2);
+            bg.lineStyle(hovered ? 2 : 1, borderMain, hovered ? 1 : 0.85);
+            bg.strokeRect(-hw, -hh, width, height);
+            const cSz = 4;
+            bg.fillStyle(gemColor, 1);
+            bg.fillRect(-hw - 1, -hh - 1, cSz, cSz);
+            bg.fillRect(hw - cSz + 1, -hh - 1, cSz, cSz);
+            bg.fillRect(-hw - 1, hh - cSz + 1, cSz, cSz);
+            bg.fillRect(hw - cSz + 1, hh - cSz + 1, cSz, cSz);
+        };
+        drawBg(false);
+        container.add([bg, ornaments, label]);
+        container.setSize(width, height);
+        container.setInteractive({ useHandCursor: true });
+        container.on('pointerover', () => {
+            if (this.pauseSettingsModal)
+                return;
+            drawBg(true);
+            label.setColor('#ffffff');
+            ornaments.setAlpha(1);
+            this.tweens.add({ targets: container, scale: 1.04, duration: 90, ease: 'Sine.easeOut' });
+        });
+        container.on('pointerout', () => {
+            drawBg(false);
+            label.setColor(primary ? '#e0f2fe' : '#cbd5e1');
+            ornaments.setAlpha(0);
+            this.tweens.add({ targets: container, scale: 1.0, duration: 90, ease: 'Sine.easeOut' });
+        });
+        container.on('pointerdown', () => {
+            if (this.pauseSettingsModal)
+                return;
+            onClick();
+        });
+        return container;
+    }
+    cleanupPauseModalListeners() {
+        if (this.pauseKeyListener) {
+            window.removeEventListener('keydown', this.pauseKeyListener, true);
+            this.pauseKeyListener = null;
+        }
+        if (this.pauseSliderMove) {
+            this.input.off('pointermove', this.pauseSliderMove);
+            this.pauseSliderMove = null;
+        }
+        if (this.pauseSliderUp) {
+            this.input.off('pointerup', this.pauseSliderUp);
+            this.pauseSliderUp = null;
+        }
+    }
+    closePauseSettingsModal() {
+        this.pauseListeningKey = null;
+        this.cleanupPauseModalListeners();
+        if (this.pauseSettingsModal) {
+            this.pauseSettingsModal.destroy();
+            this.pauseSettingsModal = null;
+        }
+    }
+    openPauseSettingsModal(tab) {
+        this.closePauseSettingsModal();
+        const W = this.scale.width;
+        const H = this.scale.height;
+        const modal = this.add.container(W / 2, H / 2).setDepth(950);
+        const backdrop = this.add.rectangle(0, 0, W * 2, H * 2, 0x000000, 0.01).setInteractive();
+        const pw = 620, ph = 460;
+        const panel = this.add.graphics();
+        panel.fillStyle(0x010308, 0.98);
+        panel.fillRect(-pw / 2 - 4, -ph / 2 - 4, pw + 8, ph + 8);
+        panel.fillStyle(0x050914, 0.98);
+        panel.fillRect(-pw / 2, -ph / 2, pw, ph);
+        panel.fillStyle(0x091428, 1);
+        panel.fillRect(-pw / 2, -ph / 2, pw, 50);
+        panel.lineStyle(2, 0x38bdf8, 0.9);
+        panel.strokeRect(-pw / 2, -ph / 2, pw, ph);
+        panel.lineStyle(1, 0x1e293b, 1);
+        panel.lineBetween(-pw / 2, -ph / 2 + 50, pw / 2, -ph / 2 + 50);
+        const header = this.add.text(-pw / 2 + 24, -ph / 2 + 25, 'USTAWIENIA', {
+            fontFamily: 'Consolas, "Courier New", monospace',
+            fontSize: '20px',
+            fontStyle: 'bold',
+            color: '#7dd3fc',
+            letterSpacing: 4,
+        }).setOrigin(0, 0.5);
+        const closeX = pw / 2 - 26, closeY = -ph / 2 + 25;
+        const closeBg = this.add.graphics();
+        const drawClose = (hover) => {
+            closeBg.clear();
+            closeBg.fillStyle(hover ? 0x7f1d1d : 0x0e172a, 1);
+            closeBg.fillRect(closeX - 15, closeY - 15, 30, 30);
+            closeBg.lineStyle(1, hover ? 0xf87171 : 0x334155, 1);
+            closeBg.strokeRect(closeX - 15, closeY - 15, 30, 30);
+        };
+        drawClose(false);
+        const closeTxt = this.add.text(closeX, closeY, '✕', {
+            fontFamily: 'Consolas, "Courier New", monospace',
+            fontSize: '18px',
+            fontStyle: 'bold',
+            color: '#e2e8f0',
+        }).setOrigin(0.5, 0.5);
+        const closeHit = this.add.rectangle(closeX, closeY, 34, 34, 0x000000, 0).setInteractive({ useHandCursor: true });
+        closeHit.on('pointerover', () => drawClose(true));
+        closeHit.on('pointerout', () => drawClose(false));
+        closeHit.on('pointerdown', () => this.closePauseSettingsModal());
+        modal.add([backdrop, panel, header, closeBg, closeTxt, closeHit]);
+        const tabs = [
+            { id: 'sound', label: 'DŹWIĘK' },
+            { id: 'controls', label: 'STEROWANIE' },
+            { id: 'graphics', label: 'GRAFIKA' },
+        ];
+        const tabW = 176, tabH = 36, tabGap = 12;
+        const tabStartX = -(tabW + tabGap);
+        const tabY = -ph / 2 + 80;
+        tabs.forEach((t, idx) => {
+            const tx = tabStartX + idx * (tabW + tabGap);
+            const act = tab === t.id;
+            const tBg = this.add.graphics();
+            tBg.fillStyle(act ? 0x0c2440 : 0x090e1a, 1);
+            tBg.fillRect(tx - tabW / 2, tabY - tabH / 2, tabW, tabH);
+            tBg.lineStyle(act ? 2 : 1, act ? 0x38bdf8 : 0x1e293b, 1);
+            tBg.strokeRect(tx - tabW / 2, tabY - tabH / 2, tabW, tabH);
+            const tTxt = this.add.text(tx, tabY, t.label, {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '14px',
+                fontStyle: 'bold',
+                color: act ? '#ffffff' : '#94a3b8',
+                letterSpacing: 2,
+            }).setOrigin(0.5, 0.5);
+            const tHit = this.add.rectangle(tx, tabY, tabW, tabH, 0x000000, 0).setInteractive({ useHandCursor: true });
+            tHit.on('pointerdown', () => {
+                if (tab !== t.id)
+                    this.openPauseSettingsModal(t.id);
+            });
+            modal.add([tBg, tTxt, tHit]);
+        });
+        const contentTopY = -ph / 2 + 136;
+        const boxW = pw - 68;
+        const getNum = (k, def) => {
+            const v = localStorage.getItem(k);
+            if (v === null)
+                return def;
+            const n = parseFloat(v);
+            return Number.isNaN(n) ? def : Phaser.Math.Clamp(n, 0, 1);
+        };
+        const addSlider = (rowIdx, title, desc, val, onChange) => {
+            const ry = contentTopY + rowIdx * 72;
+            const rBg = this.add.graphics();
+            rBg.fillStyle(0x080e1c, 0.92);
+            rBg.fillRect(-boxW / 2, ry - 26, boxW, 56);
+            rBg.lineStyle(1, 0x1e293b, 1);
+            rBg.strokeRect(-boxW / 2, ry - 26, boxW, 56);
+            const tLbl = this.add.text(-boxW / 2 + 16, ry - 9, title, {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '15px',
+                fontStyle: 'bold',
+                color: '#e2e8f0',
+            }).setOrigin(0, 0.5);
+            const tDesc = this.add.text(-boxW / 2 + 16, ry + 11, desc, {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '11px',
+                color: '#64748b',
+            }).setOrigin(0, 0.5);
+            const trackW = 152, trackX = boxW / 2 - 218;
+            const pctText = this.add.text(boxW / 2 - 16, ry, `${Math.round(val * 100)}%`, {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '14px',
+                fontStyle: 'bold',
+                color: '#7dd3fc',
+            }).setOrigin(1, 0.5);
+            const sG = this.add.graphics();
+            const drawS = (v) => {
+                sG.clear();
+                sG.fillStyle(0x0f172a, 1);
+                sG.fillRect(trackX, ry - 5, trackW, 10);
+                sG.lineStyle(1, 0x334155, 1);
+                sG.strokeRect(trackX, ry - 5, trackW, 10);
+                const fw = Math.round(trackW * v);
+                if (fw > 0) {
+                    sG.fillStyle(0x0284c7, 1);
+                    sG.fillRect(trackX + 1, ry - 4, Math.max(0, fw - 1), 8);
+                    sG.fillStyle(0x38bdf8, 1);
+                    sG.fillRect(trackX + 1, ry - 4, Math.max(0, fw - 1), 3);
+                }
+                const kx = trackX + fw;
+                sG.fillStyle(0xe0f2fe, 1);
+                sG.fillRect(kx - 5, ry - 10, 10, 20);
+                sG.lineStyle(1, 0x0284c7, 1);
+                sG.strokeRect(kx - 5, ry - 10, 10, 20);
+            };
+            drawS(val);
+            const upd = (p) => {
+                const v = Phaser.Math.Clamp((p.x - W / 2 - trackX) / trackW, 0, 1);
+                drawS(v);
+                pctText.setText(`${Math.round(v * 100)}%`);
+                onChange(v);
+            };
+            const hit = this.add.rectangle(trackX + trackW / 2, ry, trackW + 20, 34, 0x000000, 0).setInteractive({ useHandCursor: true });
+            hit.on('pointerdown', (p) => {
+                upd(p);
+                this.cleanupPauseModalListeners();
+                this.pauseSliderMove = (mp) => { if (mp.isDown)
+                    upd(mp); };
+                this.pauseSliderUp = () => this.cleanupPauseModalListeners();
+                this.input.on('pointermove', this.pauseSliderMove);
+                this.input.on('pointerup', this.pauseSliderUp);
+            });
+            modal.add([rBg, tLbl, tDesc, sG, pctText, hit]);
+        };
+        const addSwitch = (ry, title, desc, init, onToggle) => {
+            const rBg = this.add.graphics();
+            rBg.fillStyle(0x080e1c, 0.92);
+            rBg.fillRect(-boxW / 2, ry - 22, boxW, 46);
+            rBg.lineStyle(1, 0x1e293b, 1);
+            rBg.strokeRect(-boxW / 2, ry - 22, boxW, 46);
+            const tLbl = this.add.text(-boxW / 2 + 16, ry - 7, title, {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '14px',
+                fontStyle: 'bold',
+                color: '#e2e8f0',
+            }).setOrigin(0, 0.5);
+            const tDesc = this.add.text(-boxW / 2 + 16, ry + 9, desc, {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '11px',
+                color: '#64748b',
+            }).setOrigin(0, 0.5);
+            const swX = boxW / 2 - 48;
+            const swG = this.add.graphics();
+            const drawSw = (on) => {
+                swG.clear();
+                swG.fillStyle(on ? 0x0369a1 : 0x1e293b, 1);
+                swG.fillRect(swX - 28, ry - 11, 56, 22);
+                swG.lineStyle(1, on ? 0x7dd3fc : 0x475569, 1);
+                swG.strokeRect(swX - 28, ry - 11, 56, 22);
+                swG.fillStyle(on ? 0xe0f2fe : 0x94a3b8, 1);
+                swG.fillRect(on ? swX + 4 : swX - 24, ry - 8, 20, 16);
+            };
+            drawSw(init);
+            let curr = init;
+            const hit = this.add.rectangle(swX, ry, 64, 30, 0x000000, 0).setInteractive({ useHandCursor: true });
+            hit.on('pointerdown', () => {
+                curr = !curr;
+                drawSw(curr);
+                onToggle(curr);
+            });
+            modal.add([rBg, tLbl, tDesc, swG, hit]);
+        };
+        if (tab === 'sound') {
+            addSlider(0, 'Głośność główna', 'Ogólny poziom dźwięku w całej grze', getNum('delveria_vol_master', 1), (v) => {
+                this.sound.volume = v;
+                this.sound.mute = v <= 0.001;
+                localStorage.setItem('delveria_vol_master', v.toFixed(2));
+            });
+            addSlider(1, 'Muzyka w tle', 'Głośność ścieżki dźwiękowej podczas gry', getNum('delveria_vol_music', 0.8), (v) => {
+                localStorage.setItem('delveria_vol_music', v.toFixed(2));
+            });
+            addSlider(2, 'Efekty dźwiękowe (SFX)', 'Kopanie, walka, boss i interfejs', getNum('delveria_vol_sfx', 1), (v) => {
+                localStorage.setItem('delveria_vol_sfx', v.toFixed(2));
+            });
+        }
+        else if (tab === 'controls') {
+            const defaults = { left: 'A', right: 'D', jump: 'W', inventory: 'E', drop: 'Q', music: 'M' };
+            let saved = { ...defaults };
+            try {
+                const r = localStorage.getItem('delveria_keybinds');
+                if (r)
+                    saved = { ...defaults, ...JSON.parse(r) };
+            }
+            catch { }
+            const actions = [
+                { key: 'left', label: 'Ruch w lewo' },
+                { key: 'right', label: 'Ruch w prawo' },
+                { key: 'jump', label: 'Skok (lub SPACE)' },
+                { key: 'inventory', label: 'Ekwipunek i crafting' },
+                { key: 'drop', label: 'Wyrzucenie przedmiotu' },
+                { key: 'music', label: 'Muzyka WŁ. / WYŁ.' },
+            ];
+            actions.forEach((act, idx) => {
+                const ry = contentTopY - 6 + idx * 42;
+                const rBg = this.add.graphics();
+                rBg.fillStyle(0x080e1c, 0.9);
+                rBg.fillRect(-boxW / 2, ry - 17, boxW, 36);
+                rBg.lineStyle(1, 0x1e293b, 0.9);
+                rBg.strokeRect(-boxW / 2, ry - 17, boxW, 36);
+                const lbl = this.add.text(-boxW / 2 + 16, ry, act.label, {
+                    fontFamily: 'Consolas, "Courier New", monospace',
+                    fontSize: '14px',
+                    color: '#e2e8f0',
+                }).setOrigin(0, 0.5);
+                const btnX = boxW / 2 - 74;
+                const kBg = this.add.graphics();
+                const drawK = (l) => {
+                    kBg.clear();
+                    kBg.fillStyle(l ? 0x0c4a6e : 0x0f172a, 1);
+                    kBg.fillRect(btnX - 58, ry - 13, 116, 26);
+                    kBg.lineStyle(1, l ? 0xfacc15 : 0x38bdf8, 1);
+                    kBg.strokeRect(btnX - 58, ry - 13, 116, 26);
+                };
+                drawK(false);
+                const kTxt = this.add.text(btnX, ry, saved[act.key], {
+                    fontFamily: 'Consolas, "Courier New", monospace',
+                    fontSize: '13px',
+                    fontStyle: 'bold',
+                    color: '#7dd3fc',
+                }).setOrigin(0.5, 0.5);
+                const hit = this.add.rectangle(btnX, ry, 120, 30, 0x000000, 0).setInteractive({ useHandCursor: true });
+                hit.on('pointerdown', () => {
+                    this.pauseListeningKey = act.key;
+                    drawK(true);
+                    kTxt.setText('NACIŚNIJ...');
+                    kTxt.setColor('#fde047');
+                    if (this.pauseKeyListener)
+                        window.removeEventListener('keydown', this.pauseKeyListener, true);
+                    this.pauseKeyListener = (ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        if (ev.key === 'Escape') {
+                            drawK(false);
+                            kTxt.setText(saved[act.key]);
+                            kTxt.setColor('#7dd3fc');
+                            this.pauseListeningKey = null;
+                            window.removeEventListener('keydown', this.pauseKeyListener, true);
+                            this.pauseKeyListener = null;
+                            return;
+                        }
+                        const norm = ev.code === 'Space' ? 'SPACE'
+                            : ev.code.startsWith('Key') && ev.code.length === 4 ? ev.code.slice(3).toUpperCase()
+                                : /^[a-zA-Z]$/.test(ev.key) ? ev.key.toUpperCase() : null;
+                        if (norm) {
+                            saved[act.key] = norm;
+                            localStorage.setItem('delveria_keybinds', JSON.stringify(saved));
+                            drawK(false);
+                            kTxt.setText(norm);
+                            kTxt.setColor('#7dd3fc');
+                            this.pauseListeningKey = null;
+                            window.removeEventListener('keydown', this.pauseKeyListener, true);
+                            this.pauseKeyListener = null;
+                        }
+                    };
+                    window.addEventListener('keydown', this.pauseKeyListener, true);
+                });
+                modal.add([rBg, lbl, kBg, kTxt, hit]);
+            });
+            const footerY = ph / 2 - 36;
+            const info = this.add.text(-boxW / 2, footerY, 'Zmiana klawiszy obowiązuje od kolejnego wejścia do gry', {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '11px',
+                color: '#64748b',
+            }).setOrigin(0, 0.5);
+            modal.add(info);
+        }
+        else if (tab === 'graphics') {
+            const fpsY = contentTopY + 8;
+            const fpsBox = this.add.graphics();
+            fpsBox.fillStyle(0x080e1c, 0.92);
+            fpsBox.fillRect(-boxW / 2, fpsY - 30, boxW, 74);
+            fpsBox.lineStyle(1, 0x1e293b, 1);
+            fpsBox.strokeRect(-boxW / 2, fpsY - 30, boxW, 74);
+            const fpsTitle = this.add.text(-boxW / 2 + 16, fpsY - 14, 'LIMIT KLATEK (FPS)', {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '14px',
+                fontStyle: 'bold',
+                color: '#e2e8f0',
+            }).setOrigin(0, 0.5);
+            modal.add([fpsBox, fpsTitle]);
+            let curFps = localStorage.getItem('delveria_fps') || '60';
+            const fpsOpts = [
+                { val: '30', label: '30' },
+                { val: '60', label: '60' },
+                { val: '120', label: '120' },
+                { val: '144', label: '144' },
+                { val: '240', label: '240' },
+                { val: '300', label: '300' },
+                { val: 'unlimited', label: 'MAX' },
+            ];
+            const optW = 68, optGap = 6;
+            const totalOptW = fpsOpts.length * optW + (fpsOpts.length - 1) * optGap;
+            const optStartX = -totalOptW / 2 + optW / 2;
+            const optY = fpsY + 18;
+            const drawers = [];
+            fpsOpts.forEach((opt, i) => {
+                const ox = optStartX + i * (optW + optGap);
+                const oBg = this.add.graphics();
+                const oTxt = this.add.text(ox, optY, opt.label, {
+                    fontFamily: 'Consolas, "Courier New", monospace',
+                    fontSize: '13px',
+                    fontStyle: 'bold',
+                    color: '#cbd5e1',
+                }).setOrigin(0.5, 0.5);
+                const drawOpt = () => {
+                    const sel = curFps === opt.val;
+                    oBg.clear();
+                    oBg.fillStyle(sel ? 0x0369a1 : 0x0f172a, 1);
+                    oBg.fillRect(ox - optW / 2, optY - 13, optW, 26);
+                    oBg.lineStyle(sel ? 2 : 1, sel ? 0x7dd3fc : 0x334155, 1);
+                    oBg.strokeRect(ox - optW / 2, optY - 13, optW, 26);
+                    oTxt.setColor(sel ? '#ffffff' : '#94a3b8');
+                };
+                drawOpt();
+                drawers.push(drawOpt);
+                const oHit = this.add.rectangle(ox, optY, optW, 28, 0x000000, 0).setInteractive({ useHandCursor: true });
+                oHit.on('pointerdown', () => {
+                    curFps = opt.val;
+                    localStorage.setItem('delveria_fps', curFps);
+                    const target = curFps === 'unlimited' ? 999 : parseInt(curFps, 10);
+                    const loop = this.game.loop;
+                    if (loop) {
+                        loop.targetFps = target;
+                        loop._target = 1000 / target;
+                    }
+                    drawers.forEach(fn => fn());
+                });
+                modal.add([oBg, oTxt, oHit]);
+            });
+            addSlider(1.25, 'Wstrząsy kamery (Shake)', 'Siła drgań ekranu podczas walki z bossem', getNum('delveria_shake_val', 1), (v) => {
+                localStorage.setItem('delveria_shake_val', v.toFixed(2));
+            });
+            const fsInit = localStorage.getItem('delveria_fullscreen') === '1';
+            addSwitch(contentTopY + 178, 'Pełny ekran', 'Przełącza okno gry w tryb pełnoekranowy', fsInit, async (v) => {
+                localStorage.setItem('delveria_fullscreen', v ? '1' : '0');
+                try {
+                    const tauri = window.__TAURI__;
+                    if (tauri?.core?.invoke)
+                        await tauri.core.invoke('set_fullscreen', { fullscreen: v });
+                }
+                catch { }
+            });
+            const hudInit = localStorage.getItem('delveria_controls_hud') !== '0';
+            addSwitch(contentTopY + 236, 'Podpowiedzi klawiszy (HUD)', 'Pokazuje panel skrótów w prawym górnym rogu', hudInit, (v) => {
+                localStorage.setItem('delveria_controls_hud', v ? '1' : '0');
+                const uiOverlay = document.getElementById('ui-overlay');
+                if (uiOverlay)
+                    uiOverlay.style.display = v ? '' : 'none';
+            });
+        }
+        this.pauseSettingsModal = modal;
     }
 }

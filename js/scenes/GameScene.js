@@ -21,6 +21,11 @@ export class GameScene extends Phaser.Scene {
     enemies;
     projectiles;
     vormakBoss;
+    isPaused = false;
+    isIntroCameraMoving = false;
+    isWorldReady = false;
+    inputLockTimer = 0;
+    controlsHudExpired = false;
     bossSlowMoFactor = 1.0;
     isSummoningBoss = false;
     miningSystem;
@@ -34,7 +39,7 @@ export class GameScene extends Phaser.Scene {
     constructor() {
         super('GameScene');
     }
-    create() {
+    create(data) {
         const T = GAME_CONSTANTS.TILE_SIZE;
         const worldWidthPx = GAME_CONSTANTS.WORLD_WIDTH * T;
         const worldHeightPx = GAME_CONSTANTS.WORLD_HEIGHT * T;
@@ -189,6 +194,9 @@ export class GameScene extends Phaser.Scene {
             else if (uiScene.isInventoryOpen) {
                 uiScene.toggleInventory(false);
             }
+            else if (uiScene.togglePauseMenu) {
+                uiScene.togglePauseMenu();
+            }
         };
         // Right-Click to open Chest within reach
         this.input.on('pointerdown', (pointer) => {
@@ -216,16 +224,95 @@ export class GameScene extends Phaser.Scene {
         });
         // 10. Centralized Custom Cursor Manager
         this.cursorManager = CursorManager.getInstance(this.game);
+        this.cursorManager.resetAll();
         // 11. Launch Parallel UI Scene (Independent of camera zoom!)
         this.scene.launch('UIScene', { player: this.player });
         // 11. Camera Setup
         const camera = this.cameras.main;
         camera.setBounds(0, 0, worldWidthPx, worldHeightPx);
-        camera.startFollow(this.player, true, 0.08, 0.08);
-        camera.setZoom(1.55);
-        // Initial greeting floating text
-        this.time.delayedCall(400, () => {
-            this.showWorldFloatingText(this.player.x, this.player.y - 30, 'Witaj w ECLIPSE: THE LOST WORLD', '#6ee7b7');
+        camera.setRoundPixels(true);
+        camera.setZoom(1.5);
+        if (data?.fromMenuAscend) {
+            // Kamera zaczyna w podziemiach (620px pod graczem) z włączonym oświetleniem i miękkim światłem kamery.
+            this.isIntroCameraMoving = true;
+            this.darknessSystem.extraLightPos = { x: this.player.x, y: this.player.y + 620, radius: 240 };
+            camera.centerOn(this.player.x, this.player.y + 620);
+            this.darknessSystem.update();
+        }
+        else {
+            this.isIntroCameraMoving = false;
+            camera.startFollow(this.player, true, 0.08, 0.08);
+            this.time.delayedCall(400, () => {
+                this.showWorldFloatingText(this.player.x, this.player.y - 30, 'Witaj w DELVERII', '#6ee7b7');
+            });
+        }
+        // Panel sterowania w prawym górnym rogu widoczny tylko przez 15 sekund gry, potem znika (wraca pod ESC)
+        this.isPaused = false;
+        this.controlsHudExpired = false;
+        if (!data?.fromMenuAscend) {
+            this.scheduleControlsHudHide();
+        }
+        this.isWorldReady = true;
+    }
+    scheduleControlsHudHide() {
+        let showHud = true;
+        try {
+            const saved = localStorage.getItem('delveria_settings');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.controlsHud !== undefined)
+                    showHud = Boolean(parsed.controlsHud);
+            }
+        }
+        catch { /* ignore */ }
+        const uiOverlay = document.getElementById('ui-overlay');
+        if (uiOverlay) {
+            uiOverlay.style.display = showHud ? '' : 'none';
+        }
+        this.time.delayedCall(15000, () => {
+            this.controlsHudExpired = true;
+            if (!this.isPaused) {
+                const overlay = document.getElementById('ui-overlay');
+                if (overlay)
+                    overlay.style.display = 'none';
+            }
+        });
+    }
+    startMenuAscend(onReachSurface) {
+        const camera = this.cameras.main;
+        const startY = this.player.y + 620;
+        const progressObj = { t: 0 };
+        camera.centerOn(this.player.x, startY);
+        this.tweens.add({
+            targets: progressObj,
+            t: 1,
+            duration: 2100,
+            ease: 'Cubic.easeOut',
+            onUpdate: () => {
+                // Śledzimy aktualne this.player.y na żywo (gracz mógł spaść na trawę podczas startu),
+                // dzięki czemu animacja kończy się dokładnie na kamerze postaci — bez żadnego przeskoku!
+                const camY = Phaser.Math.Linear(startY, this.player.y, progressObj.t);
+                camera.centerOn(this.player.x, camY);
+                if (this.darknessSystem.extraLightPos) {
+                    this.darknessSystem.extraLightPos.x = this.player.x;
+                    this.darknessSystem.extraLightPos.y = camY;
+                    this.darknessSystem.extraLightPos.radius = 140 + (1 - progressObj.t) * 110;
+                }
+            },
+            onComplete: () => {
+                camera.centerOn(this.player.x, this.player.y);
+                this.darknessSystem.extraLightPos = null;
+                this.isIntroCameraMoving = false;
+                this.inputLockTimer = 180;
+                camera.startFollow(this.player, true, 0.08, 0.08);
+                const uiScene = this.scene.get('UIScene');
+                if (uiScene?.cameras?.main) {
+                    uiScene.tweens.add({ targets: uiScene.cameras.main, alpha: 1, duration: 450, ease: 'Sine.easeOut' });
+                }
+                this.scheduleControlsHudHide();
+                this.showWorldFloatingText(this.player.x, this.player.y - 30, 'Witaj w DELVERII', '#6ee7b7');
+                onReachSurface();
+            }
         });
     }
     handleBlockDrop(tileX, tileY, blockId) {
@@ -261,14 +348,20 @@ export class GameScene extends Phaser.Scene {
         }
     }
     update(time, delta) {
+        if (this.isPaused)
+            return;
+        if (this.inputLockTimer > 0)
+            this.inputLockTimer -= delta;
         // 1. Update Continuous Day/Night, Celestial Bodies (Sun, Moon, Stars) & Sky
         this.dayNightSystem.update(delta);
         // 1.1 Update World (Sapling growth, falling trees)
         this.worldManager.update(delta);
         // 1.2 Subterranean Darkness & Fog-of-War Lighting
         this.darknessSystem.update();
-        // 2. Input & Player update
-        this.inputManager.update(delta);
+        // 2. Input & Player update (zablokowane podczas wyjazdu kamery z podziemi)
+        if (!this.isIntroCameraMoving) {
+            this.inputManager.update(delta);
+        }
         // Auto-close chest modal if player walks out of reach
         const uiScene = this.scene.get('UIScene');
         if (uiScene && uiScene.isChestOpen && uiScene.activeChestPos) {
@@ -288,7 +381,7 @@ export class GameScene extends Phaser.Scene {
             this.vormakBoss.update(time, delta * this.bossSlowMoFactor);
         }
         // 4. Mining, Building, Summoning & Attack handling
-        if (this.input.activePointer.isDown) {
+        if (this.input.activePointer.isDown && !this.isIntroCameraMoving && this.inputLockTimer <= 0) {
             const selectedItem = this.player.getSelectedItem();
             if (selectedItem?.id === 'vormak_totem') {
                 this.useVormakTotem();
@@ -310,7 +403,7 @@ export class GameScene extends Phaser.Scene {
                 }
             }
         }
-        else {
+        else if (!this.isIntroCameraMoving) {
             this.miningSystem.update(time, delta, this.input.activePointer);
         }
         // 5. Update Dropped Items (magnetic pull & collection)

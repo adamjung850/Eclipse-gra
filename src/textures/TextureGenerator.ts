@@ -722,71 +722,75 @@ export class TextureGenerator {
       ctx.fillRect(12, 12, 5, 1);
     });
 
-    // 30. SAND
+    // 30. SAND (bezszwowy, ziarnisty pustynny piasek z delikatnymi falami wydm)
     drawTile(`tile_${BlockId.SAND}`, (ctx) => {
-      ctx.fillStyle = '#b38634';
+      ctx.fillStyle = '#d9b15f';
       ctx.fillRect(0, 0, T, T);
-      ctx.fillStyle = '#c7993f';
-      ctx.fillRect(1, 1, T - 2, T - 2);
 
-      ctx.fillStyle = '#dbae4d';
-      ctx.fillRect(0, 3, 11, 2);
-      ctx.fillRect(11, 4, 13, 2);
-      ctx.fillRect(0, 10, 14, 2);
-      ctx.fillRect(14, 11, 10, 2);
-      ctx.fillRect(0, 17, 9, 2);
-      ctx.fillRect(9, 18, 15, 2);
-
-      ctx.fillStyle = '#f0ca6e';
-      ctx.fillRect(2, 3, 7, 1);
-      ctx.fillRect(13, 4, 8, 1);
-      ctx.fillRect(3, 10, 8, 1);
-      ctx.fillRect(15, 11, 7, 1);
-      ctx.fillRect(2, 17, 5, 1);
-      ctx.fillRect(11, 18, 9, 1);
-
-      ctx.fillStyle = '#9e7327';
-      ctx.fillRect(1, 5, 8, 1);
-      ctx.fillRect(13, 6, 8, 1);
-      ctx.fillRect(2, 12, 10, 1);
-      ctx.fillRect(12, 20, 9, 1);
-
-      ctx.fillStyle = '#fff4cc';
-      ctx.fillRect(5, 3, 1, 1);
-      ctx.fillRect(16, 4, 1, 1);
-      ctx.fillRect(7, 10, 1, 1);
-      ctx.fillRect(18, 11, 1, 1);
-      ctx.fillRect(14, 18, 1, 1);
+      // Miękkie fale wydmowe (bez ramek na krawędziach kafelka!)
+      const palette = ['#cfa450', '#e3be6f', '#c29642', '#edd087'];
+      for (let y = 0; y < T; y++) {
+        for (let x = 0; x < T; x++) {
+          const n = Math.sin(x * 0.55 + y * 0.35) + Math.cos(x * 0.9 - y * 0.7);
+          const hash = Math.abs(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1;
+          if (hash > 0.86) {
+            ctx.fillStyle = palette[3]; // jasne ziarenko kwarcu
+            ctx.fillRect(x, y, 1, 1);
+          } else if (hash < 0.14) {
+            ctx.fillStyle = palette[2]; // ciemniejsze ziarenko
+            ctx.fillRect(x, y, 1, 1);
+          } else if (n > 0.75) {
+            ctx.fillStyle = palette[1];
+            ctx.fillRect(x, y, 1, 1);
+          } else if (n < -0.65) {
+            ctx.fillStyle = palette[0];
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
     });
 
-    // 31. SANDSTONE
+    // 31. SANDSTONE (warstwowy pustynny piaskowiec z naturalnymi spękaniami)
     drawTile(`tile_${BlockId.SANDSTONE}`, (ctx) => {
-      ctx.fillStyle = '#7a501a';
+      ctx.fillStyle = '#b8823c';
       ctx.fillRect(0, 0, T, T);
 
-      const strata = [
-        { y: 1, h: 5, base: '#b5853c', hi: '#cca054', lo: '#946624' },
-        { y: 7, h: 4, base: '#8a5c1e', hi: '#a37129', lo: '#6e4712' },
-        { y: 12, h: 5, base: '#bd8f44', hi: '#d4aa59', lo: '#996d29' },
-        { y: 18, h: 5, base: '#9c6c22', hi: '#b3812f', lo: '#7a5015' }
+      // Naturalne warstwy geologiczne
+      const layers = [
+        { y: 0, h: 6, col: '#c48d44', hi: '#d9a75f', lo: '#9c6a2b' },
+        { y: 6, h: 5, col: '#a87230', hi: '#bf8740', lo: '#87571f' },
+        { y: 11, h: 7, col: '#c99349', hi: '#dfb068', lo: '#9e6c2c' },
+        { y: 18, h: 6, col: '#9e6b2b', hi: '#b57f3a', lo: '#7d501b' },
       ];
+      for (const l of layers) {
+        ctx.fillStyle = l.col;
+        ctx.fillRect(0, l.y, T, l.h);
+        ctx.fillStyle = l.hi;
+        ctx.fillRect(0, l.y, T, 1);
+        ctx.fillStyle = l.lo;
+        ctx.fillRect(0, l.y + l.h - 1, T, 1);
+      }
 
-      strata.forEach(s => {
-        ctx.fillStyle = s.base;
-        ctx.fillRect(0, s.y, T, s.h);
-        ctx.fillStyle = s.hi;
-        ctx.fillRect(0, s.y, T, 1);
-        ctx.fillRect(3, s.y + 1, 8, 2);
-        ctx.fillRect(14, s.y + 1, 7, 2);
-        ctx.fillStyle = s.lo;
-        ctx.fillRect(0, s.y + s.h - 1, T, 1);
-      });
+      // Pęknięcia i ziarna skały osadowej
+      for (let y = 0; y < T; y++) {
+        for (let x = 0; x < T; x++) {
+          const h = Math.abs(Math.sin(x * 37.1 + y * 91.7) * 19384.2) % 1;
+          if (h > 0.90) {
+            ctx.fillStyle = '#e6be7a';
+            ctx.fillRect(x, y, 1, 1);
+          } else if (h < 0.08) {
+            ctx.fillStyle = '#6e4514';
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
 
-      ctx.fillStyle = '#52340b';
-      ctx.fillRect(8, 1, 1, 5);
-      ctx.fillRect(16, 7, 1, 4);
-      ctx.fillRect(6, 12, 1, 5);
-      ctx.fillRect(17, 18, 1, 5);
+      // Pionowe spękania między blokami warstwowymi
+      ctx.fillStyle = '#734916';
+      ctx.fillRect(6, 1, 1, 4);
+      ctx.fillRect(17, 6, 1, 4);
+      ctx.fillRect(10, 12, 1, 5);
+      ctx.fillRect(20, 19, 1, 4);
     });
 
     // 32. DARK GRASS
@@ -889,25 +893,60 @@ export class TextureGenerator {
         ctx.fillRect(m.x + 2, m.y + 1, 1, 1);
       });
     });
-    // 37. CACTUS
+    // 37. CACTUS (szczegółowy pixel-artowy kaktus saguaro z żebrami 3D, ramionami i igiełkami)
     drawTile(`tile_${BlockId.CACTUS}`, (ctx) => {
       ctx.clearRect(0, 0, T, T);
-      // Main ribbed stem (width 12px)
-      ctx.fillStyle = '#2c4718';
-      ctx.fillRect(6, 0, 12, T);
-      ctx.fillStyle = '#4f7a2d';
+
+      // Kontur głównego pnia
+      ctx.fillStyle = '#183310';
       ctx.fillRect(7, 0, 10, T);
-      // Ribs
-      ctx.fillStyle = '#639639';
-      ctx.fillRect(8, 0, 2, T);
-      ctx.fillRect(12, 0, 2, T);
-      ctx.fillRect(15, 0, 1, T);
-      // Needles
-      ctx.fillStyle = '#1c300f';
-      ctx.fillRect(4, 4, 2, 1);
-      ctx.fillRect(18, 8, 2, 1);
-      ctx.fillRect(4, 14, 2, 1);
-      ctx.fillRect(18, 18, 2, 1);
+
+      // Wypełnienie + cieniowanie 3D żeber
+      ctx.fillStyle = '#2d5c1c';
+      ctx.fillRect(8, 0, 8, T);
+      ctx.fillStyle = '#47872a';
+      ctx.fillRect(9, 0, 6, T);
+      ctx.fillStyle = '#68ad3b';
+      ctx.fillRect(10, 0, 2, T);
+      ctx.fillStyle = '#89cc52';
+      ctx.fillRect(13, 0, 1, T);
+
+      // Lewe ramię kaktusa (wygięte ku górze)
+      ctx.fillStyle = '#183310';
+      ctx.fillRect(2, 6, 6, 4);
+      ctx.fillRect(2, 3, 4, 5);
+      ctx.fillStyle = '#387022';
+      ctx.fillRect(3, 7, 5, 2);
+      ctx.fillRect(3, 4, 2, 4);
+      ctx.fillStyle = '#68ad3b';
+      ctx.fillRect(3, 4, 1, 3);
+
+      // Prawe ramię kaktusa (niżej)
+      ctx.fillStyle = '#183310';
+      ctx.fillRect(16, 13, 6, 4);
+      ctx.fillRect(18, 9, 4, 6);
+      ctx.fillStyle = '#387022';
+      ctx.fillRect(16, 14, 5, 2);
+      ctx.fillRect(19, 10, 2, 5);
+      ctx.fillStyle = '#89cc52';
+      ctx.fillRect(19, 10, 1, 4);
+
+      // Jasne pustynne kolce (igiełki)
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(6, 3, 1, 1);
+      ctx.fillRect(17, 5, 1, 1);
+      ctx.fillRect(1, 5, 1, 1);
+      ctx.fillRect(22, 11, 1, 1);
+      ctx.fillRect(6, 15, 1, 1);
+      ctx.fillRect(17, 20, 1, 1);
+      ctx.fillRect(11, 9, 1, 1);
+      ctx.fillRect(13, 18, 1, 1);
+
+      // Mały kwiatek kaktusa na prawym ramieniu (detal)
+      ctx.fillStyle = '#f43f5e';
+      ctx.fillRect(19, 8, 2, 1);
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(19, 7, 1, 1);
     });
 
     // 38. CRYSTAL BLOCK
@@ -1203,19 +1242,34 @@ export class TextureGenerator {
 
   private static createTilesetTexture(scene: Phaser.Scene, T: number): void {
     const TOTAL_TILES = 64;
-    const canvas = scene.textures.createCanvas('world_tileset', TOTAL_TILES * T, T);
+    const EXTRUDE = 1;
+    const CELL = T + EXTRUDE * 2; // 26x26 per tile (1px extruded border prevents WebGL seams)
+    const canvas = scene.textures.createCanvas('world_tileset', TOTAL_TILES * CELL, CELL);
     if (!canvas) return;
     const ctx = canvas.context;
     ctx.imageSmoothingEnabled = false;
 
     // Tile 0 is transparent (Air)
-    // Copy each tile_X texture into corresponding slot
+    // Copy each tile_X texture into corresponding slot with 1px extruded edges
     for (let id = 1; id < TOTAL_TILES; id++) {
       const tileKey = `tile_${id}`;
       if (scene.textures.exists(tileKey)) {
         const srcCanvas = (scene.textures.get(tileKey).getSourceImage() as unknown) as CanvasImageSource;
         if (srcCanvas) {
-          ctx.drawImage(srcCanvas, id * T, 0, T, T);
+          const sx = id * CELL;
+          // Center tile
+          ctx.drawImage(srcCanvas, 0, 0, T, T, sx + EXTRUDE, EXTRUDE, T, T);
+          // Top & bottom edge extrude
+          ctx.drawImage(srcCanvas, 0, 0, T, 1, sx + EXTRUDE, 0, T, EXTRUDE);
+          ctx.drawImage(srcCanvas, 0, T - 1, T, 1, sx + EXTRUDE, EXTRUDE + T, T, EXTRUDE);
+          // Left & right edge extrude
+          ctx.drawImage(srcCanvas, 0, 0, 1, T, sx, EXTRUDE, EXTRUDE, T);
+          ctx.drawImage(srcCanvas, T - 1, 0, 1, T, sx + EXTRUDE + T, EXTRUDE, EXTRUDE, T);
+          // 4 corners extrude
+          ctx.drawImage(srcCanvas, 0, 0, 1, 1, sx, 0, EXTRUDE, EXTRUDE);
+          ctx.drawImage(srcCanvas, T - 1, 0, 1, 1, sx + EXTRUDE + T, 0, EXTRUDE, EXTRUDE);
+          ctx.drawImage(srcCanvas, 0, T - 1, 1, 1, sx, EXTRUDE + T, EXTRUDE, EXTRUDE);
+          ctx.drawImage(srcCanvas, T - 1, T - 1, 1, 1, sx + EXTRUDE + T, EXTRUDE + T, EXTRUDE, EXTRUDE);
         }
       }
     }

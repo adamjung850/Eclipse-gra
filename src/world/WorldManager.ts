@@ -139,7 +139,7 @@ export class WorldManager {
       height: this.height
     });
 
-    const tileset = this.tilemap.addTilesetImage('world_tileset', 'world_tileset', T, T, 0, 0);
+    const tileset = this.tilemap.addTilesetImage('world_tileset', 'world_tileset', T, T, 1, 2);
     if (!tileset) {
       console.error('Failed to create world tileset');
       return;

@@ -19,6 +19,7 @@ export class DarknessSystem {
     worldManager;
     player;
     darknessGraphic;
+    extraLightPos = null;
     constructor(scene, worldManager, player) {
         this.scene = scene;
         this.worldManager = worldManager;
@@ -67,6 +68,9 @@ export class DarknessSystem {
             // Check if any light source affects this column
             let colHasLight = false;
             if (Math.abs(colCenterX - playerX) < playerRadius + T) {
+                colHasLight = true;
+            }
+            if (!colHasLight && this.extraLightPos && Math.abs(colCenterX - this.extraLightPos.x) < this.extraLightPos.radius + T) {
                 colHasLight = true;
             }
             if (!colHasLight) {
@@ -121,6 +125,18 @@ export class DarknessSystem {
                         const factor = 1.0 - Math.sqrt(pdistSq) / playerRadius;
                         const light = factor * factor; // Smooth quadratic falloff
                         darkness = Math.max(0, darkness - light * 0.92);
+                    }
+                    // 2b. Extra camera/intro ascending light aura
+                    if (this.extraLightPos && this.extraLightPos.radius > 1) {
+                        const edx = colCenterX - this.extraLightPos.x;
+                        const edy = worldY - this.extraLightPos.y;
+                        const edistSq = edx * edx + edy * edy;
+                        const er = this.extraLightPos.radius;
+                        if (edistSq < er * er) {
+                            const factor = 1.0 - Math.sqrt(edistSq) / er;
+                            const light = factor * factor;
+                            darkness = Math.max(0, darkness - light * 0.92);
+                        }
                     }
                     // 3. Placed torches
                     for (let i = 0; i < torchPositions.length; i++) {

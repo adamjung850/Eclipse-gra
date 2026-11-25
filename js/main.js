@@ -1,7 +1,27 @@
 import { BootScene } from './scenes/BootScene.js';
+import { IntroScene } from './scenes/IntroScene.js';
+import { MainMenuScene } from './scenes/MainMenuScene.js';
 import { GameScene } from './scenes/GameScene.js';
 import { UIScene } from './scenes/UIScene.js';
 export function createGame() {
+    let targetFps = 60;
+    let forceSetTimeOut = false;
+    try {
+        const savedFps = localStorage.getItem('delveria_fps');
+        if (savedFps === 'unlimited') {
+            targetFps = 999;
+            forceSetTimeOut = false;
+        }
+        else if (savedFps) {
+            const parsed = parseInt(savedFps, 10);
+            if (!Number.isNaN(parsed) && parsed >= 30) {
+                targetFps = parsed;
+            }
+        }
+    }
+    catch {
+        // Ignore storage errors
+    }
     const config = {
         type: Phaser.AUTO,
         parent: 'game-container',
@@ -9,6 +29,10 @@ export function createGame() {
         height: window.innerHeight,
         pixelArt: true,
         roundPixels: true,
+        fps: {
+            target: targetFps,
+            forceSetTimeOut,
+        },
         scale: {
             mode: Phaser.Scale.RESIZE,
             autoCenter: Phaser.Scale.CENTER_BOTH
@@ -20,7 +44,7 @@ export function createGame() {
                 debug: false
             }
         },
-        scene: [BootScene, GameScene, UIScene]
+        scene: [BootScene, IntroScene, MainMenuScene, GameScene, UIScene]
     };
     return new Phaser.Game(config);
 }

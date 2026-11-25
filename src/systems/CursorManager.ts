@@ -355,6 +355,16 @@ export class CursorManager {
     return this.isHoveringUI;
   }
 
+  public resetAll(): void {
+    this.isHoveringUI = false;
+    this.isHoldingItem = false;
+    this.isHoveringEnemy = false;
+    this.isHoveringDroppedItem = false;
+    this.isTileInReach = false;
+    this.isPointerDown = false;
+    this.updateState();
+  }
+
   public isItemHeld(): boolean {
     return this.isHoldingItem;
   }

@@ -323,6 +323,15 @@ export class CursorManager {
     isUIHovered() {
         return this.isHoveringUI;
     }
+    resetAll() {
+        this.isHoveringUI = false;
+        this.isHoldingItem = false;
+        this.isHoveringEnemy = false;
+        this.isHoveringDroppedItem = false;
+        this.isTileInReach = false;
+        this.isPointerDown = false;
+        this.updateState();
+    }
     isItemHeld() {
         return this.isHoldingItem;
     }

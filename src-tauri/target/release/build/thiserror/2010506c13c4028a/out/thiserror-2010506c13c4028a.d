@@ -1,0 +1,14 @@
+C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\thiserror/2010506c13c4028a\out\thiserror-2010506c13c4028a.d: C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\lib.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\aserror.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\display.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\var.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\private.rs C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\thiserror/80db4bce7fbd68e9\out/private.rs
+
+C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\thiserror/2010506c13c4028a\out\libthiserror-2010506c13c4028a.rlib: C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\lib.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\aserror.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\display.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\var.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\private.rs C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\thiserror/80db4bce7fbd68e9\out/private.rs
+
+C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\thiserror/2010506c13c4028a\out\libthiserror-2010506c13c4028a.rmeta: C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\lib.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\aserror.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\display.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\var.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\private.rs C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\thiserror/80db4bce7fbd68e9\out/private.rs
+
+C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\lib.rs:
+C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\aserror.rs:
+C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\display.rs:
+C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\var.rs:
+C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\thiserror-2.0.21\src\private.rs:
+C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\thiserror/80db4bce7fbd68e9\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\PC\\Desktop\\Eclipse\\Eclipse-gra\\src-tauri\\target\\release\\build\\thiserror/80db4bce7fbd68e9\\out

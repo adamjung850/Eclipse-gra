@@ -5,12 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "python -m http.server 8080",
-    "build": "tsc"
+    "build": "tsc",
+    "prepare:dist": "node scripts/prepare-dist.mjs",
+    "tauri": "tauri",
+    "app:dev": "tauri dev",
+    "app:build": "tauri build --no-bundle"
   },
-  "keywords": ["game", "rpg", "sandbox", "phaser3", "typescript"],
+  "keywords": [
+    "game",
+    "rpg",
+    "sandbox",
+    "phaser3",
+    "typescript"
+  ],
   "author": "Eclipse Dev Team",
   "license": "MIT",
   "devDependencies": {
+    "@tauri-apps/cli": "^2.12.6",
     "phaser": "^3.88.2",
     "typescript": "^5.4.0"
   }

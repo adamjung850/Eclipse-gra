@@ -38,15 +38,30 @@ export class InputManager {
     const kb = this.scene.input.keyboard;
     if (!kb) return;
 
-    this.keyA = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-    this.keyD = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-    this.keyW = kb.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+    let saved: Record<string, string> = {};
+    try {
+      const raw = localStorage.getItem('delveria_keybinds');
+      if (raw) saved = JSON.parse(raw);
+    } catch {
+      // Ignore invalid JSON
+    }
+
+    const resolveCode = (action: string, fallback: number): number => {
+      const name = saved[action];
+      if (!name) return fallback;
+      const code = (Phaser.Input.Keyboard.KeyCodes as Record<string, number>)[name];
+      return typeof code === 'number' ? code : fallback;
+    };
+
+    this.keyA = kb.addKey(resolveCode('left', Phaser.Input.Keyboard.KeyCodes.A));
+    this.keyD = kb.addKey(resolveCode('right', Phaser.Input.Keyboard.KeyCodes.D));
+    this.keyW = kb.addKey(resolveCode('jump', Phaser.Input.Keyboard.KeyCodes.W));
     this.keyS = kb.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     this.keySpace = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.keyE = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    this.keyE = kb.addKey(resolveCode('inventory', Phaser.Input.Keyboard.KeyCodes.E));
     this.keyEsc = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-    this.keyQ = kb.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
-    this.keyM = kb.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+    this.keyQ = kb.addKey(resolveCode('drop', Phaser.Input.Keyboard.KeyCodes.Q));
+    this.keyM = kb.addKey(resolveCode('music', Phaser.Input.Keyboard.KeyCodes.M));
 
     this.cursors = kb.createCursorKeys();
 

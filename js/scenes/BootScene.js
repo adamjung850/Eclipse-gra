@@ -20,6 +20,6 @@ export class BootScene extends Phaser.Scene {
     create() {
         // Generate all procedural and loaded pixel textures into Phaser's Texture Manager
         TextureGenerator.generateAll(this);
-        this.scene.start('GameScene');
+        this.scene.start('IntroScene');
     }
 }

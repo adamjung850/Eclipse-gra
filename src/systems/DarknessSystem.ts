@@ -21,7 +21,8 @@ export class DarknessSystem {
   private scene: Phaser.Scene;
   private worldManager: WorldManager;
   private player: Player;
-  private darknessGraphic: Phaser.GameObjects.Graphics;
+  public darknessGraphic: Phaser.GameObjects.Graphics;
+  public extraLightPos: { x: number; y: number; radius: number } | null = null;
 
   constructor(scene: Phaser.Scene, worldManager: WorldManager, player: Player) {
     this.scene = scene;
@@ -84,6 +85,9 @@ export class DarknessSystem {
       if (Math.abs(colCenterX - playerX) < playerRadius + T) {
         colHasLight = true;
       }
+      if (!colHasLight && this.extraLightPos && Math.abs(colCenterX - this.extraLightPos.x) < this.extraLightPos.radius + T) {
+        colHasLight = true;
+      }
       if (!colHasLight) {
         for (let i = 0; i < torchPositions.length; i++) {
           if (Math.abs(colCenterX - torchPositions[i].x) < torchRadius + T) {
@@ -143,6 +147,19 @@ export class DarknessSystem {
             const factor = 1.0 - Math.sqrt(pdistSq) / playerRadius;
             const light = factor * factor; // Smooth quadratic falloff
             darkness = Math.max(0, darkness - light * 0.92);
+          }
+
+          // 2b. Extra camera/intro ascending light aura
+          if (this.extraLightPos && this.extraLightPos.radius > 1) {
+            const edx = colCenterX - this.extraLightPos.x;
+            const edy = worldY - this.extraLightPos.y;
+            const edistSq = edx * edx + edy * edy;
+            const er = this.extraLightPos.radius;
+            if (edistSq < er * er) {
+              const factor = 1.0 - Math.sqrt(edistSq) / er;
+              const light = factor * factor;
+              darkness = Math.max(0, darkness - light * 0.92);
+            }
           }
 
           // 3. Placed torches

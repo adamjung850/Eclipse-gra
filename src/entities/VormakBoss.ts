@@ -249,6 +249,7 @@ export class VormakBoss {
   private headVy: number = 0;
   private currentSpeed: number = 340;
   private currentAngle: number = 0;
+  private breachDirX: number = 1;
   private hasBreachedSurface: boolean = false;
   private hasBreachedEntry: boolean = false;
   private hasFiredSpikes: boolean = false;
@@ -370,9 +371,10 @@ export class VormakBoss {
     this.sounds.play('boss_roar');
     this.scene.cameras.main.shake(220, 0.005);
 
-    // Initial dramatic upward breach leap into the sky
+    // Initial dramatic upward breach leap into the sky (wide arc so body never folds vertically)
     const dirToPlayer = Math.sign(this.player.x - spawnX) || 1;
-    this.currentAngle = -Math.PI / 2 + dirToPlayer * 0.20;
+    this.breachDirX = dirToPlayer;
+    this.currentAngle = -Math.PI / 2 + dirToPlayer * 0.56;
     this.head.rotation = this.currentAngle;
     this.currentSpeed = 840;
     this.headVx = Math.cos(this.currentAngle) * this.currentSpeed;
@@ -765,10 +767,10 @@ export class VormakBoss {
   private startBreachLeap(): void {
     this.cleanupTelegraph();
 
-    const dirToPlayer = Math.sign(this.player.x - this.head.x) || (Math.random() < 0.5 ? -1 : 1);
-    const targetLaunchAngle = -Math.PI / 2 + dirToPlayer * 0.28;
+    this.breachDirX = Math.sign(this.player.x - this.head.x) || (Math.random() < 0.5 ? -1 : 1);
+    const targetLaunchAngle = -Math.PI / 2 + this.breachDirX * 0.55;
     // Gentle initial nudge; updateBreachLeap steers smoothly the rest of the way
-    this.steerTowardsAngle(targetLaunchAngle, 0.35);
+    this.steerTowardsAngle(targetLaunchAngle, 0.55);
     this.currentSpeed = this.phase === 1 ? 840 : (this.phase === 2 ? 920 : 980);
 
     this.headVx = Math.cos(this.currentAngle) * this.currentSpeed;
@@ -781,9 +783,8 @@ export class VormakBoss {
   private updateBreachLeap(delta: number, dt: number): void {
     this.stateTimer -= delta;
 
-    // Smoothly arc upward toward player sky crest
-    const dirToPlayer = Math.sign(this.player.x - this.head.x) || 1;
-    const launchAngle = -Math.PI / 2 + dirToPlayer * 0.32;
+    // Keep committed horizontal arc direction so Vormak never reverses mid-leap onto his own tail
+    const launchAngle = -Math.PI / 2 + this.breachDirX * 0.55;
     this.steerTowardsAngle(launchAngle, 4.5 * dt);
     this.headVx = Math.cos(this.currentAngle) * this.currentSpeed;
     this.headVy = Math.sin(this.currentAngle) * this.currentSpeed;
@@ -1140,10 +1141,13 @@ export class VormakBoss {
     this.state = VormakState.DEEP_ABYSS_SLAM;
     this.stateTimer = 900;
 
-    // Launches upward continuously from underground approach position (smooth turn, no instant snap)
+    // Launches upward in a clean arc (ensure minimum horizontal velocity so body never folds vertically)
     const surfaceY = this.findSurfaceTileY(this.head.x) * GAME_CONSTANTS.TILE_SIZE;
-    this.steerTowardsAngle(-Math.PI / 2, 0.45);
-    this.headVx = Phaser.Math.Clamp((this.player.x - this.head.x) * 0.6, -120, 120);
+    const slamDir = Math.sign(this.player.x - this.head.x) || (Math.random() < 0.5 ? -1 : 1);
+    this.breachDirX = slamDir;
+    this.steerTowardsAngle(-Math.PI / 2 + slamDir * 0.36, 0.55);
+    const rawVx = (this.player.x - this.head.x) * 0.8;
+    this.headVx = Math.abs(rawVx) < 240 ? slamDir * 240 : Phaser.Math.Clamp(rawVx, -340, 340);
     this.headVy = -760;
 
     this.sounds.play('boss_emerge');
@@ -1369,8 +1373,9 @@ export class VormakBoss {
     else if (headCos > 0.08) this.head.setFlipY(false);
 
     // Surface-only visibility: Vormak is ONLY visible on/above the surface (never in underground caves!)
+    // +56px margin lets foregroundLayer (depth 10) naturally mask the diving head instead of clipping mid-air
     const headSurfaceY = this.findSurfaceTileY(this.head.x) * GAME_CONSTANTS.TILE_SIZE;
-    this.head.setVisible(this.head.y <= headSurfaceY + 20);
+    this.head.setVisible(this.head.y <= headSurfaceY + 56);
 
     // Sync head Arcade Physics body position
     const headBody = this.head.body as Phaser.Physics.Arcade.Body;
@@ -1382,19 +1387,26 @@ export class VormakBoss {
     // Animate articulated lower jaw ("buzia")
     this.updateLowerJaw(time);
 
+    const MAX_SEG_BEND = 0.48; // Max ~27 deg bend per link so segments never fold into a Y-shape
+
     for (let i = 1; i < this.allSegments.length; i++) {
       const prev = this.allSegments[i - 1];
       const curr = this.allSegments[i];
       if (!prev || !prev.active || !curr || !curr.active) continue;
 
       const rawBackAngle = Math.atan2(curr.y - prev.y, curr.x - prev.x);
+      const prevBackAngle = prev.rotation + Math.PI;
+      const bendDiff = Phaser.Math.Angle.Wrap(rawBackAngle - prevBackAngle);
+      const backAngle = Math.abs(bendDiff) > MAX_SEG_BEND
+        ? prevBackAngle + Math.sign(bendDiff) * MAX_SEG_BEND
+        : rawBackAngle;
 
       // Tight overlapping spacing matched to 118x107 head, 91x52 body, 84x46 tail PNG sprites
       const spacing = i === 1 ? 50 : (curr.isTail ? 36 : 56);
 
-      curr.x = prev.x + Math.cos(rawBackAngle) * spacing;
-      curr.y = prev.y + Math.sin(rawBackAngle) * spacing;
-      curr.rotation = rawBackAngle + Math.PI;
+      curr.x = prev.x + Math.cos(backAngle) * spacing;
+      curr.y = prev.y + Math.sin(backAngle) * spacing;
+      curr.rotation = Phaser.Math.Angle.Wrap(backAngle + Math.PI);
 
       // Orient segment upright cleanly
       const segCos = Math.cos(curr.rotation);
@@ -1403,7 +1415,7 @@ export class VormakBoss {
 
       // Hide segment completely when underground / inside caves
       const segSurfaceY = this.findSurfaceTileY(curr.x) * GAME_CONSTANTS.TILE_SIZE;
-      curr.setVisible(curr.y <= segSurfaceY + 20);
+      curr.setVisible(curr.y <= segSurfaceY + 56);
 
       // Keep Arcade Physics body position aligned with sprite position
       const body = curr.body as Phaser.Physics.Arcade.Body;

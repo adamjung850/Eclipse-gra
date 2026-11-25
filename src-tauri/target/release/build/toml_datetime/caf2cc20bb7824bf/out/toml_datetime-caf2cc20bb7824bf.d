@@ -1,0 +1,10 @@
+C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\toml_datetime/caf2cc20bb7824bf\out\toml_datetime-caf2cc20bb7824bf.d: C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\lib.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\datetime.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\de.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\ser.rs
+
+C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\toml_datetime/caf2cc20bb7824bf\out\libtoml_datetime-caf2cc20bb7824bf.rlib: C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\lib.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\datetime.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\de.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\ser.rs
+
+C:\Users\PC\Desktop\Eclipse\Eclipse-gra\src-tauri\target\release\build\toml_datetime/caf2cc20bb7824bf\out\libtoml_datetime-caf2cc20bb7824bf.rmeta: C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\lib.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\datetime.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\de.rs C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\ser.rs
+
+C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\lib.rs:
+C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\datetime.rs:
+C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\de.rs:
+C:\Users\PC\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\toml_datetime-1.1.3+spec-1.1.0\src\ser.rs:

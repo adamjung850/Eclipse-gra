@@ -314,6 +314,43 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         else {
             body.setVelocityX(0);
         }
+        // Auto-step 1 bloku (24px) bez skakania i bez zwalniania — płynne wejście po pojedynczym stopniu
+        const wm = this.scene.worldManager;
+        if (wm && this.isGrounded && body.velocity.y >= 0 && (moveLeft || moveRight)) {
+            const T = GAME_CONSTANTS.TILE_SIZE;
+            const dir = moveLeft ? -1 : 1;
+            const probeX = dir < 0 ? body.left - 3 : body.right + 3;
+            const stepTileX = Math.floor(probeX / T);
+            const curTileX = Math.floor((body.left + body.right) * 0.5 / T);
+            if (stepTileX !== curTileX || (moveLeft && body.blocked.left) || (moveRight && body.blocked.right)) {
+                const feetTileY = Math.floor((body.bottom - 2) / T);
+                const curLeftTileX = Math.floor((body.left + 2) / T);
+                const curRightTileX = Math.floor((body.right - 2) / T);
+                const headTileY = Math.floor((body.top + 2) / T);
+                const stepSolid = wm.isSolid(stepTileX, feetTileY);
+                const above1Free = !wm.isSolid(stepTileX, feetTileY - 1);
+                const above2Free = !wm.isSolid(stepTileX, feetTileY - 2);
+                let headClear = true;
+                for (let tx = curLeftTileX; tx <= curRightTileX; tx++) {
+                    if (wm.isSolid(tx, headTileY - 1))
+                        headClear = false;
+                }
+                if (stepSolid && above1Free && above2Free && headClear) {
+                    const targetBottomY = feetTileY * T - 0.1;
+                    const bottomOffset = body.bottom - this.y;
+                    this.y = targetBottomY - bottomOffset;
+                    this.x += dir * 2;
+                    body.position.y = targetBottomY - body.height;
+                    body.position.x += dir * 2;
+                    body.prev.y = body.position.y;
+                    body.prev.x = body.position.x;
+                    body.setVelocityX(dir * currentSpeed);
+                    body.setVelocityY(0);
+                    body.blocked.down = true;
+                    this.isGrounded = true;
+                }
+            }
+        }
         if (this.jumpBufferTimer > 0 && this.coyoteTimer > 0) {
             body.setVelocityY(GAME_CONSTANTS.PLAYER_JUMP_VELOCITY);
             this.jumpBufferTimer = 0;
