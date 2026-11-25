@@ -125,10 +125,11 @@ export class EnemySpawner {
       // Surface Level
       // -----------------------------------------------------------------
       if (isNight) {
-        // Night: Skeletons (45%), Slimes (35%), Bats (20%)
+        // Night: Skeletons (35%), Spiders (25%), Slimes (25%), Bats (15%)
         const roll = Math.random();
-        if (roll < 0.45) typeKey = 'skeleton';
-        else if (roll < 0.80) typeKey = 'slime';
+        if (roll < 0.35) typeKey = 'skeleton';
+        else if (roll < 0.60) typeKey = 'spider';
+        else if (roll < 0.85) typeKey = 'slime';
         else typeKey = 'bat';
       } else {
         // Day: Slimes (Green, Blue, occasionally Red)
@@ -136,19 +137,21 @@ export class EnemySpawner {
       }
     } else if (depth < GAME_CONSTANTS.CAVERN_DEPTH) {
       // -----------------------------------------------------------------
-      // Shallow Caverns: Crawlers (45%), Slimes (30%), Bats (25%)
+      // Shallow Caverns: Spiders (30%), Crawlers (30%), Slimes (20%), Bats (20%)
       // -----------------------------------------------------------------
       const roll = Math.random();
-      if (roll < 0.45) typeKey = 'crawler';
-      else if (roll < 0.75) typeKey = 'slime';
+      if (roll < 0.30) typeKey = 'spider';
+      else if (roll < 0.60) typeKey = 'crawler';
+      else if (roll < 0.80) typeKey = 'slime';
       else typeKey = 'bat';
     } else {
       // -----------------------------------------------------------------
-      // Deep Caverns: Skeletons (50%), Crawlers (30%), Bats (20%)
+      // Deep Caverns: Skeletons (40%), Spiders (25%), Crawlers (20%), Bats (15%)
       // -----------------------------------------------------------------
       const roll = Math.random();
-      if (roll < 0.50) typeKey = 'skeleton';
-      else if (roll < 0.80) typeKey = 'crawler';
+      if (roll < 0.40) typeKey = 'skeleton';
+      else if (roll < 0.65) typeKey = 'spider';
+      else if (roll < 0.85) typeKey = 'crawler';
       else typeKey = 'bat';
     }
 

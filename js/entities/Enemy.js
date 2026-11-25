@@ -15,9 +15,7 @@ export const ENEMY_TYPES = {
         xpReward: 15,
         behavior: 'slime',
         drops: [
-            { itemId: 'torch', min: 2, max: 4, chance: 0.8 },
-            { itemId: 'wood', min: 1, max: 3, chance: 0.6 },
-            { itemId: 'sapling', min: 1, max: 2, chance: 0.4 }
+            { itemId: 'slime_gel', min: 1, max: 3, chance: 1.0 }
         ]
     },
     crawler: {
@@ -42,23 +40,41 @@ export const ENEMY_TYPES = {
     },
     skeleton: {
         id: 'skeleton',
-        name: 'Szkielet Górnika',
+        name: 'Szkielet z Włócznią',
         texture: 'enemy_skeleton',
-        width: 20,
+        width: 30,
         height: 36,
-        bodyWidth: 16,
+        bodyWidth: 18,
         bodyHeight: 32,
         maxHp: 85,
         damage: 18,
         defense: 6,
-        speed: 62,
+        speed: 68,
         xpReward: 45,
         behavior: 'skeleton',
         drops: [
-            { itemId: 'iron_ore', min: 1, max: 3, chance: 0.65 },
-            { itemId: 'coal', min: 2, max: 4, chance: 0.8 },
-            { itemId: 'torch', min: 3, max: 6, chance: 0.7 },
-            { itemId: 'iron_bar', min: 1, max: 1, chance: 0.15 }
+            { itemId: 'bone', min: 1, max: 3, chance: 1.0 },
+            { itemId: 'iron_ore', min: 1, max: 2, chance: 0.4 },
+            { itemId: 'coal', min: 1, max: 3, chance: 0.5 }
+        ]
+    },
+    spider: {
+        id: 'spider',
+        name: 'Pająk Jaskiniowy',
+        texture: 'enemy_spider',
+        width: 28,
+        height: 20,
+        bodyWidth: 22,
+        bodyHeight: 16,
+        maxHp: 44,
+        damage: 14,
+        defense: 2,
+        speed: 118,
+        xpReward: 24,
+        behavior: 'crawler',
+        drops: [
+            { itemId: 'spider_silk', min: 1, max: 3, chance: 1.0 },
+            { itemId: 'spider_eye', min: 1, max: 1, chance: 0.10 }
         ]
     },
     bat: {
@@ -77,9 +93,8 @@ export const ENEMY_TYPES = {
         behavior: 'bat',
         flying: true,
         drops: [
-            { itemId: 'astral_crystal', min: 1, max: 1, chance: 0.12 },
-            { itemId: 'torch', min: 1, max: 3, chance: 0.5 },
-            { itemId: 'coal', min: 1, max: 2, chance: 0.6 }
+            { itemId: 'bat_fang', min: 1, max: 2, chance: 1.0 },
+            { itemId: 'coal', min: 1, max: 2, chance: 0.4 }
         ]
     },
     vormak: {

@@ -746,10 +746,11 @@ export class UIScene extends Phaser.Scene {
         })
         .join(' | ');
 
-      const reqText = this.add.text(54, 28, `Składniki: ${ingTexts}`, {
+      const reqText = this.add.text(54, 24, `Składniki: ${ingTexts}`, {
         fontFamily: 'monospace',
-        fontSize: '10px',
-        color: canCraft ? '#86efac' : '#94a3b8'
+        fontSize: '9px',
+        color: canCraft ? '#86efac' : '#94a3b8',
+        wordWrap: { width: 280 }
       });
       row.add(reqText);
 
@@ -1887,22 +1888,45 @@ export class UIScene extends Phaser.Scene {
     this.bossBarMaxHp = Math.max(1, maxHp);
     this.bossBarCurrentHp = Phaser.Math.Clamp(currentHp, 0, this.bossBarMaxHp);
     const ratio = this.bossBarCurrentHp / this.bossBarMaxHp;
-    this.bossBarAnimWidth = UIScene.BOSS_BAR_FILL_W * ratio;
-    this.bossBarTargetWidth = this.bossBarAnimWidth;
+    this.bossBarAnimWidth = 0; // Start empty and sweep-fill dramatically
+    this.bossBarTargetWidth = UIScene.BOSS_BAR_FILL_W * ratio;
+    this.renderBossBarFill();
 
     const pct = Math.round(ratio * 100);
     this.bossBarHpText.setText(`${this.bossBarCurrentHp} / ${this.bossBarMaxHp} HP (${pct}%)`);
 
+    this.repositionBossBar();
+    const targetY = this.bossBarContainer.y;
+
     this.bossBarContainer.setAlpha(0);
+    this.bossBarContainer.setScale(0.84);
+    this.bossBarContainer.y = targetY - 64;
     this.bossBarContainer.setVisible(true);
 
-    this.repositionBossBar();
     this.tweens.killTweensOf(this.bossBarContainer);
+    this.tweens.killTweensOf(this);
+
+    // Slide & pop in bossbar frame
     this.tweens.add({
       targets: this.bossBarContainer,
       alpha: 1,
-      duration: 350,
-      ease: 'Sine.easeOut'
+      y: targetY,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 650,
+      ease: 'Back.easeOut'
+    });
+
+    // Sweep-fill HP bar from 0 to full
+    this.tweens.add({
+      targets: this,
+      bossBarAnimWidth: this.bossBarTargetWidth,
+      duration: 950,
+      delay: 200,
+      ease: 'Cubic.easeOut',
+      onUpdate: () => {
+        this.renderBossBarFill();
+      }
     });
   }
 

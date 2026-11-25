@@ -2072,6 +2072,126 @@ export class TextureGenerator {
       ctx.moveTo(10, 2); ctx.lineTo(22, 4); ctx.lineTo(20, 16); ctx.lineTo(16, 10); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#e28aff'; ctx.fillRect(16, 5, 4, 3);
     });
+
+    // --- MONSTER DROPS & VORMAK TOTEM ---
+    drawIcon('icon_slime_gel', (ctx) => {
+      ctx.fillStyle = '#14532d';
+      ctx.fillRect(5, 8, 14, 11);
+      ctx.fillRect(7, 6, 10, 14);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(6, 9, 12, 9);
+      ctx.fillRect(8, 7, 8, 11);
+      ctx.fillStyle = '#4ade80';
+      ctx.fillRect(8, 9, 6, 5);
+      ctx.fillStyle = '#bbf7d0';
+      ctx.fillRect(9, 9, 3, 2);
+    });
+
+    drawIcon('icon_bone', (ctx) => {
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(4, 15, 5, 5);
+      ctx.fillRect(15, 4, 5, 5);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(5, 16, 3, 3);
+      ctx.fillRect(16, 5, 3, 3);
+      ctx.fillRect(3, 14, 3, 3);
+      ctx.fillRect(6, 17, 3, 3);
+      ctx.fillRect(14, 3, 3, 3);
+      ctx.fillRect(17, 6, 3, 3);
+      ctx.strokeStyle = '#f1f5f9';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(7, 17); ctx.lineTo(17, 7); ctx.stroke();
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(10, 11, 4, 2);
+    });
+
+    drawIcon('icon_spider_silk', (ctx) => {
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(6, 6, 12, 12);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(7, 7, 10, 10);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(8, 8, 8, 2);
+      ctx.fillRect(7, 11, 10, 2);
+      ctx.fillRect(9, 14, 6, 2);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(16, 15, 4, 2);
+      ctx.fillRect(18, 17, 3, 2);
+    });
+
+    drawIcon('icon_spider_eye', (ctx) => {
+      ctx.fillStyle = '#3b0764';
+      ctx.beginPath(); ctx.arc(12, 12, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#991b1b';
+      ctx.beginPath(); ctx.arc(12, 12, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(9, 9, 6, 6);
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(11, 10, 2, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(9, 9, 2, 2);
+    });
+
+    drawIcon('icon_bat_fang', (ctx) => {
+      ctx.fillStyle = '#475569';
+      ctx.beginPath();
+      ctx.moveTo(6, 5); ctx.lineTo(16, 5); ctx.lineTo(14, 20); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.moveTo(7, 6); ctx.lineTo(15, 6); ctx.lineTo(13, 19); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(12, 16, 2, 3); // crimson tip
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(7, 6, 8, 2);
+    });
+
+    drawIcon('icon_vormak_totem', (ctx) => {
+      // High-detail Pixelart Totem Vormaka modeled after boss_vormak_head + crystal body
+      ctx.fillStyle = '#070b12';
+      ctx.fillRect(6, 5, 12, 17);
+      ctx.fillRect(5, 7, 14, 7);
+      // Curved ribbed basalt horns (top left & top right)
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(2, 2, 4, 3); ctx.fillRect(4, 4, 3, 4);
+      ctx.fillRect(18, 2, 4, 3); ctx.fillRect(17, 4, 3, 4);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(3, 3, 2, 2); ctx.fillRect(5, 5, 2, 2);
+      ctx.fillRect(19, 3, 2, 2); ctx.fillRect(17, 5, 2, 2);
+      // Main chiseled stone head & pillar
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(7, 6, 10, 15);
+      ctx.fillStyle = '#2d3b4e';
+      ctx.fillRect(8, 7, 8, 5);
+      ctx.fillRect(8, 15, 8, 5);
+      // Lush moss in cracks & brow
+      ctx.fillStyle = '#14532d';
+      ctx.fillRect(7, 6, 10, 2);
+      ctx.fillRect(7, 13, 3, 3);
+      ctx.fillRect(14, 17, 3, 3);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(8, 6, 4, 1);
+      ctx.fillRect(13, 6, 3, 1);
+      ctx.fillRect(7, 14, 2, 1);
+      // Glowing electric cyan eyes & fissures
+      ctx.fillStyle = '#00e5ff';
+      ctx.fillRect(8, 9, 3, 2);
+      ctx.fillRect(13, 9, 3, 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(9, 9, 1, 1);
+      ctx.fillRect(14, 9, 1, 1);
+      // Sharp ivory fangs
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(8, 12, 2, 2);
+      ctx.fillRect(11, 12, 2, 2);
+      ctx.fillRect(14, 12, 2, 2);
+      // Glowing cyan rune crystal core in pedestal
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(10, 15, 4, 5);
+      ctx.fillStyle = '#00e5ff';
+      ctx.fillRect(11, 16, 2, 3);
+      ctx.fillStyle = '#e0f2fe';
+      ctx.fillRect(11, 17, 1, 1);
+    });
   }
 
   private static createUtilityTextures(scene: Phaser.Scene, T: number): void {
@@ -2305,46 +2425,173 @@ export class TextureGenerator {
       }
     }
 
-    // 3. SKELETON (Lost Miner Skeleton) - 20x36
+    // 3. SKELETON (Spear-wielding Skeleton) - 30x36
     if (!scene.textures.exists('enemy_skeleton')) {
-      const canvas = scene.textures.createCanvas('enemy_skeleton', 20, 36);
+      const canvas = scene.textures.createCanvas('enemy_skeleton', 30, 36);
       if (canvas) {
         const ctx = canvas.context;
         ctx.imageSmoothingEnabled = false;
-        // Skull
+        // Skull (centered around x=8..18)
         ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(6, 3, 10, 9);
-        ctx.fillRect(7, 12, 8, 3); // jaw
+        ctx.fillRect(8, 3, 10, 9);
+        ctx.fillRect(9, 12, 8, 3); // jaw
         // Eye sockets (haunted glowing amber)
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(8, 6, 3, 3);
-        ctx.fillRect(13, 6, 3, 3);
+        ctx.fillRect(10, 6, 3, 3);
+        ctx.fillRect(15, 6, 3, 3);
         ctx.fillStyle = '#fbbf24';
-        ctx.fillRect(9, 7, 1, 1);
-        ctx.fillRect(14, 7, 1, 1);
+        ctx.fillRect(11, 7, 1, 1);
+        ctx.fillRect(16, 7, 1, 1);
         // Spine & Ribs
         ctx.fillStyle = '#cbd5e1';
-        ctx.fillRect(10, 15, 2, 12);
-        ctx.fillRect(6, 17, 10, 2);
-        ctx.fillRect(7, 20, 8, 2);
-        ctx.fillRect(8, 23, 6, 2);
+        ctx.fillRect(12, 15, 2, 12);
+        ctx.fillRect(8, 17, 10, 2);
+        ctx.fillRect(9, 20, 8, 2);
+        ctx.fillRect(10, 23, 6, 2);
         // Pelvis
         ctx.fillStyle = '#94a3b8';
-        ctx.fillRect(7, 26, 8, 3);
+        ctx.fillRect(9, 26, 8, 3);
         // Legs & Boots
         ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(7, 29, 3, 5);
-        ctx.fillRect(12, 29, 3, 5);
+        ctx.fillRect(9, 29, 3, 5);
+        ctx.fillRect(14, 29, 3, 5);
         ctx.fillStyle = '#334155'; // rusty miner boots
-        ctx.fillRect(6, 33, 4, 3);
-        ctx.fillRect(12, 33, 4, 3);
-        // Arm & Rusty miner blade
+        ctx.fillRect(8, 33, 4, 3);
+        ctx.fillRect(14, 33, 4, 3);
+        // Arm holding Spear (Włócznia)
         ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(3, 16, 2, 8);
-        ctx.fillStyle = '#78350f'; // rust hilt
-        ctx.fillRect(2, 24, 4, 2);
-        ctx.fillStyle = '#94a3b8'; // iron blade
-        ctx.fillRect(1, 26, 3, 7);
+        ctx.fillRect(5, 16, 3, 2);
+        ctx.fillRect(4, 18, 2, 4);
+        ctx.fillRect(17, 17, 3, 2);
+        // Long Wooden Spear Shaft (horizontal-diagonal)
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(1, 20, 22, 2);
+        ctx.fillStyle = '#92400e';
+        ctx.fillRect(2, 20, 20, 1);
+        // Sharp Iron Spearhead (Grot włóczni)
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath();
+        ctx.moveTo(22, 18); ctx.lineTo(29, 21); ctx.lineTo(22, 24);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(23, 20, 4, 1);
+        canvas.refresh();
+      }
+    }
+
+    // 3b. CAVE SPIDER (Pająk Jaskiniowy) - 28x20
+    if (!scene.textures.exists('enemy_spider')) {
+      const canvas = scene.textures.createCanvas('enemy_spider', 28, 20);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.imageSmoothingEnabled = false;
+        // 8 Articulated Legs
+        ctx.strokeStyle = '#1e1b2e';
+        ctx.lineWidth = 2;
+        const legPairs = [
+          [9, 10, 2, 6, 1, 16],
+          [11, 11, 5, 8, 4, 18],
+          [17, 11, 23, 8, 24, 18],
+          [19, 10, 26, 6, 27, 16],
+          [10, 9, 4, 3, 2, 11],
+          [18, 9, 24, 3, 26, 11]
+        ];
+        legPairs.forEach(([x1, y1, x2, y2, x3, y3]) => {
+          ctx.beginPath();
+          ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3);
+          ctx.stroke();
+        });
+        // Abdomen (back)
+        ctx.fillStyle = '#18181b';
+        ctx.beginPath(); ctx.ellipse(10, 10, 6, 5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#3f3f46';
+        ctx.fillRect(7, 7, 4, 2);
+        // Red hourglass/venom marking
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(9, 9, 2, 2);
+        // Head / Cephalothorax
+        ctx.fillStyle = '#27272a';
+        ctx.beginPath(); ctx.ellipse(18, 11, 5, 4, 0, 0, Math.PI * 2); ctx.fill();
+        // Glowing Spider Eyes (multiple crimson eyes)
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(19, 9, 2, 2);
+        ctx.fillRect(21, 10, 2, 2);
+        ctx.fillStyle = '#fca5a5';
+        ctx.fillRect(19, 9, 1, 1);
+        // Fangs
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(21, 13, 2, 2);
+        ctx.fillRect(19, 13, 1, 2);
+        canvas.refresh();
+      }
+    }
+
+    // 3c. VORMAK TOTEM WORLD SPRITE (36x46) - Modeled after Vormak boss head & cyan crystal body
+    if (!scene.textures.exists('vormak_totem_world')) {
+      const canvas = scene.textures.createCanvas('vormak_totem_world', 36, 46);
+      if (canvas) {
+        const ctx = canvas.context;
+        ctx.imageSmoothingEnabled = false;
+        // Dark basalt outline
+        ctx.fillStyle = '#070b12';
+        ctx.fillRect(9, 8, 18, 35);
+        ctx.fillRect(7, 11, 22, 13);
+        ctx.fillRect(6, 38, 24, 6); // wide pedestal base
+
+        // Curved ribbed basalt horns (matching boss_vormak_head.png)
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(2, 2, 6, 4); ctx.fillRect(4, 5, 6, 5); ctx.fillRect(6, 8, 5, 5);
+        ctx.fillRect(28, 2, 6, 4); ctx.fillRect(26, 5, 6, 5); ctx.fillRect(25, 8, 5, 5);
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(3, 3, 3, 2); ctx.fillRect(5, 6, 3, 2);
+        ctx.fillRect(30, 3, 3, 2); ctx.fillRect(28, 6, 3, 2);
+
+        // Chiseled basalt stone body
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(10, 9, 16, 33);
+        ctx.fillRect(8, 12, 20, 11);
+        ctx.fillRect(7, 39, 22, 4);
+        ctx.fillStyle = '#2d3b4e';
+        ctx.fillRect(11, 10, 14, 8);
+        ctx.fillRect(11, 25, 14, 13);
+
+        // Subtle dark moss in stone crevices
+        ctx.fillStyle = '#14532d';
+        ctx.fillRect(10, 9, 16, 3);
+        ctx.fillRect(10, 23, 5, 4);
+        ctx.fillRect(21, 31, 5, 5);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(12, 9, 5, 2);
+        ctx.fillRect(20, 10, 4, 1);
+        ctx.fillRect(11, 24, 3, 2);
+
+        // Glowing electric cyan eyes + cracks
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(11, 14, 5, 4);
+        ctx.fillRect(20, 14, 5, 4);
+        ctx.fillStyle = '#00e5ff';
+        ctx.fillRect(12, 15, 4, 2);
+        ctx.fillRect(20, 15, 4, 2);
+        ctx.fillRect(17, 10, 2, 4);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(13, 15, 2, 2);
+        ctx.fillRect(21, 15, 2, 2);
+
+        // Sharp ivory fangs
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(11, 20, 2, 4);
+        ctx.fillRect(15, 20, 2, 3);
+        ctx.fillRect(19, 20, 2, 3);
+        ctx.fillRect(23, 20, 2, 4);
+
+        // Glowing cyan crystal rune core in pillar
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(15, 27, 6, 9);
+        ctx.fillStyle = '#00e5ff';
+        ctx.fillRect(16, 28, 4, 7);
+        ctx.fillStyle = '#e0f2fe';
+        ctx.fillRect(17, 30, 2, 3);
         canvas.refresh();
       }
     }

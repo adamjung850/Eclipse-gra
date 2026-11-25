@@ -1115,5 +1115,72 @@ export const ITEM_REGISTRY = {
         damage: 35,
         value: 1800,
         obtainInfo: 'Skrzynia Monolitu w Otchłani'
+    },
+    // --- MONSTER DROPS & BOSS SUMMONERS ---
+    slime_gel: {
+        id: 'slime_gel',
+        name: 'Szlam',
+        category: ItemCategory.MATERIAL,
+        rarity: ItemRarity.COMMON,
+        description: 'Lepka, elastyczna substancja pozostawiona przez szlamy.',
+        iconTexture: 'icon_slime_gel',
+        maxStack: 999,
+        value: 2,
+        obtainInfo: 'Wypada z pokonanych Szlamów'
+    },
+    bone: {
+        id: 'bone',
+        name: 'Kość',
+        category: ItemCategory.MATERIAL,
+        rarity: ItemRarity.COMMON,
+        description: 'Stara, twarda kość szkieletu.',
+        iconTexture: 'icon_bone',
+        maxStack: 999,
+        value: 4,
+        obtainInfo: 'Wypada z pokonanych Szkieletów'
+    },
+    spider_silk: {
+        id: 'spider_silk',
+        name: 'Nić',
+        category: ItemCategory.MATERIAL,
+        rarity: ItemRarity.COMMON,
+        description: 'Wytrzymała, jedwabista nić pajęcza.',
+        iconTexture: 'icon_spider_silk',
+        maxStack: 999,
+        value: 3,
+        obtainInfo: 'Wypada z pokonanych Pająków'
+    },
+    spider_eye: {
+        id: 'spider_eye',
+        name: 'Oko Pająka',
+        category: ItemCategory.MATERIAL,
+        rarity: ItemRarity.UNCOMMON,
+        description: 'Mroczne, połyskujące oko jaskiniowego pająka. Rzadki składnik rytualny.',
+        iconTexture: 'icon_spider_eye',
+        maxStack: 99,
+        value: 18,
+        obtainInfo: '10% szansy na zdobycie z Pająków'
+    },
+    bat_fang: {
+        id: 'bat_fang',
+        name: 'Kieł Nietoperza',
+        category: ItemCategory.MATERIAL,
+        rarity: ItemRarity.COMMON,
+        description: 'Ostry kieł jaskiniowego nietoperza.',
+        iconTexture: 'icon_bat_fang',
+        maxStack: 999,
+        value: 5,
+        obtainInfo: 'Wypada z pokonanych Nietoperzy'
+    },
+    vormak_totem: {
+        id: 'vormak_totem',
+        name: 'Totem Vormaka',
+        category: ItemCategory.CONSUMABLE,
+        rarity: ItemRarity.EPIC,
+        description: 'Starożytny kamienny totem pokryty mchem i runami. Kliknij LPM, aby przyzwać Vormaka!',
+        iconTexture: 'icon_vormak_totem',
+        maxStack: 10,
+        value: 500,
+        obtainInfo: 'Wytworzono: Stół Rzemieślniczy (50 Szlamu, 20 Kości, 5 Oczu Pająka, 100 Kamienia, 5 Diamentów)'
     }
 };

@@ -25,6 +25,8 @@ export class GameScene extends Phaser.Scene {
   public enemies!: Phaser.Physics.Arcade.Group;
   public projectiles!: Phaser.Physics.Arcade.Group;
   public vormakBoss?: VormakBoss;
+  private bossSlowMoFactor: number = 1.0;
+  private isSummoningBoss: boolean = false;
 
   public miningSystem!: MiningSystem;
   public combatSystem!: CombatSystem;
@@ -109,6 +111,14 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, pSpawnX, pSpawnY);
     (window as any).__gameScene = this;
+
+    // Tymczasowe przedmioty deweloperskie do przetestowania Totemu Vormaka
+    this.player.addItem('slime_gel', 50);
+    this.player.addItem('bone', 20);
+    this.player.addItem('spider_eye', 5);
+    this.player.addItem('stone', 100);
+    this.player.addItem('diamond', 5);
+    this.player.addItem('workbench_item', 1);
 
     // 6. Dropped Items, Enemies & Projectiles Physics Groups
     this.droppedItems = this.physics.add.group();
@@ -266,43 +276,6 @@ export class GameScene extends Phaser.Scene {
         '#6ee7b7'
       );
     });
-
-    // 12. Dev Test Spawn: Vormak Boss Battle Encounter (Spawns right beside player)
-    this.time.delayedCall(700, () => {
-      this.vormakBoss = new VormakBoss(
-        this,
-        this.worldManager,
-        this.player,
-        this.sounds,
-        this.enemies
-      );
-      this.showWorldFloatingText(
-        this.player.x,
-        this.player.y - 50,
-        '⚠️ VORMAK POWSTAJE! [B: Przywołaj ponownie]',
-        '#ef4444'
-      );
-    });
-
-    // 13. Re-summon Boss Key [B] for instant testing
-    this.input.keyboard?.on('keydown-B', () => {
-      if (this.vormakBoss && !this.vormakBoss.isDead) {
-        this.vormakBoss.destroy();
-      }
-      this.vormakBoss = new VormakBoss(
-        this,
-        this.worldManager,
-        this.player,
-        this.sounds,
-        this.enemies
-      );
-      this.showWorldFloatingText(
-        this.player.x,
-        this.player.y - 50,
-        '⚠️ Przywołano Vormaka obok gracza!',
-        '#f97316'
-      );
-    });
   }
 
   public handleBlockDrop(tileX: number, tileY: number, blockId: number): void {
@@ -370,26 +343,30 @@ export class GameScene extends Phaser.Scene {
     this.enemySpawner.update(delta);
     this.combatSystem.update(time, delta, this.input.activePointer);
 
-    // 3.1 Vormak Boss Update
+    // 3.1 Vormak Boss Update (respects cinematic slow-motion factor during summon)
     if (this.vormakBoss && !this.vormakBoss.isDead) {
-      this.vormakBoss.update(time, delta);
+      this.vormakBoss.update(time, delta * this.bossSlowMoFactor);
     }
 
-    // 4. Mining, Building & Attack handling (supports weapons, tools, and bare-hand punching!)
+    // 4. Mining, Building, Summoning & Attack handling
     if (this.input.activePointer.isDown) {
       const selectedItem = this.player.getSelectedItem();
-      const isWeapon = selectedItem?.category === ItemCategory.WEAPON;
-      const aimingAtEnemy = this.combatSystem.isPointerOverEnemy(this.input.activePointer);
-
-      if (isWeapon || aimingAtEnemy) {
-        // Weapon attack or clicking directly on an enemy (including bare fist!) takes priority
-        this.combatSystem.handlePlayerAttack(time, this.input.activePointer);
+      if (selectedItem?.id === 'vormak_totem') {
+        this.useVormakTotem();
       } else {
-        // Otherwise attempt mining/placement
-        const didMine = this.miningSystem.update(time, delta, this.input.activePointer);
-        // If not targeting a mineable/placeable tile, allow swinging tool or punching with bare hand!
-        if (!didMine) {
+        const isWeapon = selectedItem?.category === ItemCategory.WEAPON;
+        const aimingAtEnemy = this.combatSystem.isPointerOverEnemy(this.input.activePointer);
+
+        if (isWeapon || aimingAtEnemy) {
+          // Weapon attack or clicking directly on an enemy (including bare fist!) takes priority
           this.combatSystem.handlePlayerAttack(time, this.input.activePointer);
+        } else {
+          // Otherwise attempt mining/placement
+          const didMine = this.miningSystem.update(time, delta, this.input.activePointer);
+          // If not targeting a mineable/placeable tile, allow swinging tool or punching with bare hand!
+          if (!didMine) {
+            this.combatSystem.handlePlayerAttack(time, this.input.activePointer);
+          }
         }
       }
     } else {
@@ -499,6 +476,167 @@ export class GameScene extends Phaser.Scene {
         '#fcd34d'
       );
     }
+  }
+
+  /**
+   * Uses "Totem Vormaka": Totem launches into the sky, slams into the ground,
+   * creating a glowing blue fissure with screen-wide tremors before Vormak erupts in slow-motion!
+   */
+  private useVormakTotem(): void {
+    if (this.isSummoningBoss) return;
+    if (this.vormakBoss && !this.vormakBoss.isDead) {
+      this.showWorldFloatingText(this.player.x, this.player.y - 36, 'Vormak już jest przebudzony!', '#f97316');
+      return;
+    }
+
+    const consumed = this.player.consumeSelectedItem(1);
+    if (!consumed) return;
+
+    this.isSummoningBoss = true;
+    const uiScene = this.scene.get('UIScene') as any;
+    if (uiScene && uiScene.refreshInventoryUI) {
+      uiScene.refreshInventoryUI();
+    }
+
+    const T = GAME_CONSTANTS.TILE_SIZE;
+    const dir = this.player.isFacingLeft ? -1 : 1;
+    const targetX = Phaser.Math.Clamp(this.player.x + dir * 100, 5 * T, (GAME_CONSTANTS.WORLD_WIDTH - 6) * T);
+    const tileX = Math.floor(targetX / T);
+    const surfaceTileY = this.worldManager.surfaceYCache?.[tileX] ?? Math.floor(this.player.y / T) + 1;
+    const surfaceY = surfaceTileY * T;
+
+    // 1. Spawn Pixelart Totem Sprite
+    const totem = this.add.sprite(this.player.x, this.player.y - 14, 'vormak_totem_world');
+    totem.setDepth(28);
+    this.sounds.play('magic_cast');
+
+    // Cyan particle trail emitter for the flying totem
+    const trailEmitter = this.add.particles(0, 0, 'particle_chip', {
+      lifespan: 450,
+      speed: { min: 20, max: 90 },
+      scale: { start: 1.5, end: 0 },
+      tint: [0x06b6d4, 0x38bdf8, 0xa5f3fc],
+      emitting: false
+    });
+    trailEmitter.setDepth(27);
+
+    // Phase A: Totem flies high up into the air
+    this.tweens.add({
+      targets: totem,
+      x: targetX,
+      y: surfaceY - 130,
+      angle: 360,
+      scaleX: 1.35,
+      scaleY: 1.35,
+      duration: 550,
+      ease: 'Cubic.easeOut',
+      onUpdate: () => {
+        if (Math.random() < 0.65) {
+          trailEmitter.explode(2, totem.x, totem.y);
+        }
+      },
+      onComplete: () => {
+        // Phase B: Totem slams straight down into the earth
+        this.tweens.add({
+          targets: totem,
+          y: surfaceY - 8,
+          angle: 720,
+          scaleX: 1.0,
+          scaleY: 1.0,
+          duration: 240,
+          ease: 'Quad.easeIn',
+          onUpdate: () => {
+            trailEmitter.explode(2, totem.x, totem.y);
+          },
+          onComplete: () => {
+            totem.destroy();
+
+            // Phase C: Ground impact -> Blue/Cyan Glow in Ground + Screen Shake + Additional Effects!
+            this.sounds.play('boss_emerge');
+            this.sounds.play('boss_warn');
+            this.cameras.main.shake(1050, 0.016);
+            this.cameras.main.flash(220, 34, 211, 238, false);
+
+            this.showWorldFloatingText(targetX, surfaceY - 45, '⚠️ Ziemia pęka... Nadchodzi Vormak!', '#38bdf8');
+
+            // Explosion of cyan energy + stone chips
+            trailEmitter.explode(32, targetX, surfaceY);
+
+            // Glowing blue fissure & energy pillar in the ground
+            const groundGlow = this.add.graphics();
+            groundGlow.setDepth(16);
+
+            let glowPulse = 0;
+            const glowTimer = this.time.addEvent({
+              delay: 30,
+              repeat: 30,
+              callback: () => {
+                glowPulse += 0.25;
+                groundGlow.clear();
+                const alpha = 0.55 + Math.sin(glowPulse) * 0.25;
+
+                // Outer deep blue aura in ground
+                groundGlow.fillStyle(0x0284c7, alpha * 0.45);
+                groundGlow.fillEllipse(targetX, surfaceY + 4, 120, 34);
+
+                // Inner bright cyan fissure
+                groundGlow.fillStyle(0x22d3ee, alpha * 0.85);
+                groundGlow.fillEllipse(targetX, surfaceY + 2, 68, 16);
+
+                // White-hot core crack
+                groundGlow.fillStyle(0xe0f2fe, alpha);
+                groundGlow.fillRect(targetX - 24, surfaceY - 2, 48, 5);
+
+                // Vertical blue light beam rising from the crack
+                groundGlow.fillStyle(0x38bdf8, alpha * 0.35);
+                groundGlow.fillRect(targetX - 18, surfaceY - 260, 36, 260);
+                groundGlow.fillStyle(0xa5f3fc, alpha * 0.55);
+                groundGlow.fillRect(targetX - 6, surfaceY - 260, 12, 260);
+
+                // Rising pixel sparks from ground fissure
+                trailEmitter.explode(3, targetX + Phaser.Math.Between(-30, 30), surfaceY);
+              }
+            });
+
+            // Phase D: After 950ms, Vormak erupts skyward in SLOW MOTION!
+            this.time.delayedCall(950, () => {
+              glowTimer.remove(false);
+              this.tweens.add({
+                targets: groundGlow,
+                alpha: 0,
+                duration: 450,
+                onComplete: () => {
+                  groundGlow.destroy();
+                  trailEmitter.destroy();
+                }
+              });
+
+              // Spawn Vormak directly from the glowing blue fissure
+              this.vormakBoss = new VormakBoss(
+                this,
+                this.worldManager,
+                this.player,
+                this.sounds,
+                this.enemies,
+                { x: targetX, y: surfaceY }
+              );
+
+              // Activate dramatic Slow Motion while Vormak rockets into the sky!
+              this.bossSlowMoFactor = 0.35;
+              this.physics.world.timeScale = 2.85; // Inverse in Arcade Physics
+
+              // After 1600ms real-time, smoothly return time to normal so Vormak crashes back to earth!
+              window.setTimeout(() => {
+                if (!this.scene || !this.scene.isActive()) return;
+                this.bossSlowMoFactor = 1.0;
+                this.physics.world.timeScale = 1.0;
+                this.isSummoningBoss = false;
+              }, 1600);
+            });
+          }
+        });
+      }
+    });
   }
 
   public showWorldFloatingText(worldX: number, worldY: number, text: string, color: string = '#44ff88'): void {

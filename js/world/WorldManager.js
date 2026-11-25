@@ -111,6 +111,7 @@ export class WorldManager {
         const bgLayer = this.tilemap.createBlankLayer('BackgroundLayer', tileset, 0, 0);
         if (bgLayer) {
             this.backgroundLayer = bgLayer;
+            this.backgroundLayer.setDepth(0);
             this.backgroundLayer.setAlpha(0.95);
             this.backgroundLayer.setTint(0x525463);
             // Populate background tiles
@@ -127,6 +128,7 @@ export class WorldManager {
         const fgLayer = this.tilemap.createBlankLayer('ForegroundLayer', tileset, 0, 0);
         if (fgLayer) {
             this.foregroundLayer = fgLayer;
+            this.foregroundLayer.setDepth(10); // Covers burrowing worms/bosses underground while leaving sky & open caves visible
             // Populate foreground tiles
             for (let x = 0; x < this.width; x++) {
                 for (let y = 0; y < this.height; y++) {

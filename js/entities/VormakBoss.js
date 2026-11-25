@@ -94,11 +94,13 @@ export class VormakSegment extends Enemy {
         this.isHead = isHead;
         this.isTail = isTail;
         this.isBurrowing = true;
-        this.setDepth(20 - segmentIndex); // Head in front, body behind
+        this.setDepth(8 - segmentIndex * 0.1); // Renders behind foregroundLayer (depth 10) so Vormak is hidden inside solid earth!
+        this.setCollideWorldBounds(false); // Never clamp boss segments against world bounds
         const body = this.body;
         if (body) {
-            body.setAllowGravity(false); // Worm controls its own continuous kinematics
-            // Circular hitboxes tuned cleanly to generated boss sprites (118x107 head, 91x52 body, 84x46 tail)
+            body.setAllowGravity(false);
+            body.moves = false; // VormakBoss handles 100% of kinematic positioning; Arcade Physics only checks overlaps
+            // Circular hitboxes tuned cleanly to loaded PNG sprites (118x107 head, 91x52 body, 84x46 tail)
             if (isHead) {
                 body.setCircle(32, 34, 21);
                 this.setOrigin(0.35, 0.5); // Pivot at skull/jaw center-back
@@ -199,7 +201,7 @@ export class VormakBoss {
     debrisEmitter;
     // UI Scene Ref
     uiScene = null;
-    constructor(scene, worldManager, player, sounds, enemiesGroup) {
+    constructor(scene, worldManager, player, sounds, enemiesGroup, spawnOrigin) {
         this.scene = scene;
         this.worldManager = worldManager;
         this.player = player;
@@ -209,11 +211,11 @@ export class VormakBoss {
         // Glowing Cyan Neon Joint Linkages (rendered cleanly behind armor plates)
         this.neonJointGraphics = scene.add.graphics();
         this.neonJointGraphics.setDepth(5);
-        // 1. Initial Test Spawn Position: Right next to player on the surface!
+        // 1. Spawn Position: Use Totem impact spot if provided, otherwise beside player
         const T = GAME_CONSTANTS.TILE_SIZE;
-        const surfaceTileY = this.findSurfaceTileY(player.x + 220);
-        const spawnX = player.x + 220;
-        const spawnY = surfaceTileY * T;
+        const spawnX = spawnOrigin ? spawnOrigin.x : player.x + 220;
+        const surfaceTileY = this.findSurfaceTileY(spawnX);
+        const spawnY = spawnOrigin ? spawnOrigin.y : surfaceTileY * T;
         // 2. Initialize Projectile Physics Group
         this.enemyProjectiles = scene.physics.add.group();
         this.enemyProjectiles.defaults = {};
@@ -240,16 +242,16 @@ export class VormakBoss {
         if (scene.textures.exists('boss_vormak_jaw')) {
             this.lowerJaw = scene.add.sprite(spawnX, spawnY, 'boss_vormak_jaw');
             this.lowerJaw.setOrigin(0.5, 0.5);
-            this.lowerJaw.setDepth(19.6); // Nested directly under Upper Skull (depth 20)
+            this.lowerJaw.setDepth(7.95); // Nested directly under Upper Skull (depth 8.0) and hidden underground
         }
-        // 4. Create 8 Armored Body Segments + 1 Barbed Tail Stinger (10 segments total, ~630px long)
+        // 4. Create 8 Armored Body Segments + 1 Tail Segment (10 segments total)
         const totalBody = 9;
         for (let i = 1; i <= totalBody; i++) {
             const isTail = i === totalBody;
             const tex = isTail ? 'boss_vormak_tail' : 'boss_vormak_body';
-            // Line them up initially in an arching curve trailing down into the earth
-            const segX = spawnX + i * 52;
-            const segY = spawnY + i * 32;
+            // Line them up vertically underground beneath the breach point
+            const segX = spawnX;
+            const segY = spawnY + i * 36;
             const seg = new VormakSegment(scene, segX, segY, tex, this, i, false, isTail);
             this.bodySegments.push(seg);
             this.allSegments.push(seg);
@@ -278,19 +280,20 @@ export class VormakBoss {
         this.sounds.play('boss_emerge');
         this.sounds.play('boss_roar');
         this.scene.cameras.main.shake(220, 0.005);
-        // Initial leap launch
-        this.currentAngle = -Math.PI * 0.75; // Leaps upward and to the left toward player
+        // Initial dramatic upward breach leap into the sky
+        const dirToPlayer = Math.sign(this.player.x - spawnX) || 1;
+        this.currentAngle = -Math.PI / 2 + dirToPlayer * 0.20;
         this.head.rotation = this.currentAngle;
-        this.currentSpeed = 580;
+        this.currentSpeed = 840;
         this.headVx = Math.cos(this.currentAngle) * this.currentSpeed;
         this.headVy = Math.sin(this.currentAngle) * this.currentSpeed;
         this.state = VormakState.INTRO_BREACH;
-        this.stateTimer = 900;
+        this.stateTimer = 2200;
     }
     update(time, delta) {
         if (this.isDead)
             return;
-        const dt = delta / 1000;
+        const dt = Math.min(delta / 1000, 0.05); // Cap dt to prevent physics spikes on frame drops
         if (this.hitCooldown > 0) {
             this.hitCooldown -= delta;
         }
@@ -403,7 +406,7 @@ export class VormakBoss {
      */
     updateIntroBreach(dt) {
         this.stateTimer -= dt * 1000;
-        this.headVy += 600 * dt; // Gravity arc
+        this.headVy += 480 * dt; // Smooth high arc into the sky
         this.head.x += this.headVx * dt;
         this.head.y += this.headVy * dt;
         this.currentAngle = Math.atan2(this.headVy, this.headVx);
@@ -454,10 +457,11 @@ export class VormakBoss {
      */
     updateUndergroundSwim(time, dt) {
         this.stateTimer -= dt * 1000;
-        // Speed scales with phase and surges cleanly underground if player runs far away
+        // Speed scales with phase and surges smoothly underground if player runs far away
         const distToPlayer = Phaser.Math.Distance.Between(this.head.x, this.head.y, this.player.x, this.player.y);
         const baseSpeed = this.phase === 1 ? 340 : (this.phase === 2 ? 410 : 470);
-        this.currentSpeed = distToPlayer > 700 ? 780 : (distToPlayer > 440 ? baseSpeed + 180 : baseSpeed);
+        const targetSpeed = distToPlayer > 700 ? 740 : (distToPlayer > 440 ? baseSpeed + 160 : baseSpeed);
+        this.currentSpeed += (targetSpeed - this.currentSpeed) * Math.min(1, 4.5 * dt);
         // Undulating deep subterranean patrol path staying in combat proximity (240 - 340px below player)
         const targetY = this.player.y + 270 + Math.sin(time * 0.003) * 55;
         const targetX = this.player.x + Math.cos(time * 0.002) * 180;
@@ -641,14 +645,14 @@ export class VormakBoss {
     startBreachLeap() {
         this.cleanupTelegraph();
         const dirToPlayer = Math.sign(this.player.x - this.head.x) || (Math.random() < 0.5 ? -1 : 1);
-        const targetLaunchAngle = -Math.PI / 2 + dirToPlayer * 0.34;
-        // Blend from current heading smoothly instead of abrupt 180° velocity jerk
-        this.steerTowardsAngle(targetLaunchAngle, 1.45);
-        this.currentSpeed = this.phase === 1 ? 660 : (this.phase === 2 ? 740 : 810);
+        const targetLaunchAngle = -Math.PI / 2 + dirToPlayer * 0.28;
+        // Gentle initial nudge; updateBreachLeap steers smoothly the rest of the way
+        this.steerTowardsAngle(targetLaunchAngle, 0.35);
+        this.currentSpeed = this.phase === 1 ? 840 : (this.phase === 2 ? 920 : 980);
         this.headVx = Math.cos(this.currentAngle) * this.currentSpeed;
         this.headVy = Math.sin(this.currentAngle) * this.currentSpeed;
         this.state = VormakState.BREACH_LEAP;
-        this.stateTimer = 460;
+        this.stateTimer = 560;
     }
     updateBreachLeap(delta, dt) {
         this.stateTimer -= delta;
@@ -681,16 +685,16 @@ export class VormakBoss {
     updateAirborneArc(delta, dt) {
         this.stateTimer -= delta;
         // Realistic gravity pulls serpent naturally back down
-        this.headVy += 650 * dt;
-        this.headVx *= 0.992;
+        this.headVy += 520 * dt;
+        this.headVx *= 0.994;
         // Gently steer head X towards player if drifting too far (> 240px away)
         const distToPlayerX = this.player.x - this.head.x;
         if (Math.abs(distToPlayerX) > 240) {
             this.headVx += Math.sign(distToPlayerX) * 450 * dt;
         }
-        // Anti-stratosphere clamp: if head reaches 180px above player, accelerate descent so boss stays on screen!
-        if (this.head.y < this.player.y - 180) {
-            this.headVy += 1400 * dt;
+        // Gentle high-altitude ceiling so boss stays visible while soaring majestically
+        if (this.head.y < this.player.y - 340) {
+            this.headVy += 750 * dt;
         }
         this.head.x += this.headVx * dt;
         this.head.y += this.headVy * dt;
@@ -720,7 +724,7 @@ export class VormakBoss {
         this.cleanupTelegraph();
         const dirToPlayer = Math.sign(this.player.x - this.head.x) || 1;
         const targetChargeAngle = dirToPlayer > 0 ? 0 : Math.PI;
-        this.steerTowardsAngle(targetChargeAngle, 1.4);
+        this.steerTowardsAngle(targetChargeAngle, 0.35);
         this.currentSpeed = this.phase === 1 ? 470 : (this.phase === 2 ? 540 : 600);
         this.headVx = Math.cos(this.currentAngle) * this.currentSpeed;
         this.headVy = Math.sin(this.currentAngle) * this.currentSpeed;
@@ -796,52 +800,67 @@ export class VormakBoss {
             const p = this.pendingSpikes[i];
             p.telegraphDelay -= delta;
             p.eruptDelay -= delta;
-            // 1. Trigger visual & audio telegraph 600ms before eruption!
+            // 1. Trigger distinct pixel-art ground tremor & emerging spike-tip warning 600ms before eruption!
             if (!p.telegraphSpawned && p.telegraphDelay <= 0) {
                 p.telegraphSpawned = true;
-                // Ground crack fissure sprite
+                // Glowing red/orange ground crack fissure
                 const crack = this.scene.add.sprite(p.x, p.y + 4, 'telegraph_spike_crack');
                 crack.setOrigin(0.5, 1.0);
                 crack.setDepth(14);
-                crack.setScale(0.85);
+                crack.setTint(0xff5533);
+                crack.setScale(0.95);
                 this.scene.tweens.add({
                     targets: crack,
-                    scaleX: 1.15,
+                    scaleX: 1.2,
                     scaleY: 1.15,
-                    alpha: { from: 0.6, to: 1.0 },
+                    alpha: { from: 0.65, to: 1.0 },
                     yoyo: true,
                     repeat: 2,
                     duration: 100
                 });
                 p.crackSprite = crack;
-                // Glowing red hazard warning glyph ("⚠️") directly above the crack
-                const marker = this.scene.add.text(p.x, p.y - 18, '⚠️', {
-                    fontSize: '13px',
-                    stroke: '#000000',
-                    strokeThickness: 3
-                });
-                marker.setOrigin(0.5, 0.5);
-                marker.setDepth(25);
+                // Vertical pixel-art danger beam / heat glow rising from the ground crack
+                const glow = this.scene.add.graphics();
+                glow.setDepth(15);
+                glow.fillStyle(0xef4444, 0.25);
+                glow.fillRect(p.x - 8, p.y - 42, 16, 44);
+                glow.fillStyle(0xf97316, 0.45);
+                glow.fillRect(p.x - 3, p.y - 34, 6, 36);
                 this.scene.tweens.add({
-                    targets: marker,
-                    scale: { from: 0.8, to: 1.25 },
+                    targets: glow,
+                    alpha: { from: 0.35, to: 1.0 },
                     yoyo: true,
                     repeat: 2,
                     duration: 100
                 });
-                p.warningMarker = marker;
+                p.glowGraphic = glow;
+                // Trembling mini stalagmite tip peeking out of the ground crack before erupting
+                const tip = this.scene.add.sprite(p.x, p.y + 2, 'proj_stalagmite_spike');
+                tip.setOrigin(0.5, 1.0);
+                tip.setDepth(15.5);
+                tip.setScale(0.75, 0.32);
+                tip.setTint(0xff8866);
+                this.scene.tweens.add({
+                    targets: tip,
+                    x: p.x + 2,
+                    scaleY: 0.45,
+                    yoyo: true,
+                    repeat: 5,
+                    duration: 50
+                });
+                p.tipSprite = tip;
                 // Ground debris puff & warning sound
-                this.debrisEmitter.explode(2, p.x, p.y);
+                this.debrisEmitter.explode(3, p.x, p.y);
                 this.sounds.play('boss_warn');
             }
             // 2. Erupt spike after 600ms warning telegraph!
             if (p.eruptDelay <= 0) {
-                if (p.crackSprite) {
+                if (p.crackSprite)
                     p.crackSprite.destroy();
-                }
-                if (p.warningMarker) {
-                    p.warningMarker.destroy();
-                }
+                if (p.tipSprite)
+                    p.tipSprite.destroy();
+                if (p.glowGraphic)
+                    p.glowGraphic.destroy();
                 // Create physical bedrock stalagmite spike projectile
                 const spike = new VormakProjectile(this.scene, p.x, p.y - 20, 'proj_stalagmite_spike', 'stalagmite', this.phase === 1 ? 16 : 22, 0, -60, 1000);
                 this.enemyProjectiles.add(spike);
@@ -862,8 +881,10 @@ export class VormakBoss {
         for (const p of this.pendingSpikes) {
             if (p.crackSprite)
                 p.crackSprite.destroy();
-            if (p.warningMarker)
-                p.warningMarker.destroy();
+            if (p.tipSprite)
+                p.tipSprite.destroy();
+            if (p.glowGraphic)
+                p.glowGraphic.destroy();
         }
         this.pendingSpikes = [];
     }
@@ -876,11 +897,7 @@ export class VormakBoss {
         this.stateTimer = 1900;
         this.barrageShotsRemaining = this.phase === 1 ? 5 : (this.phase === 2 ? 7 : 9);
         this.barrageShotTimer = 400; // 400ms charge-up pause before firing
-        // Emerges smoothly near the telegraph surface spot (no jarring cross-map teleport!)
         const surfaceY = this.findSurfaceTileY(this.head.x) * GAME_CONSTANTS.TILE_SIZE;
-        this.head.y = Math.max(this.head.y - 36, surfaceY - 26);
-        this.currentAngle = Math.atan2(this.player.y - this.head.y, this.player.x - this.head.x);
-        this.head.rotation = this.currentAngle;
         this.headVx = 0;
         this.headVy = 0;
         this.triggerEarthDebrisExplosion(this.head.x, surfaceY);
@@ -891,9 +908,13 @@ export class VormakBoss {
     updateCyanRayBarrage(delta, dt) {
         this.stateTimer -= delta;
         this.barrageShotTimer -= delta;
-        // Track player aim
+        // Smoothly emerge to hover just above the surface without teleporting
+        const surfaceY = this.findSurfaceTileY(this.head.x) * GAME_CONSTANTS.TILE_SIZE;
+        const hoverY = surfaceY - 28;
+        this.head.y += (hoverY - this.head.y) * Math.min(1, 7.0 * dt);
+        // Smoothly rotate head towards player aim
         const angleToPlayer = Math.atan2(this.player.y - this.head.y, this.player.x - this.head.x);
-        this.currentAngle = angleToPlayer;
+        this.steerTowardsAngle(angleToPlayer, 5.5 * dt);
         this.head.rotation = this.currentAngle;
         // Rapid barrage fire
         if (this.barrageShotsRemaining > 0 && this.barrageShotTimer <= 0) {
@@ -920,10 +941,9 @@ export class VormakBoss {
         this.cleanupTelegraph();
         this.state = VormakState.DEEP_ABYSS_SLAM;
         this.stateTimer = 900;
-        // Launches upward continuously from underground approach position (no sudden snap!)
+        // Launches upward continuously from underground approach position (smooth turn, no instant snap)
         const surfaceY = this.findSurfaceTileY(this.head.x) * GAME_CONSTANTS.TILE_SIZE;
-        this.currentAngle = -Math.PI / 2;
-        this.head.rotation = this.currentAngle;
+        this.steerTowardsAngle(-Math.PI / 2, 0.45);
         this.headVx = Phaser.Math.Clamp((this.player.x - this.head.x) * 0.6, -120, 120);
         this.headVy = -760;
         this.sounds.play('boss_emerge');
@@ -1067,7 +1087,7 @@ export class VormakBoss {
     }
     /**
      * Inverse Kinematics: Chained body segments follow the segment in front at EXACT rigid distances.
-     * Also renders glowing electric cyan neon linkages between all segment joints!
+     * Pure Follow-The-Leader constraints ensure zero gaps, zero stretching, and zero sudden whipping.
      */
     updateSegmentChaining(time = 0, delta = 16) {
         this.neonJointGraphics.clear();
@@ -1077,48 +1097,43 @@ export class VormakBoss {
             this.head.setFlipY(true);
         else if (headCos > 0.08)
             this.head.setFlipY(false);
+        // Surface-only visibility: Vormak is ONLY visible on/above the surface (never in underground caves!)
+        const headSurfaceY = this.findSurfaceTileY(this.head.x) * GAME_CONSTANTS.TILE_SIZE;
+        this.head.setVisible(this.head.y <= headSurfaceY + 20);
+        // Sync head Arcade Physics body position
+        const headBody = this.head.body;
+        if (headBody) {
+            headBody.position.x = this.head.x - headBody.halfWidth;
+            headBody.position.y = this.head.y - headBody.halfHeight;
+        }
         // Animate articulated lower jaw ("buzia")
         this.updateLowerJaw(time);
-        // Smooth maximum angular flex (~16 deg) per joint prevents unnatural kinks or loops
-        const MAX_JOINT_BEND = 0.28;
         for (let i = 1; i < this.allSegments.length; i++) {
             const prev = this.allSegments[i - 1];
             const curr = this.allSegments[i];
             if (!prev || !prev.active || !curr || !curr.active)
                 continue;
-            const prevBackAngle = prev.rotation + Math.PI;
             const rawBackAngle = Math.atan2(curr.y - prev.y, curr.x - prev.x);
-            const bendDiff = Phaser.Math.Angle.Wrap(rawBackAngle - prevBackAngle);
-            const clampedBackAngle = prevBackAngle + Phaser.Math.Clamp(bendDiff, -MAX_JOINT_BEND, MAX_JOINT_BEND);
-            // Spacing tuned cleanly to generated sprites:
-            // head->body1 = 52px, body->body = 68px, body->tail = 38px (tucks tail collar cleanly under body crystal)
-            const spacing = i === 1 ? 52 : (curr.isTail ? 38 : 68);
-            curr.x = prev.x + Math.cos(clampedBackAngle) * spacing;
-            curr.y = prev.y + Math.sin(clampedBackAngle) * spacing;
-            curr.rotation = clampedBackAngle + Math.PI;
+            // Tight overlapping spacing matched to 118x107 head, 91x52 body, 84x46 tail PNG sprites
+            const spacing = i === 1 ? 50 : (curr.isTail ? 36 : 56);
+            curr.x = prev.x + Math.cos(rawBackAngle) * spacing;
+            curr.y = prev.y + Math.sin(rawBackAngle) * spacing;
+            curr.rotation = rawBackAngle + Math.PI;
             // Orient segment upright cleanly
             const segCos = Math.cos(curr.rotation);
             if (segCos < -0.08)
                 curr.setFlipY(true);
             else if (segCos > 0.08)
                 curr.setFlipY(false);
+            // Hide segment completely when underground / inside caves
+            const segSurfaceY = this.findSurfaceTileY(curr.x) * GAME_CONSTANTS.TILE_SIZE;
+            curr.setVisible(curr.y <= segSurfaceY + 20);
             // Keep Arcade Physics body position aligned with sprite position
             const body = curr.body;
             if (body) {
                 body.position.x = curr.x - body.halfWidth;
                 body.position.y = curr.y - body.halfHeight;
             }
-            // Render glowing electric cyan neon spine energy behind armor joints
-            const mx = (prev.x + curr.x) / 2;
-            const my = (prev.y + curr.y) / 2;
-            this.neonJointGraphics.lineStyle(9, 0x0284c7, 0.38);
-            this.neonJointGraphics.lineBetween(prev.x, prev.y, curr.x, curr.y);
-            this.neonJointGraphics.lineStyle(4, 0x00e5ff, 0.85);
-            this.neonJointGraphics.lineBetween(prev.x, prev.y, curr.x, curr.y);
-            this.neonJointGraphics.fillStyle(0x0284c7, 0.50);
-            this.neonJointGraphics.fillCircle(mx, my, 8);
-            this.neonJointGraphics.fillStyle(0x00e5ff, 0.90);
-            this.neonJointGraphics.fillCircle(mx, my, 4.5);
         }
         // Update 4 articulated digging wing-claws synced directly with updated body segment transforms
         this.updateDiggingLimbs(time, delta);
@@ -1130,6 +1145,7 @@ export class VormakBoss {
     updateLowerJaw(time) {
         if (!this.lowerJaw || !this.lowerJaw.active || !this.head || !this.head.active)
             return;
+        this.lowerJaw.setVisible(this.head.visible);
         const localX = 28.75;
         const localY = this.head.flipY ? -4.90 : 4.90;
         const cosA = Math.cos(this.head.rotation);
@@ -1186,10 +1202,10 @@ export class VormakBoss {
         if (!frontSeg || !rearSeg)
             return;
         const specs = [
-            { seg: frontSeg, bg: false, depth: 19.3, phase: 0, scale: 1.00, lx: 2, ly: 7 },
-            { seg: frontSeg, bg: true, depth: 10.6, phase: Math.PI, scale: 0.94, lx: 11, ly: 1 },
-            { seg: rearSeg, bg: false, depth: 18.3, phase: Math.PI * 0.55, scale: 0.86, lx: 2, ly: 7 },
-            { seg: rearSeg, bg: true, depth: 10.4, phase: Math.PI * 1.55, scale: 0.80, lx: 10, ly: 1 }
+            { seg: frontSeg, bg: false, depth: 7.92, phase: 0, scale: 1.00, lx: 2, ly: 7 },
+            { seg: frontSeg, bg: true, depth: 6.40, phase: Math.PI, scale: 0.94, lx: 11, ly: 1 },
+            { seg: rearSeg, bg: false, depth: 7.72, phase: Math.PI * 0.55, scale: 0.86, lx: 2, ly: 7 },
+            { seg: rearSeg, bg: true, depth: 6.20, phase: Math.PI * 1.55, scale: 0.80, lx: 10, ly: 1 }
         ];
         for (const spec of specs) {
             const sprite = this.scene.add.sprite(spec.seg.x, spec.seg.y, 'boss_vormak_claw');
@@ -1250,6 +1266,7 @@ export class VormakBoss {
             const lx = limb.anchorLocalX + elbowX;
             const ly = (flipY ? -1 : 1) * (limb.anchorLocalY + elbowY);
             limb.sprite.setPosition(limb.segment.x + lx * cosS - ly * sinS, limb.segment.y + lx * sinS + ly * cosS);
+            limb.sprite.setVisible(limb.segment.visible);
             limb.sprite.setFlipY(flipY);
             limb.sprite.rotation = limb.segment.rotation + (flipY ? -swingAngle : swingAngle);
             limb.sprite.setScale(limb.baseScale * (1 + Math.sin(phase) * 0.06), limb.baseScale * (1 - Math.sin(phase) * 0.04));

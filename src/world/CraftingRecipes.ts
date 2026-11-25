@@ -116,6 +116,20 @@ export const CRAFTING_RECIPES: CraftingRecipe[] = [
     category: 'armor',
     ingredients: [{ itemId: 'copper_ore', count: 4 }, { itemId: 'astral_crystal', count: 2 }]
   },
+  {
+    id: 'vormak_totem',
+    resultItemId: 'vormak_totem',
+    resultCount: 1,
+    station: CraftingStation.WORKBENCH,
+    category: 'consumables',
+    ingredients: [
+      { itemId: 'slime_gel', count: 50 },
+      { itemId: 'bone', count: 20 },
+      { itemId: 'spider_eye', count: 5 },
+      { itemId: 'stone', count: 100 },
+      { itemId: 'diamond', count: 5 }
+    ]
+  },
 
   // --- SMELTING FURNACE (Station: FURNACE) ---
   {

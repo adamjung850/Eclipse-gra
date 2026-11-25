@@ -1,7 +1,6 @@
 import { GAME_CONSTANTS } from '../types/index.js';
 import { WorldManager } from '../world/WorldManager.js';
 import { Player } from '../entities/Player.js';
-import { VormakBoss, VormakState } from '../entities/VormakBoss.js';
 
 /**
  * DarknessSystem manages subterranean fog-of-war and dynamic lighting.
@@ -67,18 +66,6 @@ export class DarknessSystem {
       }
     });
 
-    // Vormak boss glowing cyan neon joints
-    const boss = (this.scene as any).vormakBoss as VormakBoss | undefined;
-    const bossNodes: { x: number; y: number }[] = [];
-    if (boss && boss.state !== VormakState.DEFEATED && boss.allSegments && boss.allSegments.length > 0) {
-      for (let i = 0; i < boss.allSegments.length; i += 2) {
-        const seg = boss.allSegments[i];
-        if (seg.x >= cam.worldView.x - 120 && seg.x <= cam.worldView.x + cam.worldView.width + 120) {
-          bossNodes.push({ x: seg.x, y: seg.y });
-        }
-      }
-    }
-
     const gloomColor = 0x030612; // Deep midnight slate/obsidian gloom
     const maxGloomAlpha = 0.86;  // Dark ambient gloom (not pitch black void)
     const gradHeight = 144;      // ~6 blocks smooth vertical transition (144px)
@@ -100,14 +87,6 @@ export class DarknessSystem {
       if (!colHasLight) {
         for (let i = 0; i < torchPositions.length; i++) {
           if (Math.abs(colCenterX - torchPositions[i].x) < torchRadius + T) {
-            colHasLight = true;
-            break;
-          }
-        }
-      }
-      if (!colHasLight) {
-        for (let i = 0; i < bossNodes.length; i++) {
-          if (Math.abs(colCenterX - bossNodes[i].x) < 100 + T) {
             colHasLight = true;
             break;
           }
@@ -175,17 +154,6 @@ export class DarknessSystem {
               const factor = 1.0 - Math.sqrt(tdistSq) / torchRadius;
               const light = factor * factor * 1.15;
               darkness = Math.max(0, darkness - light * 0.95);
-            }
-          }
-
-          // 4. Vormak neon glow
-          for (let i = 0; i < bossNodes.length; i++) {
-            const bdx = colCenterX - bossNodes[i].x;
-            const bdy = worldY - bossNodes[i].y;
-            const bdistSq = bdx * bdx + bdy * bdy;
-            if (bdistSq < 10000) { // 100px radius
-              const factor = 1.0 - Math.sqrt(bdistSq) / 100;
-              darkness = Math.max(0, darkness - factor * 0.88);
             }
           }
 
