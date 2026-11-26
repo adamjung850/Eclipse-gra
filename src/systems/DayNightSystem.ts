@@ -408,6 +408,14 @@ export class DayNightSystem {
     return this.cycleTimeMs / DayNightSystem.TOTAL_CYCLE_MS;
   }
 
+  public getCycleTimeMs(): number {
+    return this.cycleTimeMs;
+  }
+
+  public setCycleTimeMs(ms: number): void {
+    this.cycleTimeMs = ((ms % DayNightSystem.TOTAL_CYCLE_MS) + DayNightSystem.TOTAL_CYCLE_MS) % DayNightSystem.TOTAL_CYCLE_MS;
+  }
+
   public getTimeString(): string {
     const isNight = this.isNight();
     const progress = this.getCycleProgress();

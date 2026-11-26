@@ -1,4 +1,6 @@
 import { BootScene } from './scenes/BootScene.js';
+import { AccountScene } from './scenes/AccountScene.js';
+import { CharacterCreatorScene } from './scenes/CharacterCreatorScene.js';
 import { IntroScene } from './scenes/IntroScene.js';
 import { MainMenuScene } from './scenes/MainMenuScene.js';
 import { GameScene } from './scenes/GameScene.js';
@@ -44,7 +46,7 @@ export function createGame(): Phaser.Game {
         debug: false
       }
     },
-    scene: [BootScene, IntroScene, MainMenuScene, GameScene, UIScene]
+    scene: [BootScene, AccountScene, CharacterCreatorScene, IntroScene, MainMenuScene, GameScene, UIScene]
   };
 
   return new Phaser.Game(config);

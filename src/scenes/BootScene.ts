@@ -1,4 +1,6 @@
 import { TextureGenerator } from '../textures/TextureGenerator.js';
+import { CharacterRenderer } from '../textures/CharacterRenderer.js';
+import { loadSavedCharacterConfig } from '../types/CharacterConfig.js';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -21,7 +23,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   public create(): void {
-    // Generate all procedural and loaded pixel textures into Phaser's Texture Manager
+    // Generate custom 28x42 player textures first, then all remaining game textures
+    CharacterRenderer.renderPlayerTextures(this, loadSavedCharacterConfig());
     TextureGenerator.generateAll(this);
     this.scene.start('IntroScene');
   }

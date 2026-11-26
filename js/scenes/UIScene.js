@@ -3,6 +3,7 @@ import { CRAFTING_RECIPES } from '../world/CraftingRecipes.js';
 import { ITEM_REGISTRY } from '../world/ItemTypes.js';
 import { CursorManager } from '../systems/CursorManager.js';
 import { BiomeSystem } from '../world/BiomeSystem.js';
+import { getAutoSaveEnabled, getAutoSaveIntervalSec, getCurrentUser, getSaveMetaForCurrentUser, saveGameProgress, setAutoSaveEnabled, setAutoSaveIntervalSec, } from '../systems/AccountSystem.js';
 export class UIScene extends Phaser.Scene {
     player;
     gameScene;
@@ -2646,9 +2647,11 @@ export class UIScene extends Phaser.Scene {
             { id: 'sound', label: 'DŹWIĘK' },
             { id: 'controls', label: 'STEROWANIE' },
             { id: 'graphics', label: 'GRAFIKA' },
+            { id: 'save', label: 'ZAPIS' },
         ];
-        const tabW = 176, tabH = 36, tabGap = 12;
-        const tabStartX = -(tabW + tabGap);
+        const tabW = 132, tabH = 36, tabGap = 10;
+        const totalTabsW = tabs.length * tabW + (tabs.length - 1) * tabGap;
+        const tabStartX = -totalTabsW / 2 + tabW / 2;
         const tabY = -ph / 2 + 80;
         tabs.forEach((t, idx) => {
             const tx = tabStartX + idx * (tabW + tabGap);
@@ -2971,6 +2974,156 @@ export class UIScene extends Phaser.Scene {
                     uiOverlay.style.display = v ? '' : 'none';
             });
         }
+        else if (tab === 'save') {
+            const user = getCurrentUser() || 'Gość';
+            const meta = getSaveMetaForCurrentUser();
+            const formatTime = (ts) => {
+                const d = new Date(ts);
+                return d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            };
+            const infoBox = this.add.graphics();
+            infoBox.fillStyle(0x080e1c, 0.92);
+            infoBox.fillRect(-boxW / 2, contentTopY - 22, boxW, 64);
+            infoBox.lineStyle(1, 0x1e293b, 1);
+            infoBox.strokeRect(-boxW / 2, contentTopY - 22, boxW, 64);
+            const accLbl = this.add.text(-boxW / 2 + 16, contentTopY - 4, `KONTO: ${user}`, {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '14px',
+                fontStyle: 'bold',
+                color: '#ffffff',
+            }).setOrigin(0, 0.5);
+            const statusTxt = this.add.text(-boxW / 2 + 16, contentTopY + 18, meta ? `Ostatni zapis: ${formatTime(meta.savedAt)} (${meta.characterName})` : 'Brak zapisanego stanu gry', {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '12px',
+                color: meta ? '#7dd3fc' : '#94a3b8',
+            }).setOrigin(0, 0.5);
+            modal.add([infoBox, accLbl, statusTxt]);
+            // Przycisk Zapisz Postęp Gry
+            const saveBtnY = contentTopY + 76;
+            const saveBtnW = boxW;
+            const saveBtnH = 44;
+            const saveBg = this.add.graphics();
+            const drawSaveBtn = (hover) => {
+                saveBg.clear();
+                saveBg.fillStyle(hover ? 0x0369a1 : 0x0c4a6e, 1);
+                saveBg.fillRect(-saveBtnW / 2, saveBtnY - saveBtnH / 2, saveBtnW, saveBtnH);
+                saveBg.lineStyle(2, 0x38bdf8, 1);
+                saveBg.strokeRect(-saveBtnW / 2, saveBtnY - saveBtnH / 2, saveBtnW, saveBtnH);
+            };
+            drawSaveBtn(false);
+            const saveTxt = this.add.text(0, saveBtnY, 'ZAPISZ POSTĘP GRY', {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '15px',
+                fontStyle: 'bold',
+                color: '#ffffff',
+                letterSpacing: 2,
+            }).setOrigin(0.5, 0.5);
+            const saveHit = this.add.rectangle(0, saveBtnY, saveBtnW, saveBtnH, 0x000000, 0).setInteractive({ useHandCursor: true });
+            saveHit.on('pointerover', () => drawSaveBtn(true));
+            saveHit.on('pointerout', () => drawSaveBtn(false));
+            saveHit.on('pointerdown', () => {
+                const res = saveGameProgress(this.gameScene);
+                if (res.ok && res.savedAt) {
+                    statusTxt.setText(`Zapisano pomyślnie! (${formatTime(res.savedAt)})`);
+                    statusTxt.setColor('#86efac');
+                    this.showSaveToast('Postęp gry zapisany!');
+                }
+                else {
+                    statusTxt.setText(res.error || 'Błąd zapisu.');
+                    statusTxt.setColor('#fca5a5');
+                }
+            });
+            modal.add([saveBg, saveTxt, saveHit]);
+            // Przełącznik Auto-Save
+            addSwitch(contentTopY + 146, 'Automatyczny zapis (Auto-Save)', 'Okresowo zapisuje świat, ekwipunek i pozycję postaci', getAutoSaveEnabled(), (v) => {
+                setAutoSaveEnabled(v);
+            });
+            // Częstotliwość Auto-Save
+            const intY = contentTopY + 218;
+            const intBox = this.add.graphics();
+            intBox.fillStyle(0x080e1c, 0.92);
+            intBox.fillRect(-boxW / 2, intY - 26, boxW, 64);
+            intBox.lineStyle(1, 0x1e293b, 1);
+            intBox.strokeRect(-boxW / 2, intY - 26, boxW, 64);
+            const intTitle = this.add.text(-boxW / 2 + 16, intY - 8, 'CZĘSTOTLIWOŚĆ AUTO-SAVE', {
+                fontFamily: 'Consolas, "Courier New", monospace',
+                fontSize: '14px',
+                fontStyle: 'bold',
+                color: '#e2e8f0',
+            }).setOrigin(0, 0.5);
+            modal.add([intBox, intTitle]);
+            let curInt = getAutoSaveIntervalSec();
+            const intOpts = [
+                { val: 30, label: '30s' },
+                { val: 60, label: '60s' },
+                { val: 120, label: '2m' },
+                { val: 300, label: '5m' },
+            ];
+            const iW = 84, iGap = 10;
+            const totalIW = intOpts.length * iW + (intOpts.length - 1) * iGap;
+            const iStartX = -totalIW / 2 + iW / 2;
+            const iBtnY = intY + 18;
+            const intDrawers = [];
+            intOpts.forEach((opt, idx) => {
+                const ox = iStartX + idx * (iW + iGap);
+                const oBg = this.add.graphics();
+                const oTxt = this.add.text(ox, iBtnY, opt.label, {
+                    fontFamily: 'Consolas, "Courier New", monospace',
+                    fontSize: '13px',
+                    fontStyle: 'bold',
+                    color: '#cbd5e1',
+                }).setOrigin(0.5, 0.5);
+                const drawOpt = () => {
+                    const sel = curInt === opt.val;
+                    oBg.clear();
+                    oBg.fillStyle(sel ? 0x0369a1 : 0x0f172a, 1);
+                    oBg.fillRect(ox - iW / 2, iBtnY - 12, iW, 24);
+                    oBg.lineStyle(sel ? 2 : 1, sel ? 0x7dd3fc : 0x334155, 1);
+                    oBg.strokeRect(ox - iW / 2, iBtnY - 12, iW, 24);
+                    oTxt.setColor(sel ? '#ffffff' : '#94a3b8');
+                };
+                drawOpt();
+                intDrawers.push(drawOpt);
+                const oHit = this.add.rectangle(ox, iBtnY, iW, 26, 0x000000, 0).setInteractive({ useHandCursor: true });
+                oHit.on('pointerdown', () => {
+                    curInt = opt.val;
+                    setAutoSaveIntervalSec(curInt);
+                    intDrawers.forEach((fn) => fn());
+                });
+                modal.add([oBg, oTxt, oHit]);
+            });
+        }
         this.pauseSettingsModal = modal;
+    }
+    showSaveToast(message) {
+        const W = this.scale.width;
+        const toast = this.add.text(W / 2, 26, message, {
+            fontFamily: 'Consolas, "Courier New", monospace',
+            fontSize: '13px',
+            fontStyle: 'bold',
+            color: '#86efac',
+            backgroundColor: '#050a14',
+            padding: { x: 12, y: 6 },
+            stroke: '#020617',
+            strokeThickness: 2,
+        }).setOrigin(0.5, 0.5).setDepth(1200).setAlpha(0);
+        this.tweens.add({
+            targets: toast,
+            alpha: 1,
+            y: 34,
+            duration: 200,
+            ease: 'Sine.easeOut',
+            onComplete: () => {
+                this.time.delayedCall(1400, () => {
+                    this.tweens.add({
+                        targets: toast,
+                        alpha: 0,
+                        y: 22,
+                        duration: 280,
+                        onComplete: () => toast.destroy(),
+                    });
+                });
+            },
+        });
     }
 }

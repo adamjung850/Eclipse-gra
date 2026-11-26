@@ -1,3 +1,4 @@
+import { getCurrentUser, hasSaveForCurrentUser, listRegisteredUsernames, loginAccount, logoutAccount, registerAccount, } from '../systems/AccountSystem.js';
 const DEFAULT_KEYBINDS = {
     left: 'A',
     right: 'D',
@@ -51,6 +52,8 @@ export class MainMenuScene extends Phaser.Scene {
     versionText;
     motes = [];
     buttons = [];
+    accountTopBtn = null;
+    accountDomRoot = null;
     settingsModal = null;
     activeTab = 'sound';
     listeningKeyAction = null;
@@ -144,20 +147,12 @@ export class MainMenuScene extends Phaser.Scene {
         this.titleSprite = this.add.image(W / 2, H * 0.21, MainMenuScene.TITLE_TEX)
             .setOrigin(0.5, 0.5)
             .setDepth(10);
-        // 3 ozdobne przyciski RPG wyśrodkowane
-        const gap = 58;
-        const btnStartY = H * 0.48 - gap;
-        const playBtn = this.createMenuButton(W / 2, btnStartY, 276, 48, 'GRAJ', true, () => {
-            this.startGame();
-        });
-        const settingsBtn = this.createMenuButton(W / 2, btnStartY + gap, 276, 44, 'USTAWIENIA', false, () => {
-            this.openSettingsModal('sound');
-        });
-        const quitBtn = this.createMenuButton(W / 2, btnStartY + gap * 2, 276, 44, 'WYJDŹ', false, () => {
-            this.quitApp();
-        });
-        this.buttons.push(playBtn, settingsBtn, quitBtn);
-        this.versionText = this.add.text(16, H - 14, 'DELVERIA • v1.0', {
+        this.rebuildMenuButtons();
+        // Przycisk "Konto" w prawym górnym rogu
+        this.rebuildAccountTopButton();
+        const activeUser = getCurrentUser();
+        const verLabel = activeUser ? `DELVERIA • v1.0  |  Konto: ${activeUser}` : 'DELVERIA • v1.0';
+        this.versionText = this.add.text(16, H - 14, verLabel, {
             fontFamily: 'Consolas, "Courier New", monospace',
             fontSize: '12px',
             color: '#64748b',
@@ -186,13 +181,18 @@ export class MainMenuScene extends Phaser.Scene {
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             this.scale.off('resize', this.handleResize, this);
             this.cleanupModalListeners();
+            this.closeAccountModal();
         });
         this.input.keyboard?.on('keydown-ENTER', () => {
-            if (!this.settingsModal && !this.isTransitioning) {
+            if (!this.settingsModal && !this.accountDomRoot && !this.isTransitioning) {
                 this.startGame();
             }
         });
         this.input.keyboard?.on('keydown-ESC', () => {
+            if (this.accountDomRoot) {
+                this.closeAccountModal();
+                return;
+            }
             if (this.settingsModal && !this.listeningKeyAction) {
                 this.closeSettingsModal();
             }
@@ -349,11 +349,14 @@ export class MainMenuScene extends Phaser.Scene {
         if (this.titleGlow) {
             this.titleGlow.setPosition(W / 2, H * 0.21);
         }
-        const gap = 58;
-        const btnStartY = H * 0.48 - gap;
+        const gap = 54;
+        const btnStartY = H * 0.48 - ((this.buttons.length - 1) * gap) / 2;
         this.buttons.forEach((btn, i) => {
             btn.container.setPosition(W / 2, btnStartY + i * gap);
         });
+        if (this.accountTopBtn) {
+            this.accountTopBtn.container.setPosition(W - this.accountTopBtn.width / 2 - 20, 34);
+        }
         if (this.versionText) {
             this.versionText.setPosition(16, H - 14);
         }
@@ -454,6 +457,11 @@ export class MainMenuScene extends Phaser.Scene {
         const maxOffset = Math.max(0, MainMenuScene.BG_H * this.bgScale - H);
         this.ascendStartTopY = -this.scrollProgress * maxOffset;
         // 1. Guziki i napis wersji znikają, napis DELVERIA zostaje!
+        this.closeAccountModal();
+        if (this.accountTopBtn) {
+            this.accountTopBtn.container.disableInteractive();
+            this.tweens.add({ targets: this.accountTopBtn.container, alpha: 0, duration: 200 });
+        }
         this.buttons.forEach((btn) => {
             btn.container.disableInteractive();
             this.tweens.add({
@@ -476,9 +484,247 @@ export class MainMenuScene extends Phaser.Scene {
         if (this.loadingCrystalGlow) {
             this.tweens.add({ targets: this.loadingCrystalGlow, alpha: 0.28, duration: 180, ease: 'Sine.easeOut' });
         }
-        // 2. Uruchom prawdziwy świat gry w tle (kamera zaczyna pod ziemią i jedzie płynnie w górę na trawę i postać)
-        this.scene.launch('GameScene', { fromMenuAscend: true });
-        this.scene.bringToTop('MainMenuScene');
+        // 2. Płynne przejście do Kreatora Postaci przed wejściem do świata Delverii
+        this.cameras.main.fadeOut(320, 6, 8, 13);
+        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+            this.scene.start('CharacterCreatorScene');
+        });
+    }
+    startSavedGame() {
+        if (this.isTransitioning)
+            return;
+        this.isTransitioning = true;
+        this.closeAccountModal();
+        this.cameras.main.fadeOut(320, 6, 8, 13);
+        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+            this.scene.start('GameScene', { loadSave: true });
+        });
+    }
+    rebuildMenuButtons() {
+        const W = this.scale.width;
+        const H = this.scale.height;
+        this.buttons.forEach((b) => b.container.destroy());
+        this.buttons = [];
+        const hasSave = hasSaveForCurrentUser();
+        const gap = 54;
+        const btnCount = hasSave ? 4 : 3;
+        const btnStartY = H * 0.48 - ((btnCount - 1) * gap) / 2;
+        let bIdx = 0;
+        if (hasSave) {
+            const continueBtn = this.createMenuButton(W / 2, btnStartY + gap * bIdx++, 276, 46, 'KONTYNUUJ', true, () => {
+                this.startSavedGame();
+            });
+            this.buttons.push(continueBtn);
+        }
+        const playBtn = this.createMenuButton(W / 2, btnStartY + gap * bIdx++, 276, hasSave ? 42 : 48, hasSave ? 'NOWA GRA' : 'GRAJ', !hasSave, () => {
+            this.startGame();
+        });
+        const settingsBtn = this.createMenuButton(W / 2, btnStartY + gap * bIdx++, 276, 44, 'USTAWIENIA', false, () => {
+            this.openSettingsModal('sound');
+        });
+        const quitBtn = this.createMenuButton(W / 2, btnStartY + gap * bIdx++, 276, 44, 'WYJDŹ', false, () => {
+            this.quitApp();
+        });
+        this.buttons.push(playBtn, settingsBtn, quitBtn);
+    }
+    rebuildAccountTopButton() {
+        const W = this.scale.width;
+        if (this.accountTopBtn) {
+            this.accountTopBtn.container.destroy();
+            this.accountTopBtn = null;
+        }
+        const user = getCurrentUser();
+        const label = user ? `KONTO: ${user}` : 'KONTO';
+        const btnW = Math.min(240, Math.max(146, label.length * 10 + 44));
+        this.accountTopBtn = this.createMenuButton(W - btnW / 2 - 20, 34, btnW, 38, label, false, () => {
+            if (this.accountDomRoot) {
+                this.closeAccountModal();
+            }
+            else {
+                this.openAccountModal();
+            }
+        });
+        this.accountTopBtn.container.setDepth(20);
+        if (this.versionText) {
+            this.versionText.setText(user ? `DELVERIA • v1.0  |  Konto: ${user}` : 'DELVERIA • v1.0');
+        }
+    }
+    closeAccountModal() {
+        if (this.accountDomRoot) {
+            this.accountDomRoot.remove();
+            this.accountDomRoot = null;
+        }
+    }
+    openAccountModal() {
+        if (this.settingsModal || this.isTransitioning)
+            return;
+        this.closeAccountModal();
+        const root = document.createElement('div');
+        root.className = 'ac-root';
+        root.style.background = 'rgba(2, 6, 14, 0.55)';
+        root.style.pointerEvents = 'auto';
+        const card = document.createElement('div');
+        card.className = 'ac-card';
+        card.innerHTML = `
+      <div class="cc-corner tl"></div>
+      <div class="cc-corner tr"></div>
+      <div class="cc-corner bl"></div>
+      <div class="cc-corner br"></div>
+    `;
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'ac-close';
+        closeBtn.textContent = '✕';
+        closeBtn.addEventListener('click', () => this.closeAccountModal());
+        card.appendChild(closeBtn);
+        const activeUser = getCurrentUser();
+        const header = document.createElement('div');
+        header.className = 'ac-header';
+        header.innerHTML = `
+      <div class="ac-title">KONTO DELVERIA</div>
+      <div class="ac-subtitle">${activeUser ? `Zalogowano jako: ${activeUser}` : 'Zaloguj się lub utwórz konto, aby zapisywać postęp gry'}</div>
+    `;
+        card.appendChild(header);
+        const existingUsers = listRegisteredUsernames();
+        let mode = existingUsers.length > 0 ? 'login' : 'register';
+        const tabs = document.createElement('div');
+        tabs.className = 'ac-tabs';
+        const loginTabBtn = document.createElement('button');
+        loginTabBtn.type = 'button';
+        loginTabBtn.className = 'ac-tab';
+        loginTabBtn.textContent = 'Logowanie';
+        const regTabBtn = document.createElement('button');
+        regTabBtn.type = 'button';
+        regTabBtn.className = 'ac-tab';
+        regTabBtn.textContent = 'Tworzenie konta';
+        tabs.append(loginTabBtn, regTabBtn);
+        card.appendChild(tabs);
+        const loginField = document.createElement('div');
+        loginField.className = 'ac-field';
+        const loginLbl = document.createElement('label');
+        loginLbl.className = 'ac-label';
+        loginLbl.textContent = 'Login';
+        const loginInput = document.createElement('input');
+        loginInput.type = 'text';
+        loginInput.className = 'ac-input';
+        loginInput.placeholder = 'Wpisz login (min. 3 znaki)...';
+        loginInput.maxLength = 20;
+        if (activeUser)
+            loginInput.value = activeUser;
+        loginField.append(loginLbl, loginInput);
+        card.appendChild(loginField);
+        if (existingUsers.length > 0) {
+            const savedRow = document.createElement('div');
+            savedRow.className = 'ac-saved-row';
+            const savedLbl = document.createElement('span');
+            savedLbl.className = 'ac-saved-lbl';
+            savedLbl.textContent = 'Konta:';
+            savedRow.appendChild(savedLbl);
+            existingUsers.slice(0, 4).forEach((uname) => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'ac-chip';
+                chip.textContent = uname;
+                chip.addEventListener('click', () => {
+                    loginInput.value = uname;
+                    mode = 'login';
+                    syncMode();
+                    passInput.focus();
+                });
+                savedRow.appendChild(chip);
+            });
+            card.appendChild(savedRow);
+        }
+        const passField = document.createElement('div');
+        passField.className = 'ac-field';
+        const passLbl = document.createElement('label');
+        passLbl.className = 'ac-label';
+        passLbl.textContent = 'Hasło';
+        const passInput = document.createElement('input');
+        passInput.type = 'password';
+        passInput.className = 'ac-input';
+        passInput.placeholder = 'Wpisz hasło (min. 4 znaki)...';
+        passInput.maxLength = 64;
+        passField.append(passLbl, passInput);
+        card.appendChild(passField);
+        const msgEl = document.createElement('div');
+        msgEl.className = 'ac-msg';
+        card.appendChild(msgEl);
+        const submitBtn = document.createElement('button');
+        submitBtn.type = 'button';
+        submitBtn.className = 'ac-submit';
+        card.appendChild(submitBtn);
+        if (activeUser) {
+            const logoutBtn = document.createElement('button');
+            logoutBtn.type = 'button';
+            logoutBtn.className = 'ac-logout';
+            logoutBtn.textContent = 'Wyloguj się';
+            logoutBtn.addEventListener('click', () => {
+                logoutAccount();
+                this.rebuildAccountTopButton();
+                this.rebuildMenuButtons();
+                this.closeAccountModal();
+            });
+            card.appendChild(logoutBtn);
+        }
+        const syncMode = () => {
+            loginTabBtn.classList.toggle('active', mode === 'login');
+            regTabBtn.classList.toggle('active', mode === 'register');
+            submitBtn.textContent = mode === 'login' ? 'ZALOGUJ SIĘ →' : 'UTWÓRZ KONTO →';
+            msgEl.textContent = '';
+            msgEl.classList.remove('ok');
+        };
+        syncMode();
+        loginTabBtn.addEventListener('click', () => {
+            mode = 'login';
+            syncMode();
+        });
+        regTabBtn.addEventListener('click', () => {
+            mode = 'register';
+            syncMode();
+        });
+        const handleSubmit = async () => {
+            msgEl.textContent = '';
+            msgEl.classList.remove('ok');
+            const res = mode === 'login'
+                ? await loginAccount(loginInput.value, passInput.value)
+                : await registerAccount(loginInput.value, passInput.value);
+            if (!res.ok) {
+                msgEl.textContent = res.error || 'Wystąpił błąd.';
+                return;
+            }
+            msgEl.classList.add('ok');
+            msgEl.textContent = mode === 'login'
+                ? `Zalogowano jako ${res.username}!`
+                : `Konto ${res.username} utworzone!`;
+            this.rebuildAccountTopButton();
+            this.rebuildMenuButtons();
+            setTimeout(() => {
+                this.closeAccountModal();
+            }, 450);
+        };
+        submitBtn.addEventListener('click', handleSubmit);
+        [loginInput, passInput].forEach((inp) => {
+            inp.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSubmit();
+                }
+            });
+        });
+        root.addEventListener('click', (e) => {
+            if (e.target === root)
+                this.closeAccountModal();
+        });
+        root.appendChild(card);
+        document.body.appendChild(root);
+        this.accountDomRoot = root;
+        setTimeout(() => {
+            if (loginInput.value.trim().length > 0)
+                passInput.focus();
+            else
+                loginInput.focus();
+        }, 50);
     }
     async quitApp() {
         try {

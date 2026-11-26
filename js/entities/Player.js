@@ -1,7 +1,9 @@
 import { CraftingStation, EquipSlotType, GAME_CONSTANTS, ItemCategory } from '../types/index.js';
+import { getActiveCharacterConfig } from '../types/CharacterConfig.js';
 import { ITEM_REGISTRY } from '../world/ItemTypes.js';
 import { BLOCK_DEFINITIONS } from '../world/BlockTypes.js';
 export class Player extends Phaser.Physics.Arcade.Sprite {
+    characterName = getActiveCharacterConfig().name || 'Wędrowiec';
     // Base Stats
     baseHp = 100;
     baseMana = 50;
@@ -58,7 +60,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     initPhysics() {
         if (this.body) {
             this.body.setSize(16, 36);
-            this.body.setOffset(4, 4);
+            this.body.setOffset(6, 6);
             this.body.setGravityY(GAME_CONSTANTS.GRAVITY);
             this.setCollideWorldBounds(true);
         }

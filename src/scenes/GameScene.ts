@@ -17,6 +17,15 @@ import { ITEM_REGISTRY } from '../world/ItemTypes.js';
 import { ChestSystem } from '../world/ChestSystem.js';
 import { BiomeSystem } from '../world/BiomeSystem.js';
 import { VormakBoss } from '../entities/VormakBoss.js';
+import { CharacterRenderer } from '../textures/CharacterRenderer.js';
+import { getActiveCharacterConfig, loadSavedCharacterConfig, setActiveCharacterConfig } from '../types/CharacterConfig.js';
+import {
+  decodeGridRle,
+  getAutoSaveEnabled,
+  getAutoSaveIntervalSec,
+  loadGameProgressForCurrentUser,
+  saveGameProgress,
+} from '../systems/AccountSystem.js';
 
 export class GameScene extends Phaser.Scene {
   public worldManager!: WorldManager;
@@ -26,6 +35,7 @@ export class GameScene extends Phaser.Scene {
   public projectiles!: Phaser.Physics.Arcade.Group;
   public vormakBoss?: VormakBoss;
   public isPaused: boolean = false;
+  private autoSaveElapsedMs: number = 0;
   public isIntroCameraMoving: boolean = false;
   public isWorldReady: boolean = false;
   public inputLockTimer: number = 0;
@@ -46,10 +56,11 @@ export class GameScene extends Phaser.Scene {
     super('GameScene');
   }
 
-  public create(data?: { fromMenuAscend?: boolean }): void {
+  public create(data?: { fromMenuAscend?: boolean; loadSave?: boolean }): void {
     const T = GAME_CONSTANTS.TILE_SIZE;
     const worldWidthPx = GAME_CONSTANTS.WORLD_WIDTH * T;
     const worldHeightPx = GAME_CONSTANTS.WORLD_HEIGHT * T;
+    this.autoSaveElapsedMs = 0;
 
     // 1. Setup World Physics Bounds
     this.physics.world.setBounds(0, 0, worldWidthPx, worldHeightPx);
@@ -60,9 +71,37 @@ export class GameScene extends Phaser.Scene {
     // 3. Sky, Atmosphere & Celestial System (Sun, Moon, Stars, Day/Night)
     this.dayNightSystem = new DayNightSystem(this);
 
-    // 4. Generate Procedural World
-    const worldData = WorldGenerator.generate();
+    // 4. Generate or Load Procedural World
+    const savedState = data?.loadSave ? loadGameProgressForCurrentUser() : null;
+    if (savedState?.character) {
+      setActiveCharacterConfig(savedState.character);
+    }
+
+    const worldData = savedState
+      ? {
+          width: savedState.world.width,
+          height: savedState.world.height,
+          foreground: decodeGridRle(savedState.world.fgRle, savedState.world.width, savedState.world.height),
+          background: decodeGridRle(savedState.world.bgRle, savedState.world.width, savedState.world.height),
+          spawnX: savedState.player.x,
+          spawnY: savedState.player.y,
+          trees: savedState.world.trees || [],
+        }
+      : WorldGenerator.generate();
+
     this.worldManager = new WorldManager(this, worldData);
+
+    if (savedState) {
+      if (Array.isArray(savedState.world.chests)) {
+        this.worldManager.chests = new Map(savedState.world.chests);
+      }
+      if (Array.isArray(savedState.world.placedTorches)) {
+        this.worldManager.placedTorches = new Set(savedState.world.placedTorches);
+      }
+      if (typeof savedState.world.cycleTimeMs === 'number') {
+        this.dayNightSystem.setCycleTimeMs(savedState.world.cycleTimeMs);
+      }
+    }
 
     // 5. Spawn Player & Check URL Teleport overrides (?tp=desert, ?tp=ice, ?tp=dark, ?tp=crystal, ?tp=nether, ?tp=void)
     let pSpawnX = worldData.spawnX;
@@ -114,16 +153,35 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // Ensure custom character sprites are rendered before creating Player
+    const charCfg = getActiveCharacterConfig() || loadSavedCharacterConfig();
+    CharacterRenderer.renderPlayerTextures(this, charCfg);
+
     this.player = new Player(this, pSpawnX, pSpawnY);
     (window as any).__gameScene = this;
+    this.cameras.main.fadeIn(450, 6, 8, 13);
 
-    // Tymczasowe przedmioty deweloperskie do przetestowania Totemu Vormaka
-    this.player.addItem('slime_gel', 50);
-    this.player.addItem('bone', 20);
-    this.player.addItem('spider_eye', 5);
-    this.player.addItem('stone', 100);
-    this.player.addItem('diamond', 5);
-    this.player.addItem('workbench_item', 1);
+    if (savedState) {
+      this.player.hp = savedState.player.hp;
+      this.player.maxHp = savedState.player.maxHp;
+      this.player.mana = savedState.player.mana;
+      this.player.maxMana = savedState.player.maxMana;
+      this.player.selectedSlot = savedState.player.selectedSlot ?? 0;
+      if (Array.isArray(savedState.player.inventory) && savedState.player.inventory.length > 0) {
+        this.player.inventory = savedState.player.inventory.map((s) => ({
+          item: s && s.itemId && ITEM_REGISTRY[s.itemId] ? ITEM_REGISTRY[s.itemId] : null,
+          count: s ? s.count || 0 : 0,
+        }));
+      }
+    } else {
+      // Tymczasowe przedmioty deweloperskie do przetestowania Totemu Vormaka
+      this.player.addItem('slime_gel', 50);
+      this.player.addItem('bone', 20);
+      this.player.addItem('spider_eye', 5);
+      this.player.addItem('stone', 100);
+      this.player.addItem('diamond', 5);
+      this.player.addItem('workbench_item', 1);
+    }
 
     // 6. Dropped Items, Enemies & Projectiles Physics Groups
     this.droppedItems = this.physics.add.group();
@@ -441,6 +499,18 @@ export class GameScene extends Phaser.Scene {
     // 3. Spawner & Combat updates
     this.enemySpawner.update(delta);
     this.combatSystem.update(time, delta, this.input.activePointer);
+
+    // 3.05 Auto-Save timer
+    if (this.isWorldReady && getAutoSaveEnabled()) {
+      this.autoSaveElapsedMs += delta;
+      if (this.autoSaveElapsedMs >= getAutoSaveIntervalSec() * 1000) {
+        this.autoSaveElapsedMs = 0;
+        const res = saveGameProgress(this);
+        if (res.ok && uiScene && typeof (uiScene as any).showSaveToast === 'function') {
+          (uiScene as any).showSaveToast('Auto-zapis wykonany');
+        }
+      }
+    }
 
     // 3.1 Vormak Boss Update (respects cinematic slow-motion factor during summon)
     if (this.vormakBoss && !this.vormakBoss.isDead) {

@@ -33,8 +33,10 @@ export class TextureGenerator {
     // 2. Generate Crack Textures
     this.createCrackTextures(scene, T);
 
-    // 3. Generate Player Sprites
-    this.createPlayerTextures(scene);
+    // 3. Generate Player Sprites (skip if already rendered by CharacterRenderer)
+    if (!scene.textures.exists('player_idle')) {
+      this.createPlayerTextures(scene);
+    }
 
     // 4. Generate Tool & Icon Textures
     this.createItemIcons(scene);

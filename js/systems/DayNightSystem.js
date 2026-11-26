@@ -334,6 +334,12 @@ export class DayNightSystem {
     getCycleProgress() {
         return this.cycleTimeMs / DayNightSystem.TOTAL_CYCLE_MS;
     }
+    getCycleTimeMs() {
+        return this.cycleTimeMs;
+    }
+    setCycleTimeMs(ms) {
+        this.cycleTimeMs = ((ms % DayNightSystem.TOTAL_CYCLE_MS) + DayNightSystem.TOTAL_CYCLE_MS) % DayNightSystem.TOTAL_CYCLE_MS;
+    }
     getTimeString() {
         const isNight = this.isNight();
         const progress = this.getCycleProgress();
