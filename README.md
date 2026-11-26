@@ -1,6 +1,15 @@
-# ECLIPSE – THE LOST WORLD | 2D Sandbox RPG
+# DELVERIA | 2D Sandbox RPG
 
-Projekt gry 2D Sandbox RPG stworzony w Phaser 3 i TypeScript.
+Projekt gry 2D Sandbox RPG stworzony w Phaser 3, TypeScript i Tauri (Rust).
+
+---
+
+## 🎮 Jak uruchomić grę po pobraniu z GitHuba (Windows)
+
+Nie musisz nic instalować ani mieć dostępu do internetu przy uruchamianiu:
+
+1. **Aplikacja okienkowa (rekomendowane):** kliknij dwukrotnie **`Delveria.exe`** w głównym folderze gry (`WebView2Loader.dll` musi leżeć obok niego w tym samym folderze).
+2. **W przeglądarce (bez Pythona i Node.js):** kliknij dwukrotnie **`Uruchom_w_przegladarce.bat`** — uruchomi wbudowany lokalny serwer Windows i automatycznie otworzy grę.
 
 ---
 
