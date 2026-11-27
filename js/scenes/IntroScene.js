@@ -1,3 +1,4 @@
+import { getBinaryCrystalMesh } from '../textures/BinaryCrystal3D.js';
 /**
  * Filmowe intro "Delveria" (zoptymalizowane pod stałe 60 FPS):
  * 1. Czyste czarne tło (bez napisów)
@@ -425,48 +426,9 @@ export class IntroScene extends Phaser.Scene {
         }
     }
     buildCrystalMesh() {
-        this.vertices = [];
-        this.triangles = [];
-        const addCrystalPillar = (offsetX, offsetY, offsetZ, tiltZ, tiltX, radius, bodyH, tipH, hueShift) => {
-            const sides = 6;
-            const baseIdx = this.vertices.length;
-            const cosZ = Math.cos(tiltZ), sinZ = Math.sin(tiltZ);
-            const cosX = Math.cos(tiltX), sinX = Math.sin(tiltX);
-            const pushV = (x, y, z) => {
-                const y1 = y * cosX - z * sinX;
-                const z1 = y * sinX + z * cosX;
-                const x2 = x * cosZ - y1 * sinZ;
-                const y2 = x * sinZ + y1 * cosZ;
-                this.vertices.push({ x: x2 + offsetX, y: y2 + offsetY, z: z1 + offsetZ });
-            };
-            pushV(0, -(bodyH + tipH), 0);
-            pushV(0, bodyH + tipH, 0);
-            for (let i = 0; i < sides; i++) {
-                const a = (i / sides) * Math.PI * 2;
-                pushV(Math.cos(a) * radius, -bodyH, Math.sin(a) * radius);
-            }
-            for (let i = 0; i < sides; i++) {
-                const a = (i / sides) * Math.PI * 2;
-                pushV(Math.cos(a) * radius, bodyH, Math.sin(a) * radius);
-            }
-            const topTip = baseIdx;
-            const botTip = baseIdx + 1;
-            for (let i = 0; i < sides; i++) {
-                const next = (i + 1) % sides;
-                const t1 = baseIdx + 2 + i;
-                const t2 = baseIdx + 2 + next;
-                const b1 = baseIdx + 2 + sides + i;
-                const b2 = baseIdx + 2 + sides + next;
-                const h = hueShift + i * 0.22;
-                this.triangles.push({ a: topTip, b: t1, c: t2, hueShift: h });
-                this.triangles.push({ a: t1, b: b1, c: t2, hueShift: h + 0.1 });
-                this.triangles.push({ a: t2, b: b1, c: b2, hueShift: h + 0.1 });
-                this.triangles.push({ a: botTip, b: b2, c: b1, hueShift: h + 0.2 });
-            }
-        };
-        addCrystalPillar(0, 0.2, 0, 0.02, 0, 2.2, 2.8, 3.8, 0.0);
-        addCrystalPillar(-3.0, 1.4, 0.5, -0.58, 0.16, 1.4, 1.8, 2.5, 0.9);
-        addCrystalPillar(3.1, 1.1, -0.5, 0.54, -0.14, 1.5, 2.0, 2.7, 1.7);
-        addCrystalPillar(-0.8, 2.6, 1.6, -0.24, 0.35, 1.0, 1.1, 1.5, 2.4);
+        // Mesh jest wspólny ze wskaźnikiem ładowania (ten sam kryształ 0/1 w plakietce)
+        const mesh = getBinaryCrystalMesh();
+        this.vertices = mesh.vertices;
+        this.triangles = mesh.triangles;
     }
 }

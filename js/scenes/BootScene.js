@@ -1,6 +1,7 @@
 import { TextureGenerator } from '../textures/TextureGenerator.js';
 import { CharacterRenderer } from '../textures/CharacterRenderer.js';
 import { loadSavedCharacterConfig } from '../types/CharacterConfig.js';
+import { initAccountDatabase } from '../systems/AccountSystem.js';
 export class BootScene extends Phaser.Scene {
     constructor() {
         super('BootScene');
@@ -20,6 +21,7 @@ export class BootScene extends Phaser.Scene {
         this.load.image('boss_vormak_claw', 'assets/textures/boss_vormak_claw.png?v=6.9');
     }
     create() {
+        void initAccountDatabase();
         // Generate custom 28x42 player textures first, then all remaining game textures
         CharacterRenderer.renderPlayerTextures(this, loadSavedCharacterConfig());
         TextureGenerator.generateAll(this);

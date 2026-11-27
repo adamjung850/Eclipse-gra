@@ -1,5 +1,7 @@
 import { DEFAULT_CHARACTER_CONFIG, loadSavedCharacterConfig, setActiveCharacterConfig } from '../types/CharacterConfig.js';
 import { CharacterRenderer } from '../textures/CharacterRenderer.js';
+import { renderBinaryCrystalFrame } from '../textures/BinaryCrystal3D.js';
+import { BlockId } from '../types/index.js';
 const EYE_COLORS = [
     '#38bdf8', '#2563eb', '#22c55e', '#78350f',
     '#d97706', '#94a3b8', '#a855f7', '#ef4444'
@@ -28,10 +30,28 @@ export class CharacterCreatorScene extends Phaser.Scene {
     uiRoot = null;
     nameModal = null;
     isTransitioning = false;
+    worldId;
+    worldName;
+    introBackdrop;
+    introShade;
+    introFog;
+    undergroundLayer;
+    loadingBadge = null;
+    loadingTimer;
+    menuBgY = 0;
+    menuBgScale = 0;
     constructor() {
         super('CharacterCreatorScene');
     }
-    create() {
+    create(data) {
+        this.worldId = data?.worldId;
+        this.worldName = data?.worldName;
+        this.menuBgY = data?.menuBgY ?? -this.scale.height;
+        this.menuBgScale = data?.menuBgScale ?? 0;
+        this.introBackdrop = undefined;
+        this.introShade = undefined;
+        this.introFog = undefined;
+        this.undergroundLayer = undefined;
         this.isTransitioning = false;
         this.motes = [];
         this.stars = [];
@@ -40,14 +60,14 @@ export class CharacterCreatorScene extends Phaser.Scene {
         if (controlsPill)
             controlsPill.style.display = 'none';
         CharacterRenderer.renderPlayerTextures(this, this.config);
-        // 1. Atmospheric Delveria Cave Background (reuse MainMenuScene texture if present)
+        // 1. Jaskinia z menu — ta sama tekstura i ten sam kadr, żeby tło było ciągłe
         this.bgGraphics = this.add.graphics();
-        this.bgGraphics.setDepth(0);
+        this.bgGraphics.setDepth(1);
         if (this.textures.exists('__delveria_menu_real_cave__')) {
             this.caveBgImage = this.add.image(0, 0, '__delveria_menu_real_cave__');
-            this.caveBgImage.setOrigin(0.5, 0.5);
-            this.caveBgImage.setAlpha(0.45);
-            this.caveBgImage.setDepth(1);
+            this.caveBgImage.setOrigin(0.5, 0);
+            this.caveBgImage.setAlpha(1);
+            this.caveBgImage.setDepth(0);
         }
         // Drifting cyan crystal motes
         for (let i = 0; i < 35; i++) {
@@ -104,9 +124,124 @@ export class CharacterCreatorScene extends Phaser.Scene {
         });
         // 5. Build HUD-matched HTML/CSS Creator Panel on the right
         this.buildCreatorDOM();
-        this.cameras.main.fadeIn(320, 6, 8, 13);
+        // 6. Płynny wjazd: kamera startuje na kadrze jaskini z menu i podjeżdża do kreatora
+        this.playIntro();
         this.events.once('shutdown', () => {
             this.cleanupDOM();
+        });
+    }
+    /**
+     * Wjazd kamery z menu do scenki kreatora — bez cięcia i bez czerni.
+     * Kamera startuje o wysokość ekranu niżej, na tym samym kadrze jaskini co menu,
+     * i jedzie w górę — tak samo, jak później wynurzenie na powierzchnię świata.
+     */
+    playIntro() {
+        const W = this.scale.width;
+        const H = this.scale.height;
+        const cam = this.cameras.main;
+        const menuScale = this.menuBgScale > 0 ? this.menuBgScale : 1;
+        // Nakładka z menu (przyciemnienie, kryształ, tytuł) pod scenką kreatora — tyle tylko,
+        // ile trzeba, żeby pierwsza klatka była tą samą, którą gracz widział przed animacją.
+        const backdrop = this.add.container(0, H).setDepth(1.5);
+        backdrop.add(this.add.rectangle(W / 2, H / 2, W, H, 0x02040a, 0.36));
+        if (this.textures.exists('__delveria_menu_real_cave__')
+            && this.textures.exists('__delveria_menu_live_01_crystal_lg__')) {
+            const cave = this.textures.get('__delveria_menu_real_cave__').getSourceImage();
+            const groundY = this.menuBgY + cave.height * menuScale - 24 * 1.6 * menuScale;
+            const crystal = this.add.image(W / 2, groundY, '__delveria_menu_live_01_crystal_lg__');
+            crystal.setOrigin(0.5, 1);
+            crystal.setScale(Math.max(0.95, menuScale * 0.48));
+            crystal.setBlendMode(Phaser.BlendModes.ADD);
+            backdrop.add(crystal);
+        }
+        if (this.textures.exists('__delveria_epic_title_v5__')) {
+            const title = this.add.image(W / 2, H * 0.21, '__delveria_epic_title_v5__');
+            const texW = title.texture.getSourceImage().width || 500;
+            title.setScale(Math.min(1, (W * 0.78) / texW));
+            backdrop.add(title);
+        }
+        this.introBackdrop = backdrop;
+        // Ta sama zasłona co na kadrze menu — dzięki temu styk obu kadrów jest niewidoczny
+        this.introShade = this.add.rectangle(W / 2, H / 2, W, H, 0x02040a, 0.36).setDepth(0.8);
+        // Miękki pas mroku na styku kadrów — warstwy skały nie łamią się w ostrą linię
+        const fog = this.add.graphics().setDepth(2);
+        fog.fillGradientStyle(0x04060e, 0x04060e, 0x04060e, 0x04060e, 0, 0, 0.7, 0.7);
+        fog.fillRect(0, H - 130, W, 130);
+        fog.fillGradientStyle(0x04060e, 0x04060e, 0x04060e, 0x04060e, 0.7, 0.7, 0, 0);
+        fog.fillRect(0, H, W, 130);
+        fog.setAlpha(0);
+        this.introFog = fog;
+        this.tweens.add({ targets: fog, alpha: 1, duration: 260, ease: 'Sine.easeOut' });
+        // Własny, ciemniejszy klimat komnaty wjeżdża dopiero po dojechaniu kamery
+        this.bgGraphics.setAlpha(0);
+        // Kamera o ekran niżej: widzi dokładnie to, co menu w chwili kliknięcia
+        cam.scrollY = H;
+        if (this.uiRoot) {
+            this.uiRoot.style.opacity = '0';
+            this.uiRoot.style.pointerEvents = 'none';
+            this.uiRoot.style.transition = 'opacity 0.32s ease';
+        }
+        const logo = this.binaryLogoImage;
+        const title = this.titleLogoImage;
+        const pedestal = this.pedestalGraphics;
+        const sprite = this.previewSprite;
+        // Pulsowanie logo przejmuje animacja wejścia i wraca po jej zakończeniu
+        if (logo)
+            this.tweens.killTweensOf(logo);
+        [logo, title, pedestal, sprite].forEach((obj) => obj?.setAlpha(0));
+        this.tweens.add({
+            targets: cam,
+            scrollY: 0,
+            duration: 1150,
+            ease: 'Sine.easeInOut',
+            onComplete: () => {
+                // Kamera dojechała: nakładka z menu znika dopiero teraz, żeby nigdy nie mignęła pustka
+                this.introBackdrop?.destroy(true);
+                this.introBackdrop = undefined;
+                cam.scrollY = 0;
+                if (this.introShade) {
+                    const shade = this.introShade;
+                    const fog = this.introFog;
+                    this.introShade = undefined;
+                    this.introFog = undefined;
+                    this.tweens.add({
+                        targets: fog ? [shade, fog] : shade,
+                        alpha: 0,
+                        duration: 420,
+                        ease: 'Sine.easeOut',
+                        onComplete: () => {
+                            shade.destroy();
+                            fog?.destroy();
+                        }
+                    });
+                }
+                if (logo) {
+                    this.tweens.add({
+                        targets: logo,
+                        alpha: { from: 0.45, to: 0.68 },
+                        duration: 2400,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Sine.easeInOut'
+                    });
+                }
+            }
+        });
+        this.tweens.add({ targets: this.bgGraphics, alpha: 1, duration: 460, delay: 690, ease: 'Sine.easeInOut' });
+        if (logo)
+            this.tweens.add({ targets: logo, alpha: 0.55, duration: 620, delay: 220, ease: 'Sine.easeOut' });
+        if (title)
+            this.tweens.add({ targets: title, alpha: 1, duration: 620, delay: 220, ease: 'Sine.easeOut' });
+        if (pedestal)
+            this.tweens.add({ targets: pedestal, alpha: 1, duration: 620, delay: 320, ease: 'Sine.easeOut' });
+        if (sprite)
+            this.tweens.add({ targets: sprite, alpha: 1, duration: 620, delay: 320, ease: 'Sine.easeOut' });
+        // HUD pojawia się dopiero, gdy kamera dojeżdża do scenki kreatora
+        this.time.delayedCall(1020, () => {
+            if (this.uiRoot) {
+                this.uiRoot.style.pointerEvents = '';
+                this.uiRoot.style.opacity = '1';
+            }
         });
     }
     update(time, delta) {
@@ -116,7 +251,7 @@ export class CharacterCreatorScene extends Phaser.Scene {
         const H = this.scale.height;
         const dt = Math.min(delta, 50) / 1000;
         this.bgGraphics.clear();
-        this.bgGraphics.fillGradientStyle(0x050810, 0x050810, 0x0c1528, 0x0c1528, 1);
+        this.bgGraphics.fillGradientStyle(0x050810, 0x050810, 0x0c1528, 0x0c1528, 0.72, 0.72, 0.52, 0.52);
         this.bgGraphics.fillRect(0, 0, W, H);
         for (const s of this.stars) {
             const a = 0.2 + 0.4 * (0.5 + 0.5 * Math.sin(time * 0.002 + s.phase));
@@ -131,6 +266,31 @@ export class CharacterCreatorScene extends Phaser.Scene {
                 m.rect.x = Math.random() * W;
             }
         }
+        this.animatePreview(time);
+    }
+    /** Ożywia podgląd postaci: oddech w postoju i unoszenie w skoku (piksele bez rozmycia). */
+    animatePreview(time) {
+        if (!this.previewSprite)
+            return;
+        const baseY = this.getStageCenter().y;
+        if (this.previewMode === 'walk') {
+            this.previewSprite.y = baseY;
+            return;
+        }
+        if (this.previewMode === 'jump') {
+            // Skok: unoszenie + przebieranie nogami w powietrzu
+            this.previewSprite.y = baseY - 8 + Math.sin(time * 0.006) * 5;
+            const frame = Math.floor(time / 180) % 2 === 0 ? 'player_jump' : 'player_walk_1';
+            if (this.textures.exists(frame) && this.previewSprite.texture.key !== frame) {
+                this.previewSprite.setTexture(frame);
+            }
+            return;
+        }
+        // Postój: spokojne oddychanie (unoszenie klatki o 2 px w górę i w dół)
+        if (this.previewSprite.texture.key !== 'player_idle' && this.textures.exists('player_idle')) {
+            this.previewSprite.setTexture('player_idle');
+        }
+        this.previewSprite.y = baseY + Math.sin(time * 0.0016) * 3;
     }
     getStageCenter() {
         const W = this.scale.width;
@@ -146,12 +306,13 @@ export class CharacterCreatorScene extends Phaser.Scene {
         const { x, y } = this.getStageCenter();
         this.previewSprite.setPosition(x, y);
         if (this.caveBgImage) {
-            this.caveBgImage.setPosition(W / 2, H / 2);
             const tex = this.caveBgImage.texture.getSourceImage();
-            if (tex && tex.width > 0 && tex.height > 0) {
-                const scale = Math.max(W / tex.width, H / tex.height);
-                this.caveBgImage.setScale(scale);
+            let scale = this.menuBgScale;
+            if ((!scale || scale <= 0) && tex && tex.width > 0 && tex.height > 0) {
+                scale = Math.max(W / tex.width, H / tex.height);
             }
+            this.caveBgImage.setScale(scale || 1);
+            this.caveBgImage.setPosition(W / 2, Math.min(H + this.menuBgY, -24));
         }
         if (this.binaryLogoImage) {
             this.binaryLogoImage.setPosition(x, y - 10);
@@ -710,16 +871,302 @@ export class CharacterCreatorScene extends Phaser.Scene {
             return;
         this.isTransitioning = true;
         setActiveCharacterConfig(this.config);
-        this.cameras.main.fadeOut(380, 6, 8, 13);
-        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-            this.cleanupDOM();
-            const controlsPill = document.querySelector('.controls-pill');
-            if (controlsPill)
-                controlsPill.style.display = '';
-            this.scene.start('GameScene');
+        // 1. HUD kreatora znika (płynnie), postać i dekoracje się rozmywają
+        if (this.nameModal) {
+            this.nameModal.remove();
+            this.nameModal = null;
+        }
+        if (this.uiRoot) {
+            this.uiRoot.style.pointerEvents = 'none';
+            this.uiRoot.style.transition = 'opacity 0.35s ease';
+            this.uiRoot.style.opacity = '0';
+        }
+        const decor = [
+            this.previewSprite,
+            this.pedestalGraphics,
+            this.binaryLogoImage,
+            this.titleLogoImage,
+        ].filter(Boolean);
+        this.tweens.add({ targets: decor, alpha: 0, duration: 520, ease: 'Sine.easeInOut' });
+        // 2. Nad kreatorem pojawiają się podziemia świata — tam kamera pojedzie dalej
+        this.introBackdrop?.destroy(true);
+        this.introBackdrop = undefined;
+        this.introShade?.destroy();
+        this.introShade = undefined;
+        this.introFog?.destroy();
+        this.introFog = undefined;
+        this.tweens.killTweensOf(this.cameras.main);
+        this.cameras.main.scrollY = 0;
+        this.buildUndergroundLayer();
+        // 3. Kamera rusza w górę, a przy ładowaniu świata zwalnia i pokazuje plakietkę 0/1
+        const cam = this.cameras.main;
+        const H = this.scale.height;
+        const state = { y: cam.scrollY };
+        this.tweens.add({
+            targets: state,
+            y: -H * 0.42,
+            duration: 620,
+            ease: 'Cubic.easeOut',
+            onUpdate: () => {
+                cam.scrollY = state.y;
+            },
+            onComplete: () => {
+                // Ładowanie świata: logo 0/1 + obracający się kryształ w prawym dolnym rogu
+                this.showLoadingBadge();
+                this.tweens.add({
+                    targets: state,
+                    y: -H,
+                    duration: 1500,
+                    ease: 'Sine.easeOut',
+                    onUpdate: () => {
+                        cam.scrollY = state.y;
+                    },
+                    onComplete: () => {
+                        // Chwila na pełnym kadrze podziemi, zanim świat przejmie ekran
+                        this.time.delayedCall(520, () => this.startWorld());
+                    },
+                });
+            },
+        });
+    }
+    /** Grunt nad scenką kreatora — prawdziwe kafle gry ułożone warstwami, z jaskinią i światłem komnaty. */
+    buildUndergroundLayer() {
+        const W = this.scale.width;
+        const H = this.scale.height;
+        // Kafle muszą mieć taki sam rozmiar jak w menu: jaskinia (24 px) jest tam wyświetlana
+        // w skali menuBgScale, więc w przejściu bloki rosną tą samą krotnością (wielokrotność 24 px,
+        // żeby pixel-art się nie rozjeżdżał).
+        const caveTex = this.textures.exists('__delveria_menu_real_cave__')
+            ? this.textures.get('__delveria_menu_real_cave__').getSourceImage()
+            : null;
+        const menuScale = this.menuBgScale > 0
+            ? this.menuBgScale
+            : (caveTex && caveTex.width > 0
+                ? Math.max(W / caveTex.width, (H * 2.1) / caveTex.height)
+                : 1.9);
+        const T = 24 * Math.max(2, Math.round(menuScale));
+        const key = '__cc_underground__';
+        this.undergroundLayer?.destroy();
+        this.undergroundLayer = undefined;
+        if (this.textures.exists(key))
+            this.textures.remove(key);
+        const canvasTex = this.textures.createCanvas(key, W, H);
+        if (!canvasTex)
+            return;
+        const ctx = canvasTex.getContext();
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = '#04060b';
+        ctx.fillRect(0, 0, W, H);
+        const tileSource = (id) => {
+            const tileKey = `tile_${id}`;
+            return this.textures.exists(tileKey)
+                ? this.textures.get(tileKey).getSourceImage()
+                : null;
+        };
+        // Deterministyczny szum — warstwa wygląda tak samo przy każdym przejściu
+        const noise = (x, y, seed) => {
+            const n = Math.sin(x * 12.9898 + y * 78.233 + seed * 37.719) * 43758.5453;
+            return n - Math.floor(n);
+        };
+        // Komnata kreatora, z której wynurza się kamera (dolna krawędź kadru)
+        const caveCx = W * 0.5;
+        const caveCy = H + T * 2.5;
+        const caveRx = W * 0.47;
+        const caveRy = H * 0.24;
+        const inCave = (px, py) => {
+            const wobble = 1 + Math.sin(px * 0.0075) * 0.11 + Math.sin(px * 0.019 + 2.1) * 0.05;
+            const dx = (px - caveCx) / (caveRx * wobble);
+            const dy = (py - caveCy) / (caveRy * (1 + (wobble - 1) * 0.4));
+            return dx * dx + dy * dy < 1;
+        };
+        // Skalne kieszenie — szerokie odnogi jaskini w masywie
+        const pockets = [
+            { x: W * 0.14, y: H * 0.32, rx: T * 4.2, ry: T * 1.7 },
+            { x: W * 0.84, y: H * 0.6, rx: T * 3.6, ry: T * 1.5 },
+        ];
+        const isAir = (px, py) => {
+            if (inCave(px, py))
+                return true;
+            for (const p of pockets) {
+                const dx = (px - p.x) / p.rx;
+                const dy = (py - p.y) / p.ry;
+                if (dx * dx + dy * dy < 1)
+                    return true;
+            }
+            return false;
+        };
+        // Granica warstw: ziemia u góry (bliżej powierzchni), kamień głębiej
+        const strataY = (px) => H * 0.3 + Math.sin(px * 0.0062) * T * 1.6 + Math.sin(px * 0.021 + 1.2) * T * 0.7;
+        const rimBelow = (px, py, step) => isAir(px + step / 2, py + step * 1.7);
+        const cols = Math.ceil(W / T) + 1;
+        const rows = Math.ceil(H / T) + 1;
+        const crystals = [];
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const px = c * T;
+                const py = r * T;
+                const cx = px + T / 2;
+                const cy = py + T / 2;
+                if (isAir(cx, cy)) {
+                    // Pustka nie jest czarna — widać ciemną ścianę jaskini, jak w grze
+                    const backWall = tileSource(cy < strataY(cx) ? BlockId.DIRT_WALL : BlockId.STONE_WALL);
+                    if (backWall)
+                        ctx.drawImage(backWall, px, py, T, T);
+                    ctx.fillStyle = 'rgba(4,6,12,0.74)';
+                    ctx.fillRect(px, py, T, T);
+                    continue;
+                }
+                // Ściana widoczna tylko przy krawędzi pustki — reszta zasłonięta blokami
+                const rim = isAir(cx - T, cy) || isAir(cx + T, cy) || isAir(cx, cy - T) || isAir(cx, cy + T);
+                if (rim) {
+                    const wall = tileSource(cy < strataY(cx) ? BlockId.DIRT_WALL : BlockId.STONE_WALL);
+                    if (wall)
+                        ctx.drawImage(wall, px, py, T, T);
+                    ctx.fillStyle = 'rgba(3,5,11,0.35)';
+                    ctx.fillRect(px, py, T, T);
+                    continue;
+                }
+                // Warstwy gruntu: ziemia, pod nią pas mchu na kamieniu, głębiej czysty kamień
+                const strata = strataY(cx);
+                let id;
+                if (cy < strata) {
+                    id = BlockId.DIRT;
+                }
+                else if (cy < strata + T * 1.5 && noise(c, r, 17) > 0.38) {
+                    id = BlockId.MOSSY_STONE;
+                }
+                else {
+                    id = BlockId.STONE;
+                }
+                // Żyły rud — falujące pasma zamiast losowej szachownicy
+                const vein = Math.sin(cx * 0.011 + cy * 0.0045) +
+                    Math.sin(cy * 0.016 - cx * 0.003) +
+                    Math.sin((cx + cy) * 0.005);
+                if (id === BlockId.STONE && cy > H * 0.36 && vein > 1.55) {
+                    const region = noise(Math.floor(c / 7), Math.floor(r / 7), 3);
+                    id = region > 0.92 ? BlockId.CRYSTAL_ORE
+                        : region > 0.66 ? BlockId.IRON_ORE
+                            : region > 0.42 ? BlockId.COPPER_ORE
+                                : BlockId.COAL_ORE;
+                    if (id === BlockId.CRYSTAL_ORE && crystals.length < 16 && cx > T * 4 && cx < W - T * 4) {
+                        crystals.push({ x: cx, y: cy });
+                    }
+                }
+                const fg = tileSource(id);
+                if (fg)
+                    ctx.drawImage(fg, px, py, T, T);
+                // Cieniowanie: drobny szum kostek + większe plamy tonu, żeby grunt nie był płaski
+                const patch = noise(Math.floor(c / 3), Math.floor(r / 2), 23);
+                const shade = 0.03 + noise(c, r, 11) * 0.08 + Math.max(0, patch - 0.55) * 0.18;
+                ctx.fillStyle = `rgba(3,5,10,${shade.toFixed(3)})`;
+                ctx.fillRect(px, py, T, T);
+                // Jasna krawędź odsłoniętego gruntu przy pustce — czytelny kontur jaskini
+                if (rimBelow(px, py, T)) {
+                    ctx.fillStyle = 'rgba(148,163,184,0.10)';
+                    ctx.fillRect(px, py, T, 2);
+                }
+            }
+        }
+        // Mrok podziemi — kafle są tu w cieniu, nie w pełnym świetle
+        ctx.fillStyle = 'rgba(3,5,12,0.44)';
+        ctx.fillRect(0, 0, W, H);
+        // Światło komnaty bijące z dołu i poświata kryształów
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const roomLight = ctx.createRadialGradient(caveCx, H + T * 3, T, caveCx, H + T * 3, H * 0.95);
+        roomLight.addColorStop(0, 'rgba(56,189,248,0.20)');
+        roomLight.addColorStop(0.4, 'rgba(14,116,144,0.08)');
+        roomLight.addColorStop(1, 'rgba(3,5,10,0)');
+        ctx.fillStyle = roomLight;
+        ctx.fillRect(0, 0, W, H);
+        for (const crystal of crystals) {
+            const glow = ctx.createRadialGradient(crystal.x, crystal.y, 2, crystal.x, crystal.y, T * 2.6);
+            glow.addColorStop(0, 'rgba(168,72,232,0.30)');
+            glow.addColorStop(1, 'rgba(60,20,90,0)');
+            ctx.fillStyle = glow;
+            ctx.fillRect(crystal.x - T * 3, crystal.y - T * 3, T * 6, T * 6);
+        }
+        ctx.restore();
+        // Mrok na krawędziach: styk z komnatą (dół) i z powierzchnią (góra)
+        const bottomFade = ctx.createLinearGradient(0, H - T * 6, 0, H);
+        bottomFade.addColorStop(0, 'rgba(3,5,10,0)');
+        bottomFade.addColorStop(1, 'rgba(3,5,10,0.4)');
+        ctx.fillStyle = bottomFade;
+        ctx.fillRect(0, H - T * 6, W, T * 6);
+        const topFade = ctx.createLinearGradient(0, 0, 0, T * 6);
+        topFade.addColorStop(0, 'rgba(2,4,8,0.9)');
+        topFade.addColorStop(1, 'rgba(2,4,8,0)');
+        ctx.fillStyle = topFade;
+        ctx.fillRect(0, 0, W, T * 6);
+        const sideFade = ctx.createLinearGradient(0, 0, W * 0.16, 0);
+        sideFade.addColorStop(0, 'rgba(2,4,8,0.75)');
+        sideFade.addColorStop(1, 'rgba(2,4,8,0)');
+        ctx.fillStyle = sideFade;
+        ctx.fillRect(0, 0, W * 0.16, H);
+        const sideFadeR = ctx.createLinearGradient(W, 0, W * 0.84, 0);
+        sideFadeR.addColorStop(0, 'rgba(2,4,8,0.75)');
+        sideFadeR.addColorStop(1, 'rgba(2,4,8,0)');
+        ctx.fillStyle = sideFadeR;
+        ctx.fillRect(W * 0.84, 0, W * 0.16, H);
+        canvasTex.refresh();
+        this.undergroundLayer = this.add.image(W / 2, -H / 2, key).setDepth(0.5);
+    }
+    /** Wskaźnik ładowania świata: sam klejnot 0/1 z intra, obracający się w prawym dolnym rogu. */
+    showLoadingBadge() {
+        if (this.loadingBadge)
+            return;
+        const badge = document.createElement('div');
+        badge.className = 'dl-loading';
+        const img = document.createElement('img');
+        img.alt = '';
+        badge.appendChild(img);
+        document.body.appendChild(badge);
+        this.loadingBadge = badge;
+        // Klatki obrotu tego samego kryształu 3D co w intra — dokładane po jednej, żeby nie zacinać przejścia
+        const TOTAL = 16;
+        const frames = [];
+        const frameAt = (i) => renderBinaryCrystalFrame({
+            size: 112,
+            rotY: (i / TOTAL) * Math.PI * 2,
+            tiltX: 0.36,
+            time: i * 160,
+        }).toDataURL();
+        frames.push(frameAt(0));
+        img.src = frames[0];
+        let shown = 0;
+        this.loadingTimer = window.setInterval(() => {
+            if (!badge.isConnected)
+                return;
+            shown = (shown + 1) % frames.length;
+            img.src = frames[shown];
+        }, 130);
+        let next = 1;
+        const buildNextFrame = () => {
+            if (!badge.isConnected || next >= TOTAL)
+                return;
+            frames.push(frameAt(next));
+            next++;
+            window.requestAnimationFrame(buildNextFrame);
+        };
+        window.requestAnimationFrame(buildNextFrame);
+    }
+    /** Kamera dojechała na podziemia — oddaje sterowanie światu gracza. */
+    startWorld() {
+        this.cleanupDOM();
+        const controlsPill = document.querySelector('.controls-pill');
+        if (controlsPill)
+            controlsPill.style.display = '';
+        this.scene.start('GameScene', {
+            worldId: this.worldId,
+            worldName: this.worldName,
+            fromCreator: true,
         });
     }
     cleanupDOM() {
+        if (this.loadingTimer !== undefined) {
+            window.clearInterval(this.loadingTimer);
+            this.loadingTimer = undefined;
+        }
         if (this.nameModal) {
             this.nameModal.remove();
             this.nameModal = null;

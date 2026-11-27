@@ -8,8 +8,18 @@ export interface AccountRecord {
   createdAt: number;
 }
 
+export interface WorldSaveSummary {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+  hasSaveData: boolean;
+}
+
 export interface SavedGameState {
   version: 1;
+  worldId?: string;
+  worldName?: string;
   username: string;
   savedAt: number;
   character: CharacterConfig;
@@ -40,6 +50,60 @@ const CURRENT_USER_KEY = 'delveria_current_user';
 const AUTOSAVE_ENABLED_KEY = 'delveria_autosave_enabled';
 const AUTOSAVE_INTERVAL_KEY = 'delveria_autosave_interval_sec';
 const SAVE_PREFIX = 'delveria_save_v1_';
+const WORLDS_INDEX_PREFIX = 'delveria_worlds_v1_';
+
+async function syncDatabaseToDisk(): Promise<void> {
+  try {
+    const tauri = (window as any).__TAURI__;
+    if (!tauri?.core?.invoke) return;
+    const dump: Record<string, string> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('delveria_')) {
+        const v = localStorage.getItem(k);
+        if (v !== null) dump[k] = v;
+      }
+    }
+    await tauri.core.invoke('db_write', { data: JSON.stringify(dump) });
+  } catch {
+    // Ignore disk DB errors in browser mode
+  }
+}
+
+export async function initAccountDatabase(): Promise<void> {
+  try {
+    const tauri = (window as any).__TAURI__;
+    if (!tauri?.core?.invoke) return;
+    const raw: string = await tauri.core.invoke('db_read');
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      for (const [k, v] of Object.entries(parsed)) {
+        if (k.startsWith('delveria_') && typeof v === 'string') {
+          if (k === ACCOUNTS_KEY || !localStorage.getItem(k)) {
+            localStorage.setItem(k, v);
+          }
+        }
+      }
+      if (!parsed[CURRENT_USER_KEY]) {
+        const cur = localStorage.getItem(CURRENT_USER_KEY);
+        const accsRaw = parsed[ACCOUNTS_KEY];
+        if (cur && typeof accsRaw === 'string') {
+          try {
+            const accs = JSON.parse(accsRaw);
+            if (!accs[normalizeUserKey(cur)]) {
+              localStorage.removeItem(CURRENT_USER_KEY);
+            }
+          } catch {
+            // Ignore
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore
+  }
+}
 
 function normalizeUserKey(username: string): string {
   return username.trim().toLowerCase();
@@ -83,6 +147,7 @@ function readAccountsMap(): Record<string, AccountRecord> {
 
 function writeAccountsMap(map: Record<string, AccountRecord>): void {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(map));
+  void syncDatabaseToDisk();
 }
 
 export function listRegisteredUsernames(): string[] {
@@ -122,8 +187,8 @@ export async function registerAccount(
   password: string
 ): Promise<{ ok: boolean; error?: string; username?: string }> {
   const username = usernameRaw.trim();
-  if (username.length < 3) {
-    return { ok: false, error: 'Login musi mieć co najmniej 3 znaki.' };
+  if (username.length < 4) {
+    return { ok: false, error: 'Login musi mieć minimum 4 znaki.' };
   }
   if (username.length > 20) {
     return { ok: false, error: 'Login może mieć maksymalnie 20 znaków.' };
@@ -131,8 +196,11 @@ export async function registerAccount(
   if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
     return { ok: false, error: 'Login może zawierać tylko litery, cyfry i _ . -' };
   }
-  if (password.length < 4) {
-    return { ok: false, error: 'Hasło musi mieć co najmniej 4 znaki.' };
+  if (password.length < 5) {
+    return { ok: false, error: 'Hasło musi mieć minimum 5 znaków.' };
+  }
+  if (!/\d/.test(password)) {
+    return { ok: false, error: 'Hasło musi zawierać co najmniej jedną cyfrę.' };
   }
 
   const key = normalizeUserKey(username);
@@ -215,18 +283,73 @@ export function setAutoSaveIntervalSec(sec: number): void {
   }
 }
 
-function getSaveKeyForUser(username: string): string {
-  return `${SAVE_PREFIX}${normalizeUserKey(username)}`;
+function getSaveKeyForUser(username: string, worldId?: string): string {
+  const base = `${SAVE_PREFIX}${normalizeUserKey(username)}`;
+  return worldId ? `${base}__${worldId}` : base;
+}
+
+function getWorldsIndexKey(username: string): string {
+  return `${WORLDS_INDEX_PREFIX}${normalizeUserKey(username)}`;
+}
+
+export function listWorldsForUser(username: string | null): WorldSaveSummary[] {
+  if (!username) return [];
+  try {
+    const raw = localStorage.getItem(getWorldsIndexKey(username));
+    const list: WorldSaveSummary[] = raw ? JSON.parse(raw) : [];
+    // Migracja starego pojedynczego zapisu jeśli istnieje
+    const legacyRaw = localStorage.getItem(getSaveKeyForUser(username));
+    if (legacyRaw && list.length === 0) {
+      const parsed = JSON.parse(legacyRaw) as SavedGameState;
+      const legacyId = 'world_1';
+      localStorage.setItem(getSaveKeyForUser(username, legacyId), legacyRaw);
+      const migrated: WorldSaveSummary = {
+        id: legacyId,
+        name: 'Świat Główny',
+        createdAt: parsed.savedAt || Date.now(),
+        updatedAt: parsed.savedAt || Date.now(),
+        hasSaveData: true,
+      };
+      list.push(migrated);
+      localStorage.setItem(getWorldsIndexKey(username), JSON.stringify(list));
+      void syncDatabaseToDisk();
+    }
+    return list.sort((a, b) => b.updatedAt - a.updatedAt);
+  } catch {
+    return [];
+  }
+}
+
+export function createNewWorldMeta(username: string | null, worldNameRaw: string): WorldSaveSummary {
+  const name = (worldNameRaw || '').trim() || 'Nowy Świat';
+  const now = Date.now();
+  const meta: WorldSaveSummary = {
+    id: `w_${now}_${Math.floor(Math.random() * 1000)}`,
+    name,
+    createdAt: now,
+    updatedAt: now,
+    hasSaveData: false,
+  };
+  if (username) {
+    const list = listWorldsForUser(username);
+    list.unshift(meta);
+    localStorage.setItem(getWorldsIndexKey(username), JSON.stringify(list));
+    void syncDatabaseToDisk();
+  }
+  return meta;
+}
+
+export function deleteWorldForUser(username: string, worldId: string): void {
+  const list = listWorldsForUser(username).filter((w) => w.id !== worldId);
+  localStorage.setItem(getWorldsIndexKey(username), JSON.stringify(list));
+  localStorage.removeItem(getSaveKeyForUser(username, worldId));
+  void syncDatabaseToDisk();
 }
 
 export function hasSaveForCurrentUser(): boolean {
   const user = getCurrentUser();
   if (!user) return false;
-  try {
-    return localStorage.getItem(getSaveKeyForUser(user)) !== null;
-  } catch {
-    return false;
-  }
+  return listWorldsForUser(user).some((w) => w.hasSaveData) || localStorage.getItem(getSaveKeyForUser(user)) !== null;
 }
 
 export function getSaveMetaForCurrentUser(): { savedAt: number; characterName: string } | null {
@@ -238,11 +361,14 @@ export function getSaveMetaForCurrentUser(): { savedAt: number; characterName: s
   };
 }
 
-export function loadGameProgressForCurrentUser(): SavedGameState | null {
+export function loadGameProgressForCurrentUser(worldId?: string): SavedGameState | null {
   const user = getCurrentUser();
   if (!user) return null;
   try {
-    const raw = localStorage.getItem(getSaveKeyForUser(user));
+    const targetId = worldId || listWorldsForUser(user)[0]?.id;
+    const raw = targetId
+      ? (localStorage.getItem(getSaveKeyForUser(user, targetId)) || localStorage.getItem(getSaveKeyForUser(user)))
+      : localStorage.getItem(getSaveKeyForUser(user));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SavedGameState;
     if (!parsed || parsed.version !== 1 || !parsed.world || !parsed.player) return null;
@@ -321,8 +447,13 @@ export function saveGameProgress(gameScene: any): { ok: boolean; savedAt?: numbe
       isDarkWood: t.isDarkWood,
     }));
 
+    const worldId: string = gameScene.activeWorldId || listWorldsForUser(user)[0]?.id || 'world_1';
+    const worldName: string = gameScene.activeWorldName || 'Świat Główny';
+
     const state: SavedGameState = {
       version: 1,
+      worldId,
+      worldName,
       username: user,
       savedAt,
       character: charCfg,
@@ -352,7 +483,21 @@ export function saveGameProgress(gameScene: any): { ok: boolean; savedAt?: numbe
       },
     };
 
-    localStorage.setItem(getSaveKeyForUser(user), JSON.stringify(state));
+    localStorage.setItem(getSaveKeyForUser(user, worldId), JSON.stringify(state));
+
+    // Zaktualizuj metadane świata na liście światów konta
+    const worlds = listWorldsForUser(user);
+    const idx = worlds.findIndex((w) => w.id === worldId);
+    if (idx >= 0) {
+      worlds[idx].updatedAt = savedAt;
+      worlds[idx].hasSaveData = true;
+      worlds[idx].name = worldName;
+    } else {
+      worlds.unshift({ id: worldId, name: worldName, createdAt: savedAt, updatedAt: savedAt, hasSaveData: true });
+    }
+    localStorage.setItem(getWorldsIndexKey(user), JSON.stringify(worlds));
+    void syncDatabaseToDisk();
+
     return { ok: true, savedAt };
   } catch (err) {
     return { ok: false, error: 'Błąd zapisu postępu gry.' };

@@ -1,4 +1,7 @@
-import { getCurrentUser, hasSaveForCurrentUser, listRegisteredUsernames, loginAccount, logoutAccount, registerAccount, } from '../systems/AccountSystem.js';
+import { createNewWorldMeta, deleteWorldForUser, getCurrentUser, listWorldsForUser, loginAccount, logoutAccount, registerAccount, } from '../systems/AccountSystem.js';
+import { CharacterRenderer } from '../textures/CharacterRenderer.js';
+import { loadSavedCharacterConfig } from '../types/CharacterConfig.js';
+import { BlockId } from '../types/index.js';
 const DEFAULT_KEYBINDS = {
     left: 'A',
     right: 'D',
@@ -52,8 +55,9 @@ export class MainMenuScene extends Phaser.Scene {
     versionText;
     motes = [];
     buttons = [];
-    accountTopBtn = null;
+    accountCircle = null;
     accountDomRoot = null;
+    worldDomRoot = null;
     settingsModal = null;
     activeTab = 'sound';
     listeningKeyAction = null;
@@ -182,10 +186,11 @@ export class MainMenuScene extends Phaser.Scene {
             this.scale.off('resize', this.handleResize, this);
             this.cleanupModalListeners();
             this.closeAccountModal();
+            this.closeWorldModal();
         });
         this.input.keyboard?.on('keydown-ENTER', () => {
-            if (!this.settingsModal && !this.accountDomRoot && !this.isTransitioning) {
-                this.startGame();
+            if (!this.settingsModal && !this.accountDomRoot && !this.worldDomRoot && !this.isTransitioning) {
+                this.onPlayButtonClicked();
             }
         });
         this.input.keyboard?.on('keydown-ESC', () => {
@@ -354,8 +359,8 @@ export class MainMenuScene extends Phaser.Scene {
         this.buttons.forEach((btn, i) => {
             btn.container.setPosition(W / 2, btnStartY + i * gap);
         });
-        if (this.accountTopBtn) {
-            this.accountTopBtn.container.setPosition(W - this.accountTopBtn.width / 2 - 20, 34);
+        if (this.accountCircle) {
+            this.accountCircle.setPosition(W - 66, 66);
         }
         if (this.versionText) {
             this.versionText.setPosition(16, H - 14);
@@ -443,24 +448,17 @@ export class MainMenuScene extends Phaser.Scene {
             this.scale.stopFullscreen();
         }
     }
-    startGame() {
+    startGame(worldId, worldName) {
         if (this.isTransitioning)
             return;
         this.isTransitioning = true;
-        this.isAscending = true;
-        this.ascendElapsed = 0;
-        this.ascendStartScroll = this.scrollProgress;
-        const W = this.scale.width;
-        const H = this.scale.height;
-        const minWorldScreenH = H * 2.1;
-        this.bgScale = Math.max(W / MainMenuScene.BG_W, minWorldScreenH / MainMenuScene.BG_H);
-        const maxOffset = Math.max(0, MainMenuScene.BG_H * this.bgScale - H);
-        this.ascendStartTopY = -this.scrollProgress * maxOffset;
+        this.isAscending = false;
         // 1. Guziki i napis wersji znikają, napis DELVERIA zostaje!
         this.closeAccountModal();
-        if (this.accountTopBtn) {
-            this.accountTopBtn.container.disableInteractive();
-            this.tweens.add({ targets: this.accountTopBtn.container, alpha: 0, duration: 200 });
+        this.closeWorldModal();
+        if (this.accountCircle) {
+            this.accountCircle.disableInteractive();
+            this.tweens.add({ targets: this.accountCircle, alpha: 0, duration: 200 });
         }
         this.buttons.forEach((btn) => {
             btn.container.disableInteractive();
@@ -484,67 +482,150 @@ export class MainMenuScene extends Phaser.Scene {
         if (this.loadingCrystalGlow) {
             this.tweens.add({ targets: this.loadingCrystalGlow, alpha: 0.28, duration: 180, ease: 'Sine.easeOut' });
         }
-        // 2. Płynne przejście do Kreatora Postaci przed wejściem do świata Delverii
-        this.cameras.main.fadeOut(320, 6, 8, 13);
-        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-            this.scene.start('CharacterCreatorScene');
+        // 2. Płynne wejście do Kreatora Postaci: bez zaciemnienia — kreator przejmuje
+        //    dokładnie ten sam kadr jaskini i podnosi kamerę do swojej scenki.
+        this.scene.start('CharacterCreatorScene', {
+            worldId,
+            worldName,
+            menuBgY: this.bgImage ? this.bgImage.y : 0,
+            menuBgScale: this.bgScale,
         });
     }
-    startSavedGame() {
+    startSavedGame(worldId, worldName) {
         if (this.isTransitioning)
             return;
         this.isTransitioning = true;
+        this.isAscending = false;
         this.closeAccountModal();
+        this.closeWorldModal();
+        let started = false;
+        const go = () => {
+            if (started)
+                return;
+            started = true;
+            this.scene.start('GameScene', { loadSave: true, worldId, worldName });
+        };
         this.cameras.main.fadeOut(320, 6, 8, 13);
-        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-            this.scene.start('GameScene', { loadSave: true });
-        });
+        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, go);
+        this.time.delayedCall(380, go);
+    }
+    setMenuButtonsInteractive(enabled) {
+        for (const b of this.buttons) {
+            // Przy zamykaniu sceny obiekty są już zniszczone (scene === undefined)
+            if (!b.container || !b.container.scene)
+                continue;
+            if (enabled)
+                b.container.setInteractive();
+            else
+                b.container.disableInteractive();
+        }
+        if (this.accountCircle && this.accountCircle.scene) {
+            if (enabled)
+                this.accountCircle.setInteractive();
+            else
+                this.accountCircle.disableInteractive();
+        }
     }
     rebuildMenuButtons() {
         const W = this.scale.width;
         const H = this.scale.height;
         this.buttons.forEach((b) => b.container.destroy());
         this.buttons = [];
-        const hasSave = hasSaveForCurrentUser();
-        const gap = 54;
-        const btnCount = hasSave ? 4 : 3;
-        const btnStartY = H * 0.48 - ((btnCount - 1) * gap) / 2;
-        let bIdx = 0;
-        if (hasSave) {
-            const continueBtn = this.createMenuButton(W / 2, btnStartY + gap * bIdx++, 276, 46, 'KONTYNUUJ', true, () => {
-                this.startSavedGame();
-            });
-            this.buttons.push(continueBtn);
-        }
-        const playBtn = this.createMenuButton(W / 2, btnStartY + gap * bIdx++, 276, hasSave ? 42 : 48, hasSave ? 'NOWA GRA' : 'GRAJ', !hasSave, () => {
-            this.startGame();
+        const gap = 58;
+        const btnStartY = H * 0.48 - gap;
+        const playBtn = this.createMenuButton(W / 2, btnStartY, 276, 48, 'GRAJ', true, () => {
+            this.onPlayButtonClicked();
         });
-        const settingsBtn = this.createMenuButton(W / 2, btnStartY + gap * bIdx++, 276, 44, 'USTAWIENIA', false, () => {
+        const settingsBtn = this.createMenuButton(W / 2, btnStartY + gap, 276, 44, 'USTAWIENIA', false, () => {
             this.openSettingsModal('sound');
         });
-        const quitBtn = this.createMenuButton(W / 2, btnStartY + gap * bIdx++, 276, 44, 'WYJDŹ', false, () => {
+        const quitBtn = this.createMenuButton(W / 2, btnStartY + gap * 2, 276, 44, 'WYJDŹ', false, () => {
             this.quitApp();
         });
         this.buttons.push(playBtn, settingsBtn, quitBtn);
     }
+    onPlayButtonClicked() {
+        if (this.isTransitioning || this.settingsModal || this.accountDomRoot || this.worldDomRoot)
+            return;
+        const user = getCurrentUser();
+        if (!user) {
+            this.openGuestWarningModal();
+        }
+        else {
+            this.openWorldSelectModal(false);
+        }
+    }
     rebuildAccountTopButton() {
         const W = this.scale.width;
-        if (this.accountTopBtn) {
-            this.accountTopBtn.container.destroy();
-            this.accountTopBtn = null;
+        if (this.accountCircle) {
+            this.accountCircle.destroy();
+            this.accountCircle = null;
         }
         const user = getCurrentUser();
-        const label = user ? `KONTO: ${user}` : 'KONTO';
-        const btnW = Math.min(240, Math.max(146, label.length * 10 + 44));
-        this.accountTopBtn = this.createMenuButton(W - btnW / 2 - 20, 34, btnW, 38, label, false, () => {
-            if (this.accountDomRoot) {
+        const cont = this.add.container(W - 66, 66).setDepth(20);
+        const ring = this.add.graphics();
+        const drawRing = (hover) => {
+            ring.clear();
+            ring.fillStyle(0x070b14, 0.94);
+            ring.fillCircle(0, 0, 44);
+            ring.lineStyle(3.5, hover ? 0x7dd3fc : (user ? 0x38bdf8 : 0xfbbf24), 0.95);
+            ring.strokeCircle(0, 0, 44);
+            ring.lineStyle(1.5, 0x38bdf8, 0.28);
+            ring.strokeCircle(0, 0, 39);
+        };
+        drawRing(false);
+        cont.add(ring);
+        if (!user) {
+            // Brak konta -> ludzik-cień z wielkim znakiem zapytania "?"
+            const sil = this.add.graphics();
+            sil.fillStyle(0x1e293b, 0.95);
+            sil.fillRect(-11, -22, 22, 18); // głowa
+            sil.fillRect(-14, -2, 28, 22); // tułów
+            const qMark = this.add.text(0, 0, '?', {
+                fontFamily: 'Consolas, monospace',
+                fontSize: '40px',
+                color: '#fde047',
+                fontStyle: 'bold',
+                stroke: '#03050a',
+                strokeThickness: 6,
+            }).setOrigin(0.5, 0.5);
+            cont.add([sil, qMark]);
+        }
+        else {
+            // Ma konto -> miniatura własnej postaci
+            const cfg = loadSavedCharacterConfig();
+            const texKey = '__delveria_avatar_preview__';
+            if (this.textures.exists(texKey)) {
+                this.textures.remove(texKey);
+            }
+            const previewCanvas = CharacterRenderer.renderPreview(cfg, 2);
+            this.textures.addCanvas(texKey, previewCanvas);
+            const avatarImg = this.add.image(0, 6, texKey).setOrigin(0.5, 0.5);
+            const maxDim = 64;
+            const sc = Math.min(maxDim / previewCanvas.width, maxDim / previewCanvas.height);
+            avatarImg.setScale(sc);
+            cont.add(avatarImg);
+        }
+        const lbl = this.add.text(0, 60, user ? user : 'KONTO', {
+            fontFamily: 'Consolas, monospace',
+            fontSize: '15px',
+            color: user ? '#7dd3fc' : '#fde047',
+            fontStyle: 'bold',
+            stroke: '#03050a',
+            strokeThickness: 4,
+        }).setOrigin(0.5, 0.5);
+        cont.add(lbl);
+        const hit = this.add.circle(0, 0, 48, 0x000000, 0).setInteractive({ useHandCursor: true });
+        hit.on('pointerover', () => drawRing(true));
+        hit.on('pointerout', () => drawRing(false));
+        hit.on('pointerdown', () => {
+            if (this.accountDomRoot)
                 this.closeAccountModal();
-            }
-            else {
+            else
                 this.openAccountModal();
-            }
         });
-        this.accountTopBtn.container.setDepth(20);
+        cont.add(hit);
+        this.accountCircle = cont;
         if (this.versionText) {
             this.versionText.setText(user ? `DELVERIA • v1.0  |  Konto: ${user}` : 'DELVERIA • v1.0');
         }
@@ -554,17 +635,64 @@ export class MainMenuScene extends Phaser.Scene {
             this.accountDomRoot.remove();
             this.accountDomRoot = null;
         }
+        if (!this.worldDomRoot && !this.settingsModal) {
+            this.setMenuButtonsInteractive(true);
+        }
+    }
+    closeWorldModal() {
+        if (this.worldDomRoot) {
+            this.worldDomRoot.remove();
+            this.worldDomRoot = null;
+        }
+        if (!this.accountDomRoot && !this.settingsModal) {
+            this.setMenuButtonsInteractive(true);
+        }
+    }
+    createPasswordField(labelText, placeholder) {
+        const field = document.createElement('div');
+        field.className = 'ac-field';
+        const lbl = document.createElement('label');
+        lbl.className = 'ac-label';
+        lbl.textContent = labelText;
+        const wrap = document.createElement('div');
+        wrap.className = 'ac-pass-wrap';
+        const input = document.createElement('input');
+        input.type = 'password';
+        input.className = 'ac-input ac-input-pass';
+        input.placeholder = placeholder;
+        input.maxLength = 64;
+        const eyeBtn = document.createElement('button');
+        eyeBtn.type = 'button';
+        eyeBtn.className = 'ac-eye-btn';
+        eyeBtn.title = 'Pokaż / ukryj hasło';
+        eyeBtn.textContent = '👁';
+        eyeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const hidden = input.type === 'password';
+            input.type = hidden ? 'text' : 'password';
+            eyeBtn.classList.toggle('visible', hidden);
+            eyeBtn.textContent = hidden ? '🙈' : '👁';
+        });
+        wrap.append(input, eyeBtn);
+        field.append(lbl, wrap);
+        return { field, input };
     }
     openAccountModal() {
         if (this.settingsModal || this.isTransitioning)
             return;
+        this.closeWorldModal();
         this.closeAccountModal();
+        this.setMenuButtonsInteractive(false);
         const root = document.createElement('div');
         root.className = 'ac-root';
-        root.style.background = 'rgba(2, 6, 14, 0.55)';
+        root.style.background = 'rgba(2, 6, 14, 0.62)';
         root.style.pointerEvents = 'auto';
+        root.addEventListener('pointerdown', (e) => e.stopPropagation());
+        root.addEventListener('mousedown', (e) => e.stopPropagation());
         const card = document.createElement('div');
         card.className = 'ac-card';
+        card.addEventListener('click', (e) => e.stopPropagation());
         card.innerHTML = `
       <div class="cc-corner tl"></div>
       <div class="cc-corner tr"></div>
@@ -575,18 +703,20 @@ export class MainMenuScene extends Phaser.Scene {
         closeBtn.type = 'button';
         closeBtn.className = 'ac-close';
         closeBtn.textContent = '✕';
-        closeBtn.addEventListener('click', () => this.closeAccountModal());
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.closeAccountModal();
+        });
         card.appendChild(closeBtn);
         const activeUser = getCurrentUser();
         const header = document.createElement('div');
         header.className = 'ac-header';
         header.innerHTML = `
       <div class="ac-title">KONTO DELVERIA</div>
-      <div class="ac-subtitle">${activeUser ? `Zalogowano jako: ${activeUser}` : 'Zaloguj się lub utwórz konto, aby zapisywać postęp gry'}</div>
+      <div class="ac-subtitle">${activeUser ? `Zalogowano jako: ${activeUser}` : 'Zaloguj się lub utwórz nowe konto'}</div>
     `;
         card.appendChild(header);
-        const existingUsers = listRegisteredUsernames();
-        let mode = existingUsers.length > 0 ? 'login' : 'register';
+        let mode = activeUser ? 'login' : 'register';
         const tabs = document.createElement('div');
         tabs.className = 'ac-tabs';
         const loginTabBtn = document.createElement('button');
@@ -607,46 +737,16 @@ export class MainMenuScene extends Phaser.Scene {
         const loginInput = document.createElement('input');
         loginInput.type = 'text';
         loginInput.className = 'ac-input';
-        loginInput.placeholder = 'Wpisz login (min. 3 znaki)...';
+        loginInput.placeholder = 'Wpisz login (min. 4 znaki)...';
         loginInput.maxLength = 20;
         if (activeUser)
             loginInput.value = activeUser;
         loginField.append(loginLbl, loginInput);
         card.appendChild(loginField);
-        if (existingUsers.length > 0) {
-            const savedRow = document.createElement('div');
-            savedRow.className = 'ac-saved-row';
-            const savedLbl = document.createElement('span');
-            savedLbl.className = 'ac-saved-lbl';
-            savedLbl.textContent = 'Konta:';
-            savedRow.appendChild(savedLbl);
-            existingUsers.slice(0, 4).forEach((uname) => {
-                const chip = document.createElement('button');
-                chip.type = 'button';
-                chip.className = 'ac-chip';
-                chip.textContent = uname;
-                chip.addEventListener('click', () => {
-                    loginInput.value = uname;
-                    mode = 'login';
-                    syncMode();
-                    passInput.focus();
-                });
-                savedRow.appendChild(chip);
-            });
-            card.appendChild(savedRow);
-        }
-        const passField = document.createElement('div');
-        passField.className = 'ac-field';
-        const passLbl = document.createElement('label');
-        passLbl.className = 'ac-label';
-        passLbl.textContent = 'Hasło';
-        const passInput = document.createElement('input');
-        passInput.type = 'password';
-        passInput.className = 'ac-input';
-        passInput.placeholder = 'Wpisz hasło (min. 4 znaki)...';
-        passInput.maxLength = 64;
-        passField.append(passLbl, passInput);
+        const { field: passField, input: passInput } = this.createPasswordField('Hasło', 'Min. 5 znaków + cyfra...');
         card.appendChild(passField);
+        const { field: pass2Field, input: pass2Input } = this.createPasswordField('Powtórz hasło', 'Wpisz ponownie hasło...');
+        card.appendChild(pass2Field);
         const msgEl = document.createElement('div');
         msgEl.className = 'ac-msg';
         card.appendChild(msgEl);
@@ -659,7 +759,8 @@ export class MainMenuScene extends Phaser.Scene {
             logoutBtn.type = 'button';
             logoutBtn.className = 'ac-logout';
             logoutBtn.textContent = 'Wyloguj się';
-            logoutBtn.addEventListener('click', () => {
+            logoutBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 logoutAccount();
                 this.rebuildAccountTopButton();
                 this.rebuildMenuButtons();
@@ -670,49 +771,76 @@ export class MainMenuScene extends Phaser.Scene {
         const syncMode = () => {
             loginTabBtn.classList.toggle('active', mode === 'login');
             regTabBtn.classList.toggle('active', mode === 'register');
-            submitBtn.textContent = mode === 'login' ? 'ZALOGUJ SIĘ →' : 'UTWÓRZ KONTO →';
+            pass2Field.style.display = mode === 'register' ? 'flex' : 'none';
+            submitBtn.textContent = mode === 'login' ? 'ZALOGUJ SIĘ →' : 'ZAREJESTRUJ SIĘ →';
             msgEl.textContent = '';
             msgEl.classList.remove('ok');
         };
         syncMode();
-        loginTabBtn.addEventListener('click', () => {
+        loginTabBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             mode = 'login';
             syncMode();
         });
-        regTabBtn.addEventListener('click', () => {
+        regTabBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             mode = 'register';
             syncMode();
         });
-        const handleSubmit = async () => {
+        const handleSubmit = async (e) => {
+            if (e)
+                e.stopPropagation();
             msgEl.textContent = '';
             msgEl.classList.remove('ok');
+            const uname = loginInput.value.trim();
+            const pass = passInput.value;
+            if (mode === 'register') {
+                if (uname.length < 4) {
+                    msgEl.textContent = 'Login musi mieć co najmniej 4 znaki.';
+                    return;
+                }
+                if (pass.length < 5 || !/\d/.test(pass)) {
+                    msgEl.textContent = 'Hasło musi mieć min. 5 znaków i zawierać cyfrę.';
+                    return;
+                }
+                if (pass !== pass2Input.value) {
+                    msgEl.textContent = 'Hasła nie są identyczne.';
+                    return;
+                }
+            }
             const res = mode === 'login'
-                ? await loginAccount(loginInput.value, passInput.value)
-                : await registerAccount(loginInput.value, passInput.value);
+                ? await loginAccount(uname, pass)
+                : await registerAccount(uname, pass);
             if (!res.ok) {
                 msgEl.textContent = res.error || 'Wystąpił błąd.';
                 return;
             }
-            msgEl.classList.add('ok');
-            msgEl.textContent = mode === 'login'
-                ? `Zalogowano jako ${res.username}!`
-                : `Konto ${res.username} utworzone!`;
+            const finalUser = res.username || uname;
             this.rebuildAccountTopButton();
             this.rebuildMenuButtons();
+            if (mode === 'register') {
+                this.closeAccountModal();
+                this.playAccountCreatedCelebration(finalUser);
+                return;
+            }
+            msgEl.classList.add('ok');
+            msgEl.textContent = `Zalogowano jako ${finalUser}!`;
             setTimeout(() => {
                 this.closeAccountModal();
             }, 450);
         };
-        submitBtn.addEventListener('click', handleSubmit);
-        [loginInput, passInput].forEach((inp) => {
+        submitBtn.addEventListener('click', (e) => void handleSubmit(e));
+        [loginInput, passInput, pass2Input].forEach((inp) => {
             inp.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    handleSubmit();
+                    e.stopPropagation();
+                    void handleSubmit();
                 }
             });
         });
         root.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (e.target === root)
                 this.closeAccountModal();
         });
@@ -725,6 +853,411 @@ export class MainMenuScene extends Phaser.Scene {
             else
                 loginInput.focus();
         }, 50);
+    }
+    playAccountCreatedCelebration(username) {
+        this.setMenuButtonsInteractive(false);
+        const W = this.scale.width;
+        const H = this.scale.height;
+        // 1. Nowy klejnot 0/1 z intra (bez czarnego tła) nad komunikatem — powiększa się i znika po 5s
+        const crystalY = Math.max(95, H * 0.5 - 145);
+        const crystal = this.add.image(W / 2, crystalY, MainMenuScene.LIVE_CRYSTAL_TEX)
+            .setDepth(60)
+            .setScale(0.22)
+            .setAlpha(0);
+        const crystalGlow = this.add.image(W / 2, crystalY, MainMenuScene.LIVE_CRYSTAL_TEX)
+            .setDepth(59)
+            .setScale(0.32)
+            .setAlpha(0)
+            .setBlendMode(Phaser.BlendModes.ADD);
+        this.tweens.add({
+            targets: crystal,
+            scale: 0.78,
+            alpha: 1,
+            duration: 4200,
+            ease: 'Sine.easeOut',
+        });
+        this.tweens.add({
+            targets: crystalGlow,
+            scale: 1.08,
+            alpha: 0.42,
+            duration: 4200,
+            ease: 'Sine.easeOut',
+        });
+        // Zanikanie nowego klejnotu pod koniec 5 sekund
+        this.tweens.add({
+            targets: [crystal, crystalGlow],
+            alpha: 0,
+            delay: 4200,
+            duration: 750,
+            ease: 'Sine.easeIn',
+        });
+        // 2. Pixelowe konfetti w Phaserze (bez czarnego tła)
+        const confettiColors = [0x38bdf8, 0x7dd3fc, 0xfde047, 0x4ade80, 0xc084fc, 0xf472b6, 0xffffff];
+        const confettiPieces = [];
+        const spawnConfettiBurst = (count, originY) => {
+            for (let i = 0; i < count; i++) {
+                const col = confettiColors[i % confettiColors.length];
+                const size = Phaser.Math.Between(4, 9);
+                const piece = this.add.rectangle(W / 2 + Phaser.Math.Between(-30, 30), originY + Phaser.Math.Between(-20, 20), size, size, col, 1).setDepth(61);
+                confettiPieces.push(piece);
+                const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+                const dist = Phaser.Math.Between(110, 360);
+                const tx = W / 2 + Math.cos(angle) * dist;
+                const ty = originY + Math.sin(angle) * dist * 0.78 + Phaser.Math.Between(40, 190);
+                this.tweens.add({
+                    targets: piece,
+                    x: tx,
+                    y: ty,
+                    angle: Phaser.Math.Between(-360, 360),
+                    alpha: { from: 1, to: 0 },
+                    duration: Phaser.Math.Between(1800, 3200),
+                    ease: 'Cubic.easeOut',
+                    onComplete: () => {
+                        if (piece.scene)
+                            piece.destroy();
+                    },
+                });
+            }
+        };
+        spawnConfettiBurst(70, H * 0.5);
+        const burst2 = this.time.delayedCall(750, () => spawnConfettiBurst(45, H * 0.5));
+        const burst3 = this.time.delayedCall(1500, () => spawnConfettiBurst(35, H * 0.5));
+        // 3. Komunikat idealnie na środku ekranu ("Cześć <user> / Twoje konto zostało utworzone")
+        //    powiększający się i znikający po 5 sekundach
+        const root = document.createElement('div');
+        root.className = 'ac-root ac-celebrate-root';
+        root.style.background = 'transparent';
+        root.style.pointerEvents = 'none';
+        const card = document.createElement('div');
+        card.className = 'ac-card ac-celebrate-card';
+        card.innerHTML = `
+      <div class="cc-corner tl"></div>
+      <div class="cc-corner tr"></div>
+      <div class="cc-corner bl"></div>
+      <div class="cc-corner br"></div>
+      <div class="ac-header">
+        <div class="ac-title" style="color:#fde047; font-size:22px;">CZEŚĆ ${username.toUpperCase()}!</div>
+        <div class="ac-subtitle" style="color:#a7f3d0; font-size:15px;">Twoje konto zostało utworzone</div>
+      </div>
+    `;
+        root.appendChild(card);
+        document.body.appendChild(root);
+        let finished = false;
+        const finish = () => {
+            if (finished)
+                return;
+            finished = true;
+            burst2.remove(false);
+            burst3.remove(false);
+            root.remove();
+            if (crystal.scene)
+                crystal.destroy();
+            if (crystalGlow.scene)
+                crystalGlow.destroy();
+            confettiPieces.forEach((p) => {
+                if (p.scene)
+                    p.destroy();
+            });
+            this.setMenuButtonsInteractive(true);
+        };
+        this.time.delayedCall(5000, finish);
+    }
+    openGuestWarningModal() {
+        if (this.settingsModal || this.isTransitioning)
+            return;
+        this.closeAccountModal();
+        this.closeWorldModal();
+        this.setMenuButtonsInteractive(false);
+        const root = document.createElement('div');
+        root.className = 'ac-root ws-root';
+        root.style.background = 'rgba(2, 6, 14, 0.65)';
+        root.style.pointerEvents = 'auto';
+        root.addEventListener('pointerdown', (e) => e.stopPropagation());
+        root.addEventListener('mousedown', (e) => e.stopPropagation());
+        const card = document.createElement('div');
+        card.className = 'ac-card';
+        card.addEventListener('click', (e) => e.stopPropagation());
+        card.innerHTML = `
+      <div class="cc-corner tl"></div>
+      <div class="cc-corner tr"></div>
+      <div class="cc-corner bl"></div>
+      <div class="cc-corner br"></div>
+      <div class="ac-header">
+        <div class="ac-title" style="color:#fbbf24;">⚠ GRASZ BEZ KONTA</div>
+        <div class="ac-subtitle" style="color:#fde68a; line-height:1.5;">
+          Twój postęp gry nie zostanie zapisany, dopóki nie utworzysz lub nie zalogujesz się na konto Delveria.
+        </div>
+      </div>
+    `;
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'ac-close';
+        closeBtn.textContent = '✕';
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.closeWorldModal();
+        });
+        card.appendChild(closeBtn);
+        const createAccBtn = document.createElement('button');
+        createAccBtn.type = 'button';
+        createAccBtn.className = 'ac-submit';
+        createAccBtn.textContent = 'UTWÓRZ / ZALOGUJ KONTO →';
+        createAccBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.closeWorldModal();
+            this.openAccountModal();
+        });
+        const playGuestBtn = document.createElement('button');
+        playGuestBtn.type = 'button';
+        playGuestBtn.className = 'ac-logout';
+        playGuestBtn.textContent = 'GRAJ MIMO TO (BEZ ZAPISU)';
+        playGuestBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.closeWorldModal();
+            this.openWorldSelectModal(true);
+        });
+        card.append(createAccBtn, playGuestBtn);
+        root.appendChild(card);
+        root.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (e.target === root)
+                this.closeWorldModal();
+        });
+        document.body.appendChild(root);
+        this.worldDomRoot = root;
+    }
+    /** Stabilny seed świata wyliczony z jego ID — ten sam zapis zawsze ma tę samą ikonę. */
+    getWorldSeed(id) {
+        let hash = 2166136261;
+        for (let i = 0; i < id.length; i++) {
+            hash ^= id.charCodeAt(i);
+            hash = Math.imul(hash, 16777619);
+        }
+        return (Math.abs(hash) % 9000) + 1000;
+    }
+    /** Blok-ikona świata wybierany z seeda (tylko bloki, które faktycznie występują w grze). */
+    getWorldBlockId(seed) {
+        const blocks = [
+            BlockId.GRASS, BlockId.DIRT, BlockId.STONE, BlockId.COPPER_ORE, BlockId.IRON_ORE,
+            BlockId.COAL_ORE, BlockId.GOLD_ORE, BlockId.CRYSTAL_ORE, BlockId.DIAMOND_ORE,
+            BlockId.SNOW, BlockId.ICE, BlockId.SAND, BlockId.SANDSTONE, BlockId.DARK_GRASS,
+            BlockId.DARK_DIRT, BlockId.MOSSY_STONE, BlockId.CRYSTAL_BLOCK, BlockId.HELLSTONE,
+            BlockId.ASH_BLOCK, BlockId.LAVA_ROCK, BlockId.VOID_STONE,
+        ];
+        return blocks[seed % blocks.length];
+    }
+    /** Ikona bloku z prawdziwych tekstur gry, powiększona x2 bez rozmycia (pixel-art). */
+    makeBlockIcon(blockId, scale = 2) {
+        const key = `tile_${blockId}`;
+        if (!this.textures.exists(key))
+            return null;
+        const source = this.textures.get(key).getSourceImage();
+        const w = Number(source.width) || 24;
+        const h = Number(source.height) || 24;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(w * scale);
+        canvas.height = Math.round(h * scale);
+        const ctx = canvas.getContext('2d');
+        if (!ctx)
+            return null;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/png');
+    }
+    openWorldSelectModal(isGuest) {
+        if (this.settingsModal || this.isTransitioning)
+            return;
+        this.closeAccountModal();
+        this.closeWorldModal();
+        this.setMenuButtonsInteractive(false);
+        const user = isGuest ? null : getCurrentUser();
+        const root = document.createElement('div');
+        root.className = 'ac-root';
+        root.style.background = 'rgba(2, 6, 14, 0.65)';
+        root.style.pointerEvents = 'auto';
+        root.addEventListener('pointerdown', (e) => e.stopPropagation());
+        root.addEventListener('mousedown', (e) => e.stopPropagation());
+        const card = document.createElement('div');
+        card.className = 'ac-card ac-world-card';
+        card.addEventListener('click', (e) => e.stopPropagation());
+        card.innerHTML = `
+      <div class="cc-corner cc-tl"></div>
+      <div class="cc-corner cc-tr"></div>
+      <div class="cc-corner cc-bl"></div>
+      <div class="cc-corner cc-br"></div>
+    `;
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'ac-close';
+        closeBtn.textContent = '✕';
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.closeWorldModal();
+        });
+        card.appendChild(closeBtn);
+        // Nagłówek w stylu HUD
+        const headEl = document.createElement('div');
+        headEl.className = 'ws-head';
+        const header = document.createElement('div');
+        header.className = 'ac-header';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'ac-title';
+        titleEl.textContent = isGuest ? 'Świat gościa' : 'Wybór świata';
+        const subtitleEl = document.createElement('div');
+        subtitleEl.className = 'ac-subtitle';
+        subtitleEl.textContent = isGuest
+            ? 'Tryb bez zapisu — postęp przepadnie po wyjściu z gry'
+            : `Konto: ${user} • wybierz zapis lub odkryj nową krainę`;
+        header.append(titleEl, subtitleEl);
+        headEl.append(header);
+        card.appendChild(headEl);
+        const listLabel = document.createElement('div');
+        listLabel.className = 'ws-label';
+        const listLabelText = document.createElement('span');
+        listLabelText.textContent = isGuest ? 'Świat tymczasowy' : 'Twoje zapisy';
+        listLabel.appendChild(listLabelText);
+        card.appendChild(listLabel);
+        const listEl = document.createElement('div');
+        listEl.className = 'ac-world-list';
+        const renderWorlds = () => {
+            listEl.innerHTML = '';
+            const worlds = isGuest ? [] : listWorldsForUser(user);
+            if (worlds.length === 0) {
+                const emptyEl = document.createElement('div');
+                emptyEl.className = 'ws-empty';
+                const emptyIcon = document.createElement('img');
+                emptyIcon.className = 'ws-empty-icon';
+                const stoneIcon = this.makeBlockIcon(BlockId.STONE);
+                if (stoneIcon)
+                    emptyIcon.src = stoneIcon;
+                const emptyTitle = document.createElement('div');
+                emptyTitle.className = 'ws-empty-title';
+                emptyTitle.textContent = isGuest ? 'Pusty świat' : 'Brak zapisów';
+                const emptyText = document.createElement('div');
+                emptyText.className = 'ws-empty-text';
+                emptyText.textContent = isGuest
+                    ? 'Tryb gościa — utwórz poniżej świat tymczasowy, aby rozpocząć od zera.'
+                    : 'Nie masz jeszcze żadnego świata. Stwórz swoją pierwszą krainę poniżej!';
+                emptyEl.append(emptyIcon, emptyTitle, emptyText);
+                listEl.appendChild(emptyEl);
+            }
+            else {
+                worlds.forEach((w) => {
+                    const row = document.createElement('div');
+                    row.className = 'ac-world-item';
+                    const seed = this.getWorldSeed(w.id);
+                    const icon = document.createElement('div');
+                    icon.className = 'ws-block-icon';
+                    const iconUrl = this.makeBlockIcon(this.getWorldBlockId(seed));
+                    if (iconUrl) {
+                        const iconImg = document.createElement('img');
+                        iconImg.src = iconUrl;
+                        iconImg.alt = '';
+                        icon.appendChild(iconImg);
+                    }
+                    const info = document.createElement('div');
+                    info.className = 'ac-world-info';
+                    const nameEl = document.createElement('div');
+                    nameEl.className = 'ac-world-name';
+                    nameEl.textContent = w.name;
+                    const metaEl = document.createElement('div');
+                    metaEl.className = 'ac-world-meta';
+                    const dt = new Date(w.updatedAt || w.createdAt);
+                    const dateEl = document.createElement('span');
+                    dateEl.textContent = w.hasSaveData
+                        ? `${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        : 'Świat nieodkryty';
+                    const tagEl = document.createElement('span');
+                    tagEl.className = w.hasSaveData ? 'ws-tag' : 'ws-tag new';
+                    tagEl.textContent = w.hasSaveData ? 'Zapis' : 'Nowy';
+                    const seedEl = document.createElement('span');
+                    seedEl.className = 'ws-seed';
+                    seedEl.textContent = `SEED ${seed}`;
+                    metaEl.append(tagEl, seedEl, dateEl);
+                    info.append(nameEl, metaEl);
+                    const actions = document.createElement('div');
+                    actions.className = 'ac-world-actions';
+                    const playWorldBtn = document.createElement('button');
+                    playWorldBtn.type = 'button';
+                    playWorldBtn.className = 'ac-world-play';
+                    playWorldBtn.textContent = w.hasSaveData ? 'KONTYNUUJ ▶' : 'GRAJ ▶';
+                    playWorldBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (w.hasSaveData) {
+                            this.startSavedGame(w.id, w.name);
+                        }
+                        else {
+                            this.closeWorldModal();
+                            this.startGame(w.id, w.name);
+                        }
+                    });
+                    const delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.className = 'ac-world-del';
+                    delBtn.title = 'Usuń świat';
+                    delBtn.textContent = '✕';
+                    delBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (user) {
+                            deleteWorldForUser(user, w.id);
+                            renderWorlds();
+                        }
+                    });
+                    actions.append(playWorldBtn, delBtn);
+                    row.append(icon, info, actions);
+                    listEl.appendChild(row);
+                });
+            }
+        };
+        renderWorlds();
+        card.appendChild(listEl);
+        // Panel tworzenia nowego świata
+        const newWrap = document.createElement('div');
+        newWrap.className = 'ws-new';
+        const newHead = document.createElement('div');
+        newHead.className = 'ws-new-head';
+        const newTitle = document.createElement('span');
+        newTitle.className = 'ws-new-title';
+        newTitle.textContent = '✦ Nowa kraina';
+        const newHint = document.createElement('span');
+        newHint.className = 'ws-new-hint';
+        newHint.textContent = 'Wygenerowana od zera';
+        newHead.append(newTitle, newHint);
+        const newInput = document.createElement('input');
+        newInput.type = 'text';
+        newInput.className = 'ac-input';
+        newInput.placeholder = 'Nazwa nowego świata...';
+        newInput.maxLength = 24;
+        const createWorldBtn = document.createElement('button');
+        createWorldBtn.type = 'button';
+        createWorldBtn.className = 'ac-submit ws-create';
+        createWorldBtn.textContent = 'STWÓRZ ▸';
+        createWorldBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const wName = newInput.value.trim() || 'Nowy Świat';
+            if (isGuest) {
+                this.closeWorldModal();
+                this.startGame(`guest_${Date.now()}`, wName);
+            }
+            else {
+                const meta = createNewWorldMeta(user, wName);
+                this.closeWorldModal();
+                this.startGame(meta.id, meta.name);
+            }
+        });
+        const newRow = document.createElement('div');
+        newRow.className = 'ws-new-row';
+        newRow.append(newInput, createWorldBtn);
+        newWrap.append(newHead, newRow);
+        card.appendChild(newWrap);
+        root.appendChild(card);
+        root.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (e.target === root)
+                this.closeWorldModal();
+        });
+        document.body.appendChild(root);
+        this.worldDomRoot = root;
     }
     async quitApp() {
         try {

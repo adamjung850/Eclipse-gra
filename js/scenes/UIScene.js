@@ -2486,6 +2486,9 @@ export class UIScene extends Phaser.Scene {
         }
         this.isPauseMenuOpen = false;
         if (this.gameScene) {
+            if (this.gameScene.isWorldReady) {
+                saveGameProgress(this.gameScene);
+            }
             this.gameScene.isPaused = false;
             this.gameScene.physics.resume();
         }
@@ -2497,6 +2500,9 @@ export class UIScene extends Phaser.Scene {
         this.scene.start('MainMenuScene');
     }
     async quitFromPause() {
+        if (this.gameScene && this.gameScene.isWorldReady) {
+            saveGameProgress(this.gameScene);
+        }
         try {
             const tauri = window.__TAURI__;
             if (tauri?.core?.invoke) {

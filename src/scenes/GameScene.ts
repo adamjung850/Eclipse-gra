@@ -36,6 +36,8 @@ export class GameScene extends Phaser.Scene {
   public vormakBoss?: VormakBoss;
   public isPaused: boolean = false;
   private autoSaveElapsedMs: number = 0;
+  public activeWorldId: string = '';
+  public activeWorldName: string = '';
   public isIntroCameraMoving: boolean = false;
   public isWorldReady: boolean = false;
   public inputLockTimer: number = 0;
@@ -56,11 +58,22 @@ export class GameScene extends Phaser.Scene {
     super('GameScene');
   }
 
-  public create(data?: { fromMenuAscend?: boolean; loadSave?: boolean }): void {
+  public create(data?: { fromMenuAscend?: boolean; fromCreator?: boolean; loadSave?: boolean; worldId?: string; worldName?: string }): void {
     const T = GAME_CONSTANTS.TILE_SIZE;
     const worldWidthPx = GAME_CONSTANTS.WORLD_WIDTH * T;
     const worldHeightPx = GAME_CONSTANTS.WORLD_HEIGHT * T;
     this.autoSaveElapsedMs = 0;
+    this.activeWorldId = data?.worldId || '';
+    this.activeWorldName = data?.worldName || '';
+
+    const onBeforeUnload = () => {
+      if (this.isWorldReady) saveGameProgress(this);
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      if (this.isWorldReady) saveGameProgress(this);
+    });
 
     // 1. Setup World Physics Bounds
     this.physics.world.setBounds(0, 0, worldWidthPx, worldHeightPx);
@@ -72,7 +85,7 @@ export class GameScene extends Phaser.Scene {
     this.dayNightSystem = new DayNightSystem(this);
 
     // 4. Generate or Load Procedural World
-    const savedState = data?.loadSave ? loadGameProgressForCurrentUser() : null;
+    const savedState = data?.loadSave ? loadGameProgressForCurrentUser(data?.worldId) : null;
     if (savedState?.character) {
       setActiveCharacterConfig(savedState.character);
     }
@@ -159,7 +172,10 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, pSpawnX, pSpawnY);
     (window as any).__gameScene = this;
-    this.cameras.main.fadeIn(450, 6, 8, 13);
+    // Wejście po kreatorze zaczyna się pod ziemią — bez rozjaśniania z czerni.
+    if (!data?.fromCreator) {
+      this.cameras.main.fadeIn(450, 6, 8, 13);
+    }
 
     if (savedState) {
       this.player.hp = savedState.player.hp;
@@ -326,6 +342,10 @@ export class GameScene extends Phaser.Scene {
 
     // 11. Launch Parallel UI Scene (Independent of camera zoom!)
     this.scene.launch('UIScene', { player: this.player });
+    if (data?.fromCreator) {
+      const uiScene = this.scene.get('UIScene') as any;
+      if (uiScene?.cameras?.main) uiScene.cameras.main.alpha = 0;
+    }
 
     // 11. Camera Setup
     const camera = this.cameras.main;
@@ -333,7 +353,9 @@ export class GameScene extends Phaser.Scene {
     camera.setRoundPixels(true);
     camera.setZoom(1.5);
 
-    if (data?.fromMenuAscend) {
+    const ascendIntro = Boolean(data?.fromMenuAscend || data?.fromCreator);
+
+    if (ascendIntro) {
       // Kamera zaczyna w podziemiach (620px pod graczem) z włączonym oświetleniem i miękkim światłem kamery.
       this.isIntroCameraMoving = true;
       this.darknessSystem.extraLightPos = { x: this.player.x, y: this.player.y + 620, radius: 240 };
@@ -356,10 +378,21 @@ export class GameScene extends Phaser.Scene {
     // Panel sterowania w prawym górnym rogu widoczny tylko przez 15 sekund gry, potem znika (wraca pod ESC)
     this.isPaused = false;
     this.controlsHudExpired = false;
-    if (!data?.fromMenuAscend) {
+    if (!ascendIntro) {
       this.scheduleControlsHudHide();
     }
     this.isWorldReady = true;
+
+    // Wejście z kreatora: kamera kontynuuje jazdę w górę, aż wynurzy się przy graczu
+    if (data?.fromCreator) {
+      this.time.delayedCall(120, () => {
+        this.startMenuAscend(() => {
+          document.querySelector('.dl-loading')?.remove();
+          const uiScene = this.scene.get('UIScene') as any;
+          if (uiScene?.cameras?.main) uiScene.cameras.main.alpha = 1;
+        });
+      });
+    }
   }
 
   private scheduleControlsHudHide(): void {

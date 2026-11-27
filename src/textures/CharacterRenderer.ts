@@ -54,6 +54,26 @@ export class CharacterRenderer {
   public static readonly FRAME_H = 42;
 
   /**
+   * Renders a scaled preview canvas of the character's idle frame (for UI avatars).
+   */
+  public static renderPreview(cfg: CharacterConfig, scale: number = 2): HTMLCanvasElement {
+    const tmp = document.createElement('canvas');
+    tmp.width = this.FRAME_W;
+    tmp.height = this.FRAME_H;
+    const tctx = tmp.getContext('2d')!;
+    tctx.imageSmoothingEnabled = false;
+    this.drawFrame(tctx, cfg, 0, 0);
+
+    const out = document.createElement('canvas');
+    out.width = this.FRAME_W * scale;
+    out.height = this.FRAME_H * scale;
+    const octx = out.getContext('2d')!;
+    octx.imageSmoothingEnabled = false;
+    octx.drawImage(tmp, 0, 0, out.width, out.height);
+    return out;
+  }
+
+  /**
    * Generates all 6 player sprite frames (idle, walk_0..3, jump) from CharacterConfig.
    */
   public static renderPlayerTextures(scene: Phaser.Scene, cfg: CharacterConfig): void {
