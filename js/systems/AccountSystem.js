@@ -1,3 +1,4 @@
+import { GAME_CONSTANTS } from '../types/index.js';
 import { getActiveCharacterConfig, loadSavedCharacterConfig } from '../types/CharacterConfig.js';
 const ACCOUNTS_KEY = 'delveria_accounts_v1';
 const CURRENT_USER_KEY = 'delveria_current_user';
@@ -389,6 +390,23 @@ export function saveGameProgress(gameScene) {
         }));
         const worldId = gameScene.activeWorldId || listWorldsForUser(user)[0]?.id || 'world_1';
         const worldName = gameScene.activeWorldName || 'Świat Główny';
+        const savedChunks = [];
+        if (wm.chunks && typeof wm.chunks.values === 'function') {
+            const cw = wm.chunkWidth || GAME_CONSTANTS.CHUNK_WIDTH;
+            for (const ch of wm.chunks.values()) {
+                if (ch.modified) {
+                    savedChunks.push({
+                        chunkIndex: ch.chunkIndex,
+                        fgRle: encodeGridRle(ch.foreground, cw, wm.height),
+                        bgRle: encodeGridRle(ch.background, cw, wm.height),
+                        modified: true,
+                    });
+                }
+            }
+        }
+        const torchesArr = wm.placedTorches instanceof Map
+            ? Array.from(wm.placedTorches.values())
+            : Array.from(wm.placedTorches.values());
         const state = {
             version: 1,
             worldId,
@@ -409,10 +427,10 @@ export function saveGameProgress(gameScene) {
             world: {
                 width: wm.width,
                 height: wm.height,
-                fgRle: encodeGridRle(wm.foreground, wm.width, wm.height),
-                bgRle: encodeGridRle(wm.background, wm.width, wm.height),
+                worldSeed: wm.worldSeed,
+                chunks: savedChunks,
                 chests: Array.from(wm.chests.entries()),
-                placedTorches: Array.from(wm.placedTorches.values()),
+                placedTorches: torchesArr,
                 trees,
                 cycleTimeMs: typeof gameScene.dayNightSystem?.getCycleTimeMs === 'function'
                     ? gameScene.dayNightSystem.getCycleTimeMs()

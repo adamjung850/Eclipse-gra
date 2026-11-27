@@ -30,7 +30,7 @@ export class EnemySpawner {
         // Spawn only 2 initial enemies safely distributed far off-screen (36 tiles away)
         const offsets = [-36, 36];
         for (const offset of offsets) {
-            const targetX = Math.max(6, Math.min(this.worldManager.width - 7, playerTile.x + offset));
+            const targetX = playerTile.x + offset;
             this.spawnGroundEnemyNear(targetX, playerTile.y, 'slime');
         }
     }
@@ -89,7 +89,7 @@ export class EnemySpawner {
         // Spawns comfortably off-screen (160px to 320px past the camera viewport boundary)
         const extraMarginPx = 160 + Math.random() * 160;
         const targetWorldX = side > 0 ? (view.right + extraMarginPx) : (view.left - extraMarginPx);
-        const targetTileX = Math.max(6, Math.min(this.worldManager.width - 7, Math.floor(targetWorldX / T)));
+        const targetTileX = Math.floor(targetWorldX / T);
         const depth = playerTile.y;
         const isNight = this.dayNightSystem?.isNight() ?? false;
         let typeKey = 'slime';
@@ -154,7 +154,7 @@ export class EnemySpawner {
         // to ensure spawns never fail when landing on a small obstruction or tree leaf
         const columnOffsets = [0, 1, -1, 2, -2];
         for (const xOff of columnOffsets) {
-            const colX = Math.max(5, Math.min(this.worldManager.width - 6, targetX + xOff));
+            const colX = targetX + xOff;
             const minY = Math.max(3, refY - 14);
             const maxY = Math.min(this.worldManager.height - 4, refY + 16);
             for (let ty = minY; ty <= maxY; ty++) {
@@ -175,7 +175,7 @@ export class EnemySpawner {
     spawnAirEnemyNear(targetX, refY) {
         const columnOffsets = [0, 1, -1];
         for (const xOff of columnOffsets) {
-            const colX = Math.max(5, Math.min(this.worldManager.width - 6, targetX + xOff));
+            const colX = targetX + xOff;
             const minY = Math.max(4, refY - 8);
             const maxY = Math.min(this.worldManager.height - 5, refY + 8);
             for (let ty = minY; ty <= maxY; ty++) {

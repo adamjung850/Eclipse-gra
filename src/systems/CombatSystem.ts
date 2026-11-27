@@ -60,11 +60,10 @@ export class CombatSystem {
   }
 
   private initColliders(): void {
-    // 1. Projectiles collide with solid world blocks
-    this.scene.physics.add.collider(
+    // 1. Projectiles collide with solid world blocks across all streamed chunks
+    this.worldManager.registerCollider(
       this.projectiles,
-      this.worldManager.foregroundLayer,
-      (projObj) => {
+      (projObj: any) => {
         const proj = projObj as Projectile;
         this.sparkEmitter.explode(4, proj.x, proj.y);
         proj.destroy();
@@ -85,11 +84,10 @@ export class CombatSystem {
     );
 
     // 3. Enemies collide with solid world blocks (excluding burrowing worm segments)
-    this.scene.physics.add.collider(
+    this.worldManager.registerCollider(
       this.enemies,
-      this.worldManager.foregroundLayer,
       undefined,
-      (enemyObj) => {
+      (enemyObj: any) => {
         const enemy = enemyObj as any;
         return !enemy.isBurrowing;
       }

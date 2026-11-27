@@ -1,4 +1,4 @@
-import { InventorySlot } from '../types/index.js';
+import { GAME_CONSTANTS, InventorySlot } from '../types/index.js';
 import { CharacterConfig, getActiveCharacterConfig, loadSavedCharacterConfig } from '../types/CharacterConfig.js';
 import { TreeRecord } from '../world/WorldGenerator.js';
 
@@ -36,10 +36,12 @@ export interface SavedGameState {
   world: {
     width: number;
     height: number;
-    fgRle: number[];
-    bgRle: number[];
+    worldSeed?: number;
+    chunks?: Array<{ chunkIndex: number; fgRle: number[]; bgRle: number[]; modified?: boolean }>;
+    fgRle?: number[];
+    bgRle?: number[];
     chests: [string, InventorySlot[]][];
-    placedTorches: number[];
+    placedTorches: Array<{ x: number; y: number } | number>;
     trees: TreeRecord[];
     cycleTimeMs: number;
   };
@@ -450,6 +452,25 @@ export function saveGameProgress(gameScene: any): { ok: boolean; savedAt?: numbe
     const worldId: string = gameScene.activeWorldId || listWorldsForUser(user)[0]?.id || 'world_1';
     const worldName: string = gameScene.activeWorldName || 'Świat Główny';
 
+    const savedChunks: Array<{ chunkIndex: number; fgRle: number[]; bgRle: number[]; modified?: boolean }> = [];
+    if (wm.chunks && typeof wm.chunks.values === 'function') {
+      const cw = wm.chunkWidth || GAME_CONSTANTS.CHUNK_WIDTH;
+      for (const ch of wm.chunks.values()) {
+        if (ch.modified) {
+          savedChunks.push({
+            chunkIndex: ch.chunkIndex,
+            fgRle: encodeGridRle(ch.foreground, cw, wm.height),
+            bgRle: encodeGridRle(ch.background, cw, wm.height),
+            modified: true,
+          });
+        }
+      }
+    }
+
+    const torchesArr: Array<{ x: number; y: number } | number> = wm.placedTorches instanceof Map
+      ? Array.from((wm.placedTorches as Map<string, { x: number; y: number }>).values())
+      : Array.from((wm.placedTorches as Set<number>).values());
+
     const state: SavedGameState = {
       version: 1,
       worldId,
@@ -472,10 +493,10 @@ export function saveGameProgress(gameScene: any): { ok: boolean; savedAt?: numbe
       world: {
         width: wm.width,
         height: wm.height,
-        fgRle: encodeGridRle(wm.foreground, wm.width, wm.height),
-        bgRle: encodeGridRle(wm.background, wm.width, wm.height),
+        worldSeed: wm.worldSeed,
+        chunks: savedChunks,
         chests: Array.from((wm.chests as Map<string, InventorySlot[]>).entries()),
-        placedTorches: Array.from((wm.placedTorches as Set<number>).values()),
+        placedTorches: torchesArr,
         trees,
         cycleTimeMs: typeof gameScene.dayNightSystem?.getCycleTimeMs === 'function'
           ? gameScene.dayNightSystem.getCycleTimeMs()

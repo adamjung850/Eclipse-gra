@@ -75,8 +75,8 @@ export class GameScene extends Phaser.Scene {
       if (this.isWorldReady) saveGameProgress(this);
     });
 
-    // 1. Setup World Physics Bounds
-    this.physics.world.setBounds(0, 0, worldWidthPx, worldHeightPx);
+    // 1. Setup World Physics Bounds (infinite horizontally, bounded vertically)
+    this.physics.world.setBounds(-10000000, 0, 20000000, worldHeightPx);
 
     // 2. Audio Synthesizer
     this.sounds = new SoundSynthesizer();
@@ -84,32 +84,39 @@ export class GameScene extends Phaser.Scene {
     // 3. Sky, Atmosphere & Celestial System (Sun, Moon, Stars, Day/Night)
     this.dayNightSystem = new DayNightSystem(this);
 
-    // 4. Generate or Load Procedural World
+    // 4. Generate or Load Infinite Chunked World
     const savedState = data?.loadSave ? loadGameProgressForCurrentUser(data?.worldId) : null;
     if (savedState?.character) {
       setActiveCharacterConfig(savedState.character);
     }
 
-    const worldData = savedState
-      ? {
-          width: savedState.world.width,
-          height: savedState.world.height,
-          foreground: decodeGridRle(savedState.world.fgRle, savedState.world.width, savedState.world.height),
-          background: decodeGridRle(savedState.world.bgRle, savedState.world.width, savedState.world.height),
-          spawnX: savedState.player.x,
-          spawnY: savedState.player.y,
-          trees: savedState.world.trees || [],
-        }
-      : WorldGenerator.generate();
+    const worldSeed = savedState?.world?.worldSeed ?? Math.floor(Math.random() * 2147483647);
+    const decodedChunks = savedState?.world?.chunks
+      ? savedState.world.chunks.map((c) => ({
+          chunkIndex: c.chunkIndex,
+          foreground: decodeGridRle(c.fgRle, GAME_CONSTANTS.CHUNK_WIDTH, savedState.world.height),
+          background: decodeGridRle(c.bgRle, GAME_CONSTANTS.CHUNK_WIDTH, savedState.world.height),
+          modified: c.modified ?? true,
+        }))
+      : undefined;
 
-    this.worldManager = new WorldManager(this, worldData);
+    this.worldManager = new WorldManager(this, worldSeed, decodedChunks, savedState?.world?.trees);
 
     if (savedState) {
       if (Array.isArray(savedState.world.chests)) {
         this.worldManager.chests = new Map(savedState.world.chests);
       }
       if (Array.isArray(savedState.world.placedTorches)) {
-        this.worldManager.placedTorches = new Set(savedState.world.placedTorches);
+        this.worldManager.placedTorches = new Map();
+        for (const item of savedState.world.placedTorches) {
+          if (typeof item === 'number') {
+            const tx = item % (savedState.world.width || GAME_CONSTANTS.WORLD_WIDTH);
+            const ty = Math.floor(item / (savedState.world.width || GAME_CONSTANTS.WORLD_WIDTH));
+            this.worldManager.placedTorches.set(`${tx},${ty}`, { x: tx, y: ty });
+          } else if (item && typeof item.x === 'number' && typeof item.y === 'number') {
+            this.worldManager.placedTorches.set(`${item.x},${item.y}`, { x: item.x, y: item.y });
+          }
+        }
       }
       if (typeof savedState.world.cycleTimeMs === 'number') {
         this.dayNightSystem.setCycleTimeMs(savedState.world.cycleTimeMs);
@@ -117,8 +124,10 @@ export class GameScene extends Phaser.Scene {
     }
 
     // 5. Spawn Player & Check URL Teleport overrides (?tp=desert, ?tp=ice, ?tp=dark, ?tp=crystal, ?tp=nether, ?tp=void)
-    let pSpawnX = worldData.spawnX;
-    let pSpawnY = worldData.spawnY;
+    let pSpawnX = savedState ? savedState.player.x : 16 * T + T / 2;
+    let pSpawnY = savedState ? savedState.player.y : (WorldGenerator.getSurfaceHeightAt(16, worldSeed) - 3) * T;
+    this.cameras.main.centerOn(pSpawnX, pSpawnY);
+    this.worldManager.updateChunksAroundCamera(this.cameras.main, true);
 
     if (typeof window !== 'undefined') {
       try {
@@ -209,14 +218,13 @@ export class GameScene extends Phaser.Scene {
     (this.enemies as any).defaults = {};
     (this.projectiles as any).defaults = {};
 
-    // 7. Setup Physics Collisions
-    this.physics.add.collider(this.player, this.worldManager.foregroundLayer);
-    this.physics.add.collider(this.droppedItems, this.worldManager.foregroundLayer);
-    this.physics.add.collider(
+    // 7. Setup Physics Collisions (automatically attached to all streamed chunks)
+    this.worldManager.registerCollider(this.player);
+    this.worldManager.registerCollider(this.droppedItems);
+    this.worldManager.registerCollider(
       this.enemies,
-      this.worldManager.foregroundLayer,
       undefined,
-      (enemyObj) => !(enemyObj as any).isBurrowing
+      (enemyObj: any) => !(enemyObj as any).isBurrowing
     );
 
     // 8. Block Broken Hook & Item Drops
@@ -349,7 +357,7 @@ export class GameScene extends Phaser.Scene {
 
     // 11. Camera Setup
     const camera = this.cameras.main;
-    camera.setBounds(0, 0, worldWidthPx, worldHeightPx);
+    camera.setBounds(-10000000, 0, 20000000, worldHeightPx);
     camera.setRoundPixels(true);
     camera.setZoom(1.5);
 
@@ -516,6 +524,9 @@ export class GameScene extends Phaser.Scene {
     if (!this.isIntroCameraMoving) {
       this.inputManager.update(delta);
     }
+
+    // Stream infinite chunks around camera (always preloaded 2 chunks off-screen)
+    this.worldManager.updateChunksAroundCamera(this.cameras.main);
 
     // Auto-close chest modal if player walks out of reach
     const uiScene = this.scene.get('UIScene') as any;
@@ -709,9 +720,9 @@ export class GameScene extends Phaser.Scene {
 
     const T = GAME_CONSTANTS.TILE_SIZE;
     const dir = this.player.isFacingLeft ? -1 : 1;
-    const targetX = Phaser.Math.Clamp(this.player.x + dir * 100, 5 * T, (GAME_CONSTANTS.WORLD_WIDTH - 6) * T);
+    const targetX = this.player.x + dir * 100;
     const tileX = Math.floor(targetX / T);
-    const surfaceTileY = this.worldManager.surfaceYCache?.[tileX] ?? Math.floor(this.player.y / T) + 1;
+    const surfaceTileY = this.worldManager.getSurfaceY(tileX);
     const surfaceY = surfaceTileY * T;
 
     // 1. Spawn Pixelart Totem Sprite

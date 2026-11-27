@@ -169,11 +169,68 @@ export class BiomeSystem {
     return this.surfaceRegions;
   }
 
+  public static currentSeed: number = 1337;
+
+  private static hashInt(n: number): number {
+    let x = n | 0;
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    return (x ^ (x >>> 16)) >>> 0;
+  }
+
+  /**
+   * Deterministic surface biome lookup for infinite horizontal worlds.
+   * Region width is 112 tiles (~3.5 chunks); region 0 (around spawn x=0..111) is always GREENLANDS.
+   */
+  public static getSurfaceBiomeForInfiniteX(tileX: number, worldSeed: number = this.currentSeed): {
+    biome: BiomeConfig;
+    isBorder: boolean;
+    neighborBiome: BiomeConfig;
+  } {
+    const regionSize = 112;
+    const regionIdx = Math.floor(tileX / regionSize);
+    const localX = ((tileX % regionSize) + regionSize) % regionSize;
+
+    const pickBiomeId = (rIdx: number): BiomeId => {
+      if (rIdx === 0) return BiomeId.GREENLANDS;
+      const pool: BiomeId[] = [BiomeId.GREENLANDS, BiomeId.DESERT, BiomeId.FROZEN_PEAKS, BiomeId.DARK_FOREST];
+      const h = this.hashInt(worldSeed ^ Math.imul(rIdx, 374761393));
+      const idx = h % pool.length;
+      // Avoid identical adjacent biome if possible
+      const prevIdx = rIdx > 0
+        ? (rIdx - 1 === 0 ? 0 : this.hashInt(worldSeed ^ Math.imul(rIdx - 1, 374761393)) % pool.length)
+        : (rIdx + 1 === 0 ? 0 : this.hashInt(worldSeed ^ Math.imul(rIdx + 1, 374761393)) % pool.length);
+      if (idx === prevIdx) {
+        return pool[(idx + 1) % pool.length];
+      }
+      return pool[idx];
+    };
+
+    const curId = pickBiomeId(regionIdx);
+    const curBiome = BIOME_CONFIGS[curId] || BIOME_CONFIGS[BiomeId.GREENLANDS];
+
+    if (localX <= 3) {
+      const prevBiome = BIOME_CONFIGS[pickBiomeId(regionIdx - 1)] || curBiome;
+      return { biome: curBiome, isBorder: prevBiome.id !== curBiome.id, neighborBiome: prevBiome };
+    }
+    if (localX >= regionSize - 4) {
+      const nextBiome = BIOME_CONFIGS[pickBiomeId(regionIdx + 1)] || curBiome;
+      return { biome: curBiome, isBorder: nextBiome.id !== curBiome.id, neighborBiome: nextBiome };
+    }
+
+    return { biome: curBiome, isBorder: false, neighborBiome: curBiome };
+  }
+
   /**
    * Evaluates the active biome at a given tile coordinate (x, y).
    * Subterranean depth overrides surface biomes.
    */
-  public static getBiomeAt(tileX: number, tileY: number, surfaceY: number = GAME_CONSTANTS.SURFACE_HEIGHT): BiomeConfig {
+  public static getBiomeAt(
+    tileX: number,
+    tileY: number,
+    surfaceY: number = GAME_CONSTANTS.SURFACE_HEIGHT,
+    worldSeed: number = this.currentSeed
+  ): BiomeConfig {
     // 1. Deep Subterranean Biomes
     if (tileY >= GAME_CONSTANTS.VOID_DEPTH) {
       return BIOME_CONFIGS[BiomeId.THE_VOID];
@@ -188,18 +245,8 @@ export class BiomeSystem {
       return BIOME_CONFIGS[BiomeId.UNDERGROUND];
     }
 
-    // 2. Surface Biomes (Dynamically and randomly distributed)
-    if (!this.surfaceRegions || this.surfaceRegions.length === 0) {
-      this.initSurfaceRegions(GAME_CONSTANTS.WORLD_WIDTH);
-    }
-
-    for (const region of this.surfaceRegions) {
-      if (tileX >= region.startX && tileX < region.endX) {
-        return BIOME_CONFIGS[region.biomeId] || BIOME_CONFIGS[BiomeId.GREENLANDS];
-      }
-    }
-
-    return BIOME_CONFIGS[BiomeId.GREENLANDS];
+    // 2. Infinite Surface Biomes
+    return this.getSurfaceBiomeForInfiniteX(tileX, worldSeed).biome;
   }
 
   /**

@@ -32,9 +32,9 @@ export class DarknessSystem {
         this.darknessGraphic.clear();
         const cam = this.scene.cameras.main;
         const T = GAME_CONSTANTS.TILE_SIZE; // 24
-        // Visible tile bounds in world coordinates (respecting camera zoom and viewport)
-        const minX = Math.max(0, Math.floor(cam.worldView.x / T));
-        const maxX = Math.min(GAME_CONSTANTS.WORLD_WIDTH - 1, Math.ceil((cam.worldView.x + cam.worldView.width) / T));
+        // Visible tile bounds in world coordinates (respecting camera zoom and viewport; X is infinite)
+        const minX = Math.floor(cam.worldView.x / T);
+        const maxX = Math.ceil((cam.worldView.x + cam.worldView.width) / T);
         const minY = Math.max(0, Math.floor(cam.worldView.y / T));
         const maxY = Math.min(GAME_CONSTANTS.WORLD_HEIGHT - 1, Math.ceil((cam.worldView.y + cam.worldView.height) / T) + 1);
         const playerX = this.player.x;
@@ -47,9 +47,7 @@ export class DarknessSystem {
         const torchPositions = [];
         const torchRadius = 180;
         const torchRadiusSq = torchRadius * torchRadius;
-        this.worldManager.placedTorches.forEach((encoded) => {
-            const tx = encoded % this.worldManager.width;
-            const ty = Math.floor(encoded / this.worldManager.width);
+        this.worldManager.placedTorches.forEach(({ x: tx, y: ty }) => {
             if (tx >= minX - 8 && tx <= maxX + 8 && ty >= minY - 8 && ty <= maxY + 8) {
                 torchPositions.push({ x: tx * T + T / 2, y: ty * T + T / 2 });
             }
@@ -58,7 +56,7 @@ export class DarknessSystem {
         const maxGloomAlpha = 0.86; // Dark ambient gloom (not pitch black void)
         const gradHeight = 144; // ~6 blocks smooth vertical transition (144px)
         for (let x = minX; x <= maxX; x++) {
-            const surfaceY = this.worldManager.surfaceYCache[x];
+            const surfaceY = this.worldManager.getSurfaceY(x);
             // Surface (block 0: grass) and Block 1 (first dirt block) remain daylight-visible.
             // The mega-smooth transition begins at the 2nd dirt block: surfaceY + 2
             const gradStartWorldY = (surfaceY + 2) * T;

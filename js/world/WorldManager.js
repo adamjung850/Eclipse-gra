@@ -1,17 +1,19 @@
 import { BlockId, BiomeId, GAME_CONSTANTS } from '../types/index.js';
 import { BLOCK_DEFINITIONS } from './BlockTypes.js';
+import { WorldGenerator } from './WorldGenerator.js';
 import { CROWN_PALETTES } from '../textures/TreeSprites.js';
 import { BiomeSystem } from './BiomeSystem.js';
 import { ITEM_REGISTRY } from './ItemTypes.js';
 export class WorldManager {
     scene;
+    worldSeed;
+    chunkWidth = GAME_CONSTANTS.CHUNK_WIDTH;
     width;
     height;
-    foreground;
-    background;
+    chunks = new Map();
     blockDamage = new Map();
     crackImages = new Map();
-    tilemap;
+    // Compatibility references for spawn chunk layer
     backgroundLayer;
     foregroundLayer;
     // Trees & Sapling growth
@@ -24,19 +26,61 @@ export class WorldManager {
     // Callback when a block is broken: (tileX, tileY, blockId) => void
     onBlockBroken;
     // Underground Darkness & Lighting Optimization
-    surfaceYCache;
-    placedTorches = new Set();
-    constructor(scene, worldData) {
+    surfaceYCache = new Map();
+    placedTorches = new Map();
+    colliderRegistrations = [];
+    solidBlockIds = [];
+    nonSolidIds = [
+        BlockId.WOOD,
+        BlockId.DARK_WOOD,
+        BlockId.PALM_WOOD,
+        BlockId.LEAVES,
+        BlockId.DARK_LEAVES,
+        BlockId.CACTUS,
+        BlockId.TORCH,
+        BlockId.DIRT_WALL,
+        BlockId.STONE_WALL,
+        BlockId.WOOD_WALL,
+        BlockId.CRYSTAL_WALL,
+        BlockId.SAPLING,
+        BlockId.TREE_ROOT,
+        BlockId.TREE_BRANCH_L,
+        BlockId.TREE_BRANCH_R
+    ];
+    constructor(scene, worldSeedOrData, savedChunks, savedTrees) {
         this.scene = scene;
-        this.width = worldData.width;
-        this.height = worldData.height;
-        this.foreground = worldData.foreground;
-        this.background = worldData.background;
-        this.surfaceYCache = new Int32Array(this.width);
-        this.initSurfaceCache();
-        // Initialize trees from procedural generation
-        if (worldData.trees) {
-            for (const t of worldData.trees) {
+        this.height = GAME_CONSTANTS.WORLD_HEIGHT;
+        this.width = GAME_CONSTANTS.WORLD_WIDTH;
+        if (typeof worldSeedOrData === 'number') {
+            this.worldSeed = worldSeedOrData;
+        }
+        else {
+            this.worldSeed = worldSeedOrData.seed ?? Math.floor(Math.random() * 2147483647);
+        }
+        BiomeSystem.currentSeed = this.worldSeed;
+        for (const key of Object.keys(BLOCK_DEFINITIONS)) {
+            const id = Number(key);
+            const def = BLOCK_DEFINITIONS[id];
+            if (def && def.isSolid) {
+                this.solidBlockIds.push(id);
+            }
+        }
+        if (savedChunks && savedChunks.length > 0) {
+            for (const sc of savedChunks) {
+                const chunk = {
+                    chunkIndex: sc.chunkIndex,
+                    foreground: sc.foreground,
+                    background: sc.background,
+                    colliders: [],
+                    isLoaded: false,
+                    modified: sc.modified ?? true,
+                };
+                this.chunks.set(sc.chunkIndex, chunk);
+                this.indexChunkColumns(chunk);
+            }
+        }
+        if (savedTrees) {
+            for (const t of savedTrees) {
                 this.activeTrees.push({
                     x: t.x,
                     surfaceY: t.surfaceY,
@@ -46,28 +90,227 @@ export class WorldManager {
                     colorVariant: t.colorVariant ?? 0,
                     branchSprites: [],
                     branchSpots: t.branchSpots ?? [],
-                    isDarkWood: t.isDarkWood
+                    isDarkWood: t.isDarkWood,
+                    chunkIndex: this.getChunkIndex(t.x),
                 });
             }
         }
-        this.createTilemaps();
-        this.spawnInitialTreeCrowns();
+        // Pre-generate & load initial chunks around spawn immediately
+        for (let c = -2; c <= 2; c++) {
+            const chunk = this.ensureChunkData(c);
+            this.loadChunkVisuals(chunk);
+        }
     }
-    initSurfaceCache() {
-        for (let x = 0; x < this.width; x++) {
-            this.recomputeSurfaceY(x);
+    getChunkIndex(tileX) {
+        return Math.floor(tileX / this.chunkWidth);
+    }
+    getLocalX(tileX) {
+        return ((tileX % this.chunkWidth) + this.chunkWidth) % this.chunkWidth;
+    }
+    ensureChunkData(chunkIndex) {
+        const existing = this.chunks.get(chunkIndex);
+        if (existing)
+            return existing;
+        const gen = WorldGenerator.generateChunk(chunkIndex, this.worldSeed, this.height);
+        const chunk = {
+            chunkIndex,
+            foreground: gen.foreground,
+            background: gen.background,
+            colliders: [],
+            isLoaded: false,
+            modified: false,
+        };
+        this.chunks.set(chunkIndex, chunk);
+        for (const t of gen.trees) {
+            const already = this.activeTrees.some((at) => at.x === t.x && at.surfaceY === t.surfaceY);
+            if (!already) {
+                this.activeTrees.push({
+                    x: t.x,
+                    surfaceY: t.surfaceY,
+                    treeTopY: t.treeTopY,
+                    trunkHeight: t.trunkHeight,
+                    crownVariant: t.crownVariant ?? 0,
+                    colorVariant: t.colorVariant ?? 0,
+                    branchSprites: [],
+                    branchSpots: t.branchSpots ?? [],
+                    isDarkWood: t.isDarkWood,
+                    chunkIndex,
+                });
+            }
+        }
+        this.indexChunkColumns(chunk);
+        return chunk;
+    }
+    indexChunkColumns(chunk) {
+        const startX = chunk.chunkIndex * this.chunkWidth;
+        for (let lx = 0; lx < this.chunkWidth; lx++) {
+            const wx = startX + lx;
+            this.recomputeSurfaceY(wx);
             for (let y = 0; y < this.height; y++) {
-                if (this.foreground[x][y] === BlockId.TORCH) {
-                    this.placedTorches.add(y * this.width + x);
+                if (chunk.foreground[lx][y] === BlockId.TORCH) {
+                    this.placedTorches.set(`${wx},${y}`, { x: wx, y });
                 }
             }
         }
     }
-    recomputeSurfaceY(x) {
-        if (x < 0 || x >= this.width)
+    registerCollider(object, collideCallback, processCallback, callbackContext) {
+        const reg = { object, collideCallback, processCallback, callbackContext };
+        this.colliderRegistrations.push(reg);
+        for (const chunk of this.chunks.values()) {
+            if (chunk.isLoaded && chunk.foregroundLayer) {
+                const col = this.scene.physics.add.collider(object, chunk.foregroundLayer, collideCallback, processCallback, callbackContext);
+                chunk.colliders.push(col);
+            }
+        }
+    }
+    updateChunksAroundCamera(cam, syncAll = false) {
+        const T = GAME_CONSTANTS.TILE_SIZE;
+        const minVisTileX = Math.floor(cam.worldView.x / T);
+        const maxVisTileX = Math.ceil((cam.worldView.x + cam.worldView.width) / T);
+        const minChunk = this.getChunkIndex(minVisTileX) - 2; // 2 chunks off-screen buffer left
+        const maxChunk = this.getChunkIndex(maxVisTileX) + 2; // 2 chunks off-screen buffer right
+        const centerChunk = Math.floor((minChunk + maxChunk) / 2);
+        const needed = [];
+        for (let c = minChunk; c <= maxChunk; c++) {
+            const ch = this.chunks.get(c);
+            if (!ch || !ch.isLoaded) {
+                needed.push(c);
+            }
+        }
+        needed.sort((a, b) => Math.abs(a - centerChunk) - Math.abs(b - centerChunk));
+        const limit = syncAll ? needed.length : 2;
+        for (let i = 0; i < Math.min(limit, needed.length); i++) {
+            const chunk = this.ensureChunkData(needed[i]);
+            this.loadChunkVisuals(chunk);
+        }
+        for (const [cIdx, chunk] of this.chunks.entries()) {
+            if (chunk.isLoaded && Math.abs(cIdx - centerChunk) > 6) {
+                this.unloadChunkVisuals(chunk);
+            }
+        }
+    }
+    loadChunkVisuals(chunk) {
+        if (chunk.isLoaded)
             return;
+        const T = GAME_CONSTANTS.TILE_SIZE;
+        const worldPixelX = chunk.chunkIndex * this.chunkWidth * T;
+        const tilemap = this.scene.make.tilemap({
+            tileWidth: T,
+            tileHeight: T,
+            width: this.chunkWidth,
+            height: this.height,
+        });
+        const tileset = tilemap.addTilesetImage('world_tileset', 'world_tileset', T, T, 1, 2);
+        if (!tileset) {
+            console.error('Failed to create chunk tileset');
+            return;
+        }
+        const bgLayer = tilemap.createBlankLayer(`bg_${chunk.chunkIndex}`, tileset, worldPixelX, 0);
+        if (bgLayer) {
+            bgLayer.setDepth(0);
+            bgLayer.setAlpha(0.95);
+            bgLayer.setTint(0x525463);
+            for (let lx = 0; lx < this.chunkWidth; lx++) {
+                for (let y = 0; y < this.height; y++) {
+                    const wallId = chunk.background[lx][y];
+                    if (wallId !== BlockId.AIR) {
+                        bgLayer.putTileAt(wallId, lx, y);
+                    }
+                }
+            }
+        }
+        const fgLayer = tilemap.createBlankLayer(`fg_${chunk.chunkIndex}`, tileset, worldPixelX, 0);
+        if (fgLayer) {
+            fgLayer.setDepth(10);
+            for (let lx = 0; lx < this.chunkWidth; lx++) {
+                const wx = chunk.chunkIndex * this.chunkWidth + lx;
+                for (let y = 0; y < this.height; y++) {
+                    const blockId = chunk.foreground[lx][y];
+                    if (blockId !== BlockId.AIR) {
+                        if (blockId === BlockId.LEAVES && this.isNaturalTreeLeaf(wx, y)) {
+                            continue;
+                        }
+                        fgLayer.putTileAt(blockId, lx, y);
+                    }
+                }
+            }
+            this.applyLayerCollisions(fgLayer);
+            for (const reg of this.colliderRegistrations) {
+                const col = this.scene.physics.add.collider(reg.object, fgLayer, reg.collideCallback, reg.processCallback, reg.callbackContext);
+                chunk.colliders.push(col);
+            }
+        }
+        chunk.tilemap = tilemap;
+        chunk.backgroundLayer = bgLayer ?? undefined;
+        chunk.foregroundLayer = fgLayer ?? undefined;
+        chunk.isLoaded = true;
+        if (chunk.chunkIndex === 0 && bgLayer && fgLayer) {
+            this.backgroundLayer = bgLayer;
+            this.foregroundLayer = fgLayer;
+        }
+        for (const tree of this.activeTrees) {
+            if (this.getChunkIndex(tree.x) === chunk.chunkIndex && !tree.crownSprite) {
+                this.spawnTreeVisuals(tree);
+            }
+        }
+    }
+    unloadChunkVisuals(chunk) {
+        if (!chunk.isLoaded)
+            return;
+        for (const col of chunk.colliders) {
+            col.destroy();
+        }
+        chunk.colliders = [];
+        for (const tree of this.activeTrees) {
+            if (this.getChunkIndex(tree.x) === chunk.chunkIndex) {
+                if (tree.crownSprite) {
+                    tree.crownSprite.destroy();
+                    tree.crownSprite = undefined;
+                }
+                if (tree.branchSprites) {
+                    for (const b of tree.branchSprites)
+                        b.destroy();
+                    tree.branchSprites = [];
+                }
+            }
+        }
+        if (chunk.tilemap) {
+            chunk.tilemap.destroy();
+            chunk.tilemap = undefined;
+        }
+        chunk.backgroundLayer = undefined;
+        chunk.foregroundLayer = undefined;
+        chunk.isLoaded = false;
+        if (!chunk.modified) {
+            this.chunks.delete(chunk.chunkIndex);
+        }
+    }
+    applyLayerCollisions(layer) {
+        layer.setCollisionByExclusion([], false);
+        layer.setCollision(this.solidBlockIds, true);
+        layer.setCollision(this.nonSolidIds, false);
+        layer.forEachTile((tile) => {
+            const def = BLOCK_DEFINITIONS[tile.index];
+            const isSolid = def ? def.isSolid : false;
+            tile.setCollision(isSolid, isSolid, isSolid, isSolid);
+        });
+    }
+    getSurfaceY(tileX) {
+        const cached = this.surfaceYCache.get(tileX);
+        if (cached !== undefined)
+            return cached;
+        return WorldGenerator.getSurfaceHeightAt(tileX, this.worldSeed);
+    }
+    recomputeSurfaceY(x) {
+        const cIdx = this.getChunkIndex(x);
+        const chunk = this.chunks.get(cIdx);
+        if (!chunk) {
+            this.surfaceYCache.set(x, WorldGenerator.getSurfaceHeightAt(x, this.worldSeed));
+            return;
+        }
+        const lx = this.getLocalX(x);
         for (let y = 0; y < this.height; y++) {
-            const b = this.foreground[x][y];
+            const b = chunk.foreground[lx][y];
             if (b === BlockId.GRASS ||
                 b === BlockId.DIRT ||
                 b === BlockId.STONE ||
@@ -87,63 +330,11 @@ export class WorldManager {
                 b === BlockId.DIAMOND_ORE ||
                 b === BlockId.CRYSTAL_ORE ||
                 b === BlockId.BEDROCK) {
-                this.surfaceYCache[x] = y;
+                this.surfaceYCache.set(x, y);
                 return;
             }
         }
-        this.surfaceYCache[x] = GAME_CONSTANTS.SURFACE_HEIGHT;
-    }
-    createTilemaps() {
-        const T = GAME_CONSTANTS.TILE_SIZE;
-        // 1. Create Phaser Tilemap
-        this.tilemap = this.scene.make.tilemap({
-            tileWidth: T,
-            tileHeight: T,
-            width: this.width,
-            height: this.height
-        });
-        const tileset = this.tilemap.addTilesetImage('world_tileset', 'world_tileset', T, T, 1, 2);
-        if (!tileset) {
-            console.error('Failed to create world tileset');
-            return;
-        }
-        // 2. Create Background Layer (Walls)
-        const bgLayer = this.tilemap.createBlankLayer('BackgroundLayer', tileset, 0, 0);
-        if (bgLayer) {
-            this.backgroundLayer = bgLayer;
-            this.backgroundLayer.setDepth(0);
-            this.backgroundLayer.setAlpha(0.95);
-            this.backgroundLayer.setTint(0x525463);
-            // Populate background tiles
-            for (let x = 0; x < this.width; x++) {
-                for (let y = 0; y < this.height; y++) {
-                    const wallId = this.background[x][y];
-                    if (wallId !== BlockId.AIR) {
-                        this.backgroundLayer.putTileAt(wallId, x, y);
-                    }
-                }
-            }
-        }
-        // 3. Create Foreground Layer (Solid & interactable blocks)
-        const fgLayer = this.tilemap.createBlankLayer('ForegroundLayer', tileset, 0, 0);
-        if (fgLayer) {
-            this.foregroundLayer = fgLayer;
-            this.foregroundLayer.setDepth(10); // Covers burrowing worms/bosses underground while leaving sky & open caves visible
-            // Populate foreground tiles
-            for (let x = 0; x < this.width; x++) {
-                for (let y = 0; y < this.height; y++) {
-                    const blockId = this.foreground[x][y];
-                    if (blockId !== BlockId.AIR) {
-                        // Natural tree leaves are rendered via tree_crown sprite, skip square block placement
-                        if (blockId === BlockId.LEAVES && this.isNaturalTreeLeaf(x, y)) {
-                            continue;
-                        }
-                        this.foregroundLayer.putTileAt(blockId, x, y);
-                    }
-                }
-            }
-            this.updateCollisions();
-        }
+        this.surfaceYCache.set(x, GAME_CONSTANTS.SURFACE_HEIGHT);
     }
     isNaturalTreeLeaf(x, y) {
         for (const tree of this.activeTrees) {
@@ -155,87 +346,87 @@ export class WorldManager {
         }
         return false;
     }
-    spawnInitialTreeCrowns() {
+    spawnTreeVisuals(tree) {
         const T = GAME_CONSTANTS.TILE_SIZE;
-        for (const tree of this.activeTrees) {
-            if (!tree.branchSprites)
-                tree.branchSprites = [];
-            // 1. Crown Sprite: overlaps top of trunk by 18px for seamless socket integration
-            const texKey = `tree_crown_${tree.crownVariant}_${tree.colorVariant}`;
-            const crown = this.scene.add.image(tree.x * T + T / 2, tree.treeTopY * T + 18, this.scene.textures.exists(texKey) ? texKey : 'tree_crown');
-            crown.setDepth(2);
-            crown.setOrigin(0.5, 1.0);
-            tree.crownSprite = crown;
-            // 2. Large Pixel Art Branches
-            if (tree.branchSpots) {
-                const darkSuffix = tree.isDarkWood ? '_dark' : '';
-                for (const b of tree.branchSpots) {
-                    if (b.side === 'L') {
-                        const bSprite = this.scene.add.image(tree.x * T + 5, b.y * T + 12, `tree_branch_left_${tree.colorVariant}${darkSuffix}`);
-                        bSprite.setOrigin(47 / 48, 35 / 42);
-                        bSprite.setDepth(1);
-                        tree.branchSprites.push(bSprite);
-                    }
-                    else {
-                        const bSprite = this.scene.add.image(tree.x * T + 19, b.y * T + 12, `tree_branch_right_${tree.colorVariant}${darkSuffix}`);
-                        bSprite.setOrigin(0, 35 / 42);
-                        bSprite.setDepth(1);
-                        tree.branchSprites.push(bSprite);
-                    }
+        if (!tree.branchSprites)
+            tree.branchSprites = [];
+        const texKey = `tree_crown_${tree.crownVariant}_${tree.colorVariant}`;
+        const crown = this.scene.add.image(tree.x * T + T / 2, tree.treeTopY * T + 18, this.scene.textures.exists(texKey) ? texKey : 'tree_crown');
+        crown.setDepth(2);
+        crown.setOrigin(0.5, 1.0);
+        tree.crownSprite = crown;
+        if (tree.branchSpots) {
+            const darkSuffix = tree.isDarkWood ? '_dark' : '';
+            for (const b of tree.branchSpots) {
+                if (b.side === 'L') {
+                    const bSprite = this.scene.add.image(tree.x * T + 5, b.y * T + 12, `tree_branch_left_${tree.colorVariant}${darkSuffix}`);
+                    bSprite.setOrigin(47 / 48, 35 / 42);
+                    bSprite.setDepth(1);
+                    tree.branchSprites.push(bSprite);
+                }
+                else {
+                    const bSprite = this.scene.add.image(tree.x * T + 19, b.y * T + 12, `tree_branch_right_${tree.colorVariant}${darkSuffix}`);
+                    bSprite.setOrigin(0, 35 / 42);
+                    bSprite.setDepth(1);
+                    tree.branchSprites.push(bSprite);
                 }
             }
         }
     }
     updateCollisions() {
-        // 1. Reset all tile collisions across the entire layer
-        this.foregroundLayer.setCollisionByExclusion([], false);
-        // 2. Identify all solid block IDs from BLOCK_DEFINITIONS
-        const solidBlockIds = [];
-        for (const key of Object.keys(BLOCK_DEFINITIONS)) {
-            const id = Number(key);
-            const def = BLOCK_DEFINITIONS[id];
-            if (def && def.isSolid) {
-                solidBlockIds.push(id);
+        for (const chunk of this.chunks.values()) {
+            if (chunk.isLoaded && chunk.foregroundLayer) {
+                this.applyLayerCollisions(chunk.foregroundLayer);
             }
         }
-        this.foregroundLayer.setCollision(solidBlockIds, true);
-        // 3. Explicitly disable collision on wood, leaves, torches, walls, saplings, cacti and tree parts
-        const nonSolidIds = [
-            BlockId.WOOD,
-            BlockId.DARK_WOOD,
-            BlockId.PALM_WOOD,
-            BlockId.LEAVES,
-            BlockId.DARK_LEAVES,
-            BlockId.CACTUS,
-            BlockId.TORCH,
-            BlockId.DIRT_WALL,
-            BlockId.STONE_WALL,
-            BlockId.WOOD_WALL,
-            BlockId.CRYSTAL_WALL,
-            BlockId.SAPLING,
-            BlockId.TREE_ROOT,
-            BlockId.TREE_BRANCH_L,
-            BlockId.TREE_BRANCH_R
-        ];
-        this.foregroundLayer.setCollision(nonSolidIds, false);
-        // 4. Force individual tile collision properties to match BLOCK_DEFINITIONS strictly
-        this.foregroundLayer.forEachTile((tile) => {
-            const def = BLOCK_DEFINITIONS[tile.index];
-            const isSolid = def ? def.isSolid : false;
-            tile.setCollision(isSolid, isSolid, isSolid, isSolid);
-        });
+    }
+    setFgTile(tileX, tileY, blockId, markModified = true) {
+        if (tileY < 0 || tileY >= this.height)
+            return;
+        const chunk = this.ensureChunkData(this.getChunkIndex(tileX));
+        const lx = this.getLocalX(tileX);
+        chunk.foreground[lx][tileY] = blockId;
+        if (markModified)
+            chunk.modified = true;
+        if (chunk.isLoaded && chunk.foregroundLayer) {
+            if (blockId === BlockId.AIR) {
+                chunk.foregroundLayer.removeTileAt(lx, tileY);
+            }
+            else {
+                chunk.foregroundLayer.putTileAt(blockId, lx, tileY);
+            }
+        }
+    }
+    setBgTile(tileX, tileY, wallId, markModified = true) {
+        if (tileY < 0 || tileY >= this.height)
+            return;
+        const chunk = this.ensureChunkData(this.getChunkIndex(tileX));
+        const lx = this.getLocalX(tileX);
+        chunk.background[lx][tileY] = wallId;
+        if (markModified)
+            chunk.modified = true;
+        if (chunk.isLoaded && chunk.backgroundLayer) {
+            if (wallId === BlockId.AIR) {
+                chunk.backgroundLayer.removeTileAt(lx, tileY);
+            }
+            else {
+                chunk.backgroundLayer.putTileAt(wallId, lx, tileY);
+            }
+        }
     }
     getBlock(tileX, tileY) {
-        if (tileX < 0 || tileX >= this.width || tileY < 0 || tileY >= this.height) {
-            return BlockId.BEDROCK; // Outside map counts as bedrock
+        if (tileY < 0 || tileY >= this.height) {
+            return tileY >= this.height ? BlockId.BEDROCK : BlockId.AIR;
         }
-        return this.foreground[tileX][tileY];
+        const chunk = this.ensureChunkData(this.getChunkIndex(tileX));
+        return chunk.foreground[this.getLocalX(tileX)][tileY];
     }
     getWall(tileX, tileY) {
-        if (tileX < 0 || tileX >= this.width || tileY < 0 || tileY >= this.height) {
+        if (tileY < 0 || tileY >= this.height) {
             return BlockId.AIR;
         }
-        return this.background[tileX][tileY];
+        const chunk = this.ensureChunkData(this.getChunkIndex(tileX));
+        return chunk.background[this.getLocalX(tileX)][tileY];
     }
     isSolid(tileX, tileY) {
         const blockId = this.getBlock(tileX, tileY);
@@ -394,11 +585,10 @@ export class WorldManager {
             }
         }
         // Remove from foreground grid and layer
-        this.foreground[tileX][tileY] = BlockId.AIR;
-        this.foregroundLayer.removeTileAt(tileX, tileY);
+        this.setFgTile(tileX, tileY, BlockId.AIR);
         this.clearDamage(tileX, tileY);
         if (blockId === BlockId.TORCH) {
-            this.placedTorches.delete(tileY * this.width + tileX);
+            this.placedTorches.delete(`${tileX},${tileY}`);
         }
         this.recomputeSurfaceY(tileX);
         // If breaking a leaf block of a tree, check if crown needs to be removed
@@ -425,8 +615,7 @@ export class WorldManager {
     fellTreeFrom(tileX, startY) {
         // 1. Break the initial trunk block
         const initialBlockId = this.getBlock(tileX, startY);
-        this.foreground[tileX][startY] = BlockId.AIR;
-        this.foregroundLayer.removeTileAt(tileX, startY);
+        this.setFgTile(tileX, startY, BlockId.AIR);
         this.clearDamage(tileX, startY);
         if (this.onBlockBroken) {
             this.onBlockBroken(tileX, startY, initialBlockId);
@@ -435,8 +624,7 @@ export class WorldManager {
         let currY = startY - 1;
         while (currY >= 0 && this.isTreeTrunkBlock(this.getBlock(tileX, currY))) {
             const bId = this.getBlock(tileX, currY);
-            this.foreground[tileX][currY] = BlockId.AIR;
-            this.foregroundLayer.removeTileAt(tileX, currY);
+            this.setFgTile(tileX, currY, BlockId.AIR);
             this.clearDamage(tileX, currY);
             if (this.onBlockBroken) {
                 this.onBlockBroken(tileX, currY, bId);
@@ -467,11 +655,10 @@ export class WorldManager {
             const topY = isConifer ? tree.treeTopY - 4 : (tree.crownVariant === 1 || isWillow ? tree.treeTopY - 3 : tree.treeTopY - 2);
             for (let lx = tree.x - halfW; lx <= tree.x + halfW; lx++) {
                 for (let ly = topY; ly <= tree.treeTopY; ly++) {
-                    if (lx >= 0 && lx < this.width && ly >= 0) {
-                        const blk = this.foreground[lx][ly];
+                    if (ly >= 0) {
+                        const blk = this.getBlock(lx, ly);
                         if (blk === BlockId.LEAVES || blk === BlockId.DARK_LEAVES || blk === BlockId.SNOW) {
-                            this.foreground[lx][ly] = BlockId.AIR;
-                            this.foregroundLayer.removeTileAt(lx, ly);
+                            this.setFgTile(lx, ly, BlockId.AIR);
                             this.clearDamage(lx, ly);
                         }
                     }
@@ -556,12 +743,10 @@ export class WorldManager {
                 return; // Obstacle above
         }
         // Remove sapling
-        this.foreground[tileX][surfaceY] = BlockId.AIR;
-        this.foregroundLayer.removeTileAt(tileX, surfaceY);
+        this.setFgTile(tileX, surfaceY, BlockId.AIR);
         // 1. Root base
         const rootBlock = isDarkWood ? BlockId.DARK_WOOD : (isPalm ? BlockId.PALM_WOOD : BlockId.TREE_ROOT);
-        this.foreground[tileX][surfaceY] = rootBlock;
-        this.foregroundLayer.putTileAt(rootBlock, tileX, surfaceY);
+        this.setFgTile(tileX, surfaceY, rootBlock);
         // 2. Trunk with dynamic leafy branches (palms have no side branches)
         const branchSpots = [];
         if (!isPalm && trunkHeight >= 4) {
@@ -586,8 +771,7 @@ export class WorldManager {
             }
         }
         for (let ty = surfaceY - 1; ty >= treeTopY; ty--) {
-            this.foreground[tileX][ty] = woodBlock;
-            this.foregroundLayer.putTileAt(woodBlock, tileX, ty);
+            this.setFgTile(tileX, ty, woodBlock);
         }
         // 3. Create Crown Sprite & Large Branch Sprites (Clean pixel-art canopy, no fake square tiles)
         const T = GAME_CONSTANTS.TILE_SIZE;
@@ -639,11 +823,11 @@ export class WorldManager {
         }
     }
     canPlaceBlock(tileX, tileY, blockId, playerBounds) {
-        if (tileX < 0 || tileX >= this.width || tileY < 0 || tileY >= this.height) {
+        if (tileY < 0 || tileY >= this.height) {
             return false;
         }
         // Target tile must be Air
-        if (this.foreground[tileX][tileY] !== BlockId.AIR) {
+        if (this.getBlock(tileX, tileY) !== BlockId.AIR) {
             return false;
         }
         // Sapling placement: must be planted on top of fertile Grass or Dirt
@@ -665,11 +849,11 @@ export class WorldManager {
             this.isSolid(tileX + 1, tileY) ||
             this.isSolid(tileX, tileY - 1) ||
             this.isSolid(tileX, tileY + 1) ||
-            this.background[tileX][tileY] !== BlockId.AIR;
+            this.getWall(tileX, tileY) !== BlockId.AIR;
         return hasSolidNeighbor;
     }
     placeBlock(tileX, tileY, blockId) {
-        if (tileX < 0 || tileX >= this.width || tileY < 0 || tileY >= this.height) {
+        if (tileY < 0 || tileY >= this.height) {
             return false;
         }
         const def = BLOCK_DEFINITIONS[blockId];
@@ -677,17 +861,15 @@ export class WorldManager {
             return false;
         if (def.isWall) {
             // Place as wall in background layer
-            this.background[tileX][tileY] = blockId;
-            this.backgroundLayer.putTileAt(blockId, tileX, tileY);
+            this.setBgTile(tileX, tileY, blockId);
         }
         else {
             // If placing dirt with air directly above, turn it into lush grass block
-            if (blockId === BlockId.DIRT && tileY > 0 && this.foreground[tileX][tileY - 1] === BlockId.AIR) {
+            if (blockId === BlockId.DIRT && tileY > 0 && this.getBlock(tileX, tileY - 1) === BlockId.AIR) {
                 blockId = BlockId.GRASS;
             }
             // Place in foreground layer
-            this.foreground[tileX][tileY] = blockId;
-            this.foregroundLayer.putTileAt(blockId, tileX, tileY);
+            this.setFgTile(tileX, tileY, blockId);
             // If planting a sapling, track it for natural tree growth!
             if (blockId === BlockId.SAPLING) {
                 this.plantedSaplings.push({
@@ -698,7 +880,7 @@ export class WorldManager {
                 });
             }
             if (blockId === BlockId.TORCH) {
-                this.placedTorches.add(tileY * this.width + tileX);
+                this.placedTorches.set(`${tileX},${tileY}`, { x: tileX, y: tileY });
             }
             this.recomputeSurfaceY(tileX);
             if (def.isSolid) {

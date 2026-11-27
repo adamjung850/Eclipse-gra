@@ -1,6 +1,432 @@
 import { BlockId, GAME_CONSTANTS, BiomeId } from '../types/index.js';
 import { BiomeSystem } from './BiomeSystem.js';
 export class WorldGenerator {
+    static hashInt(n) {
+        let x = n | 0;
+        x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+        x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+        return (x ^ (x >>> 16)) >>> 0;
+    }
+    static hash2D(seed, x, y) {
+        let h = seed | 0;
+        h = Math.imul(h ^ (x | 0), 374761393);
+        h = Math.imul(h ^ (y | 0), 668265263);
+        h = (h ^ (h >>> 13)) | 0;
+        h = Math.imul(h, 1274126177);
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    }
+    static smoothstep(t) {
+        return t * t * (3 - 2 * t);
+    }
+    static valueNoise2D(seed, x, y) {
+        const ix = Math.floor(x);
+        const iy = Math.floor(y);
+        const fx = this.smoothstep(x - ix);
+        const fy = this.smoothstep(y - iy);
+        const v00 = this.hash2D(seed, ix, iy);
+        const v10 = this.hash2D(seed, ix + 1, iy);
+        const v01 = this.hash2D(seed, ix, iy + 1);
+        const v11 = this.hash2D(seed, ix + 1, iy + 1);
+        const a = v00 + (v10 - v00) * fx;
+        const b = v01 + (v11 - v01) * fx;
+        return a + (b - a) * fy;
+    }
+    static createSeededRng(seed) {
+        let s = seed | 0;
+        return () => {
+            s = (s + 0x6d2b79f5) | 0;
+            let t = Math.imul(s ^ (s >>> 15), 1 | s);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+    static getSurfaceHeightAt(x, worldSeed) {
+        const seedOffset = ((worldSeed & 0xffff) / 65536) * 1000;
+        const baseH = GAME_CONSTANTS.SURFACE_HEIGHT;
+        const relief = Math.sin((x + seedOffset) * 0.022) * 5 +
+            Math.cos((x + seedOffset) * 0.048) * 3 +
+            Math.sin((x + seedOffset) * 0.09) * 1.5;
+        return Math.floor(baseH + relief);
+    }
+    /**
+     * Generates a single deterministic chunk [chunkIndex * CHUNK_WIDTH .. (chunkIndex+1) * CHUNK_WIDTH - 1].
+     * Guarantees seamless borders across chunk edges for negative and positive X.
+     */
+    static generateChunk(chunkIndex, worldSeed, height = GAME_CONSTANTS.WORLD_HEIGHT) {
+        const cw = GAME_CONSTANTS.CHUNK_WIDTH;
+        const startX = chunkIndex * cw;
+        const foreground = [];
+        const background = [];
+        const trees = [];
+        const rng = this.createSeededRng(worldSeed ^ Math.imul(chunkIndex, 0x9e3779b1));
+        for (let lx = 0; lx < cw; lx++) {
+            foreground[lx] = new Array(height).fill(BlockId.AIR);
+            background[lx] = new Array(height).fill(BlockId.AIR);
+        }
+        const surfaceHeights = new Array(cw);
+        for (let lx = 0; lx < cw; lx++) {
+            surfaceHeights[lx] = this.getSurfaceHeightAt(startX + lx, worldSeed);
+        }
+        // 1. Primary Strata & Biomes
+        for (let lx = 0; lx < cw; lx++) {
+            const wx = startX + lx;
+            const surfaceY = surfaceHeights[lx];
+            const { biome, isBorder, neighborBiome } = BiomeSystem.getSurfaceBiomeForInfiniteX(wx, worldSeed);
+            for (let y = 0; y < height; y++) {
+                if (y < surfaceY)
+                    continue;
+                if (y >= GAME_CONSTANTS.BEDROCK_DEPTH) {
+                    foreground[lx][y] = BlockId.BEDROCK;
+                    background[lx][y] = BlockId.BEDROCK;
+                }
+                else if (y >= GAME_CONSTANTS.VOID_DEPTH) {
+                    foreground[lx][y] = rng() < 0.12 ? BlockId.VOID_CRYSTAL : BlockId.VOID_STONE;
+                    background[lx][y] = BlockId.VOID_STONE;
+                }
+                else if (y >= GAME_CONSTANTS.NETHER_DEPTH) {
+                    const roll = rng();
+                    if (roll < 0.14) {
+                        foreground[lx][y] = BlockId.LAVA_ROCK;
+                        background[lx][y] = BlockId.HELLSTONE;
+                    }
+                    else if (roll < 0.50) {
+                        foreground[lx][y] = BlockId.HELLSTONE;
+                        background[lx][y] = BlockId.HELLSTONE;
+                    }
+                    else {
+                        foreground[lx][y] = BlockId.ASH_BLOCK;
+                        background[lx][y] = BlockId.ASH_BLOCK;
+                    }
+                }
+                else if (y >= GAME_CONSTANTS.CRYSTAL_DEPTH) {
+                    const isCrystal = rng() < 0.08;
+                    foreground[lx][y] = isCrystal ? BlockId.CRYSTAL_BLOCK : BlockId.STONE;
+                    background[lx][y] = isCrystal ? BlockId.CRYSTAL_BLOCK : BlockId.STONE;
+                }
+                else if (y >= surfaceY + 5) {
+                    if (biome.id === BiomeId.DARK_FOREST && y < surfaceY + 14 && rng() < 0.45) {
+                        foreground[lx][y] = BlockId.MOSSY_STONE;
+                        background[lx][y] = BlockId.MOSSY_STONE;
+                    }
+                    else if (biome.id === BiomeId.DESERT && y < surfaceY + 12) {
+                        foreground[lx][y] = BlockId.SANDSTONE;
+                        background[lx][y] = BlockId.SANDSTONE;
+                    }
+                    else {
+                        foreground[lx][y] = BlockId.STONE;
+                        background[lx][y] = BlockId.STONE;
+                    }
+                }
+                else {
+                    const curBiome = isBorder && rng() < 0.45 ? neighborBiome : biome;
+                    let blk;
+                    if (curBiome.id === BiomeId.FROZEN_PEAKS) {
+                        blk = y < surfaceY + 3 ? BlockId.SNOW : BlockId.ICE;
+                    }
+                    else if (curBiome.id === BiomeId.DESERT) {
+                        blk = y < surfaceY + 3 ? BlockId.SAND : BlockId.SANDSTONE;
+                    }
+                    else if (curBiome.id === BiomeId.DARK_FOREST) {
+                        blk = y === surfaceY ? BlockId.DARK_GRASS : BlockId.DARK_DIRT;
+                    }
+                    else {
+                        blk = y === surfaceY ? BlockId.GRASS : BlockId.DIRT;
+                    }
+                    foreground[lx][y] = blk;
+                    background[lx][y] = blk;
+                }
+            }
+        }
+        // 2. Seamless Winding Caves & Geodes (deterministic Perlin worms across neighbor chunks)
+        const carveChunkWorms = (wormChunkIdx) => {
+            const wRng = this.createSeededRng(worldSeed ^ Math.imul(wormChunkIdx, 0x7f4a7c15));
+            const wStartX = wormChunkIdx * cw;
+            const carveWorm = (params) => {
+                let curX = params.x;
+                let curY = params.y;
+                let curAngle = params.angle;
+                let angleVelocity = 0;
+                const branchDepth = params.branchDepth || 0;
+                for (let step = 0; step < params.length; step++) {
+                    const radNoise = Math.sin(step * 0.22) * 0.35 + (wRng() - 0.5) * 0.2;
+                    const radius = Math.max(1.6, Math.min(2.8, params.radius + radNoise));
+                    const intR = Math.ceil(radius);
+                    for (let ox = -intR; ox <= intR; ox++) {
+                        for (let oy = -intR; oy <= intR; oy++) {
+                            if (Math.sqrt(ox * ox + oy * oy) <= radius) {
+                                const wx = Math.floor(curX + ox);
+                                const ty = Math.floor(curY + oy);
+                                if (wx >= startX && wx < startX + cw && ty >= 0 && ty < GAME_CONSTANTS.BEDROCK_DEPTH - 2) {
+                                    const lx = wx - startX;
+                                    const sY = surfaceHeights[lx];
+                                    const isNearSpawn = Math.abs(wx - 16) <= 8 && ty < sY + 8;
+                                    if (isNearSpawn)
+                                        continue;
+                                    if (params.isEntrance || ty >= sY + 3) {
+                                        foreground[lx][ty] = BlockId.AIR;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    angleVelocity = angleVelocity * 0.72 + (wRng() - 0.5) * params.turnSpeed;
+                    curAngle += angleVelocity;
+                    const curSurfaceY = this.getSurfaceHeightAt(Math.floor(curX), worldSeed);
+                    if (curY > GAME_CONSTANTS.BEDROCK_DEPTH - 7) {
+                        curAngle -= 0.18;
+                    }
+                    else if (!params.isEntrance && curY < curSurfaceY + 5) {
+                        curAngle += 0.18;
+                    }
+                    curX += Math.cos(curAngle);
+                    curY += Math.sin(curAngle);
+                    if (branchDepth < 1 && step > 18 && step < params.length - 12 && wRng() < 0.035) {
+                        carveWorm({
+                            x: curX,
+                            y: curY,
+                            angle: curAngle + (wRng() > 0.5 ? 0.75 : -0.75),
+                            length: Math.floor(params.length * 0.5),
+                            radius: Math.max(1.4, params.radius - 0.2),
+                            turnSpeed: params.turnSpeed * 1.1,
+                            isEntrance: false,
+                            branchDepth: branchDepth + 1,
+                        });
+                    }
+                }
+            };
+            // Occasional surface cave entrance (every ~3 chunks)
+            if (wormChunkIdx !== 0 && Math.abs(this.hashInt(worldSeed ^ Math.imul(wormChunkIdx, 4391))) % 3 === 0) {
+                const entX = wStartX + 8 + Math.floor(wRng() * (cw - 16));
+                const entY = this.getSurfaceHeightAt(entX, worldSeed);
+                const isRight = wRng() > 0.5;
+                carveWorm({
+                    x: entX,
+                    y: entY,
+                    angle: isRight ? Math.PI / 3 + (wRng() - 0.5) * 0.25 : (2 * Math.PI) / 3 + (wRng() - 0.5) * 0.25,
+                    length: 62,
+                    radius: 1.9,
+                    turnSpeed: 0.30,
+                    isEntrance: true,
+                });
+            }
+            // 2 winding subterranean worms per chunk
+            for (let w = 0; w < 2; w++) {
+                const wx = wStartX + wRng() * cw;
+                const sY = this.getSurfaceHeightAt(Math.floor(wx), worldSeed);
+                const wy = sY + 10 + wRng() * (GAME_CONSTANTS.BEDROCK_DEPTH - sY - 22);
+                carveWorm({
+                    x: wx,
+                    y: wy,
+                    angle: wRng() * Math.PI * 2,
+                    length: 70 + Math.floor(wRng() * 40),
+                    radius: 1.9,
+                    turnSpeed: 0.35,
+                    isEntrance: false,
+                });
+            }
+            // Occasional Crystal Geode Cavern
+            if (Math.abs(this.hashInt(worldSeed ^ Math.imul(wormChunkIdx, 8273))) % 3 === 0) {
+                const gx = wStartX + 6 + Math.floor(wRng() * (cw - 12));
+                const gy = Math.floor(GAME_CONSTANTS.CRYSTAL_DEPTH + 5 + wRng() * 30);
+                const geodeR = 5.5 + wRng() * 2.0;
+                const intR = Math.ceil(geodeR);
+                for (let ox = -intR; ox <= intR; ox++) {
+                    for (let oy = -intR; oy <= intR; oy++) {
+                        const dist = Math.sqrt(ox * ox + oy * oy * 1.15);
+                        const wx = gx + ox;
+                        const ty = gy + oy;
+                        if (wx >= startX && wx < startX + cw && ty < GAME_CONSTANTS.BEDROCK_DEPTH - 2) {
+                            const lx = wx - startX;
+                            if (dist <= geodeR - 1.5)
+                                foreground[lx][ty] = BlockId.AIR;
+                            else if (dist <= geodeR)
+                                foreground[lx][ty] = BlockId.CRYSTAL_BLOCK;
+                        }
+                    }
+                }
+            }
+        };
+        for (let c = chunkIndex - 1; c <= chunkIndex + 1; c++) {
+            carveChunkWorms(c);
+        }
+        // 3. Deterministic Ore Veins inside chunk
+        const oreConfigs = [
+            { id: BlockId.COAL_ORE, minD: 6, maxD: 120, count: 5, size: 4 },
+            { id: BlockId.COPPER_ORE, minD: 8, maxD: 110, count: 4, size: 4 },
+            { id: BlockId.IRON_ORE, minD: 18, maxD: 155, count: 4, size: 4 },
+            { id: BlockId.GOLD_ORE, minD: 45, maxD: 185, count: 3, size: 3 },
+            { id: BlockId.DIAMOND_ORE, minD: 85, maxD: 218, count: 2, size: 3 },
+            { id: BlockId.CRYSTAL_BLOCK, minD: GAME_CONSTANTS.CRYSTAL_DEPTH, maxD: GAME_CONSTANTS.NETHER_DEPTH - 5, count: 3, size: 3 },
+        ];
+        for (const ore of oreConfigs) {
+            for (let v = 0; v < ore.count; v++) {
+                const cx = Math.floor(rng() * cw);
+                const minY = Math.max(surfaceHeights[cx] + 5, ore.minD);
+                const maxY = Math.min(GAME_CONSTANTS.BEDROCK_DEPTH - 4, ore.maxD);
+                if (maxY <= minY)
+                    continue;
+                const cy = minY + Math.floor(rng() * (maxY - minY));
+                for (let s = 0; s < ore.size; s++) {
+                    const ox = Math.max(0, Math.min(cw - 1, cx + Math.floor((rng() - 0.5) * 3)));
+                    const oy = Math.max(minY, Math.min(maxY, cy + Math.floor((rng() - 0.5) * 3)));
+                    if (foreground[ox][oy] === BlockId.STONE ||
+                        foreground[ox][oy] === BlockId.MOSSY_STONE ||
+                        foreground[ox][oy] === BlockId.SANDSTONE ||
+                        foreground[ox][oy] === BlockId.HELLSTONE) {
+                        foreground[ox][oy] = ore.id;
+                    }
+                }
+            }
+        }
+        // 4. Occasional Underground Cabin + Chest
+        if (chunkIndex !== 0 && Math.abs(this.hashInt(worldSeed ^ Math.imul(chunkIndex, 9173))) % 6 === 0) {
+            const cx = 8 + Math.floor(rng() * (cw - 16));
+            const cy = GAME_CONSTANTS.SURFACE_HEIGHT + 28 + Math.floor(rng() * 45);
+            for (let dx = -3; dx <= 3; dx++) {
+                for (let dy = -3; dy <= 1; dy++) {
+                    const tx = cx + dx;
+                    const ty = cy + dy;
+                    if (tx < 0 || tx >= cw || ty >= GAME_CONSTANTS.BEDROCK_DEPTH - 2)
+                        continue;
+                    if (dy === 1 || dy === -3 || dx === -3 || dx === 3) {
+                        foreground[tx][ty] = BlockId.PLANK;
+                        background[tx][ty] = BlockId.WOOD_WALL;
+                    }
+                    else {
+                        foreground[tx][ty] = BlockId.AIR;
+                        background[tx][ty] = BlockId.WOOD_WALL;
+                    }
+                }
+            }
+            foreground[cx][cy] = BlockId.CHEST;
+            if (cx - 1 >= 0)
+                foreground[cx - 1][cy - 1] = BlockId.TORCH;
+        }
+        // 5. Deterministic Flora (Trees, Palms, Cacti) with cross-chunk spacing
+        let lastFloraWx = -999999;
+        // Check 4 tiles before chunk start so we respect trees at end of previous chunk
+        for (let wx = startX - 4; wx < startX + cw; wx++) {
+            const colRoll = this.hash2D(worldSeed + 777, wx, 19);
+            if (wx - lastFloraWx < 4)
+                continue;
+            if (Math.abs(wx - 16) <= 2)
+                continue; // Keep exact spawn tile clear
+            const sY = this.getSurfaceHeightAt(wx, worldSeed);
+            const sPrev = this.getSurfaceHeightAt(wx - 1, worldSeed);
+            const sNext = this.getSurfaceHeightAt(wx + 1, worldSeed);
+            const { biome } = BiomeSystem.getSurfaceBiomeForInfiniteX(wx, worldSeed);
+            if (biome.id === BiomeId.DESERT) {
+                if (colRoll >= 0.52)
+                    continue;
+                lastFloraWx = wx;
+                if (wx < startX)
+                    continue;
+                const lx = wx - startX;
+                const isPalm = this.hash2D(worldSeed + 778, wx, 23) < 0.48;
+                if (isPalm) {
+                    const trunkHeight = 6 + Math.floor(this.hash2D(worldSeed + 779, wx, 29) * 3);
+                    const treeTopY = sY - trunkHeight;
+                    for (let ty = sY - 1; ty >= treeTopY; ty--) {
+                        foreground[lx][ty] = BlockId.PALM_WOOD;
+                    }
+                    trees.push({
+                        x: wx,
+                        surfaceY: sY,
+                        treeTopY,
+                        trunkHeight,
+                        crownVariant: 8,
+                        colorVariant: 6,
+                        branchSpots: [],
+                        isDarkWood: false,
+                    });
+                }
+                else {
+                    const cactusH = 2 + Math.floor(this.hash2D(worldSeed + 780, wx, 31) * 3);
+                    for (let ty = sY - 1; ty >= sY - cactusH; ty--) {
+                        foreground[lx][ty] = BlockId.CACTUS;
+                    }
+                }
+                continue;
+            }
+            if (Math.abs(sPrev - sY) > 1 || Math.abs(sNext - sY) > 1)
+                continue;
+            if (colRoll >= 0.48)
+                continue;
+            lastFloraWx = wx;
+            if (wx < startX)
+                continue;
+            const lx = wx - startX;
+            const r1 = this.hash2D(worldSeed + 801, wx, 41);
+            const r2 = this.hash2D(worldSeed + 802, wx, 43);
+            const r3 = this.hash2D(worldSeed + 803, wx, 47);
+            const isFrozenPeaks = biome.id === BiomeId.FROZEN_PEAKS;
+            const isDarkForest = biome.id === BiomeId.DARK_FOREST;
+            let trunkHeight;
+            let crownVariant;
+            let colorVariant;
+            let woodBlock = BlockId.WOOD;
+            const branchSpots = [];
+            if (isFrozenPeaks) {
+                trunkHeight = 6 + Math.floor(r1 * 3);
+                crownVariant = r2 < 0.65 ? 5 : 6;
+                colorVariant = r3 < 0.75 ? 4 : 2;
+                foreground[lx][sY - 1] = BlockId.TREE_ROOT;
+                if (trunkHeight >= 7 && r3 < 0.4) {
+                    branchSpots.push({ y: sY - 2, side: r2 < 0.5 ? 'L' : 'R' });
+                }
+            }
+            else if (isDarkForest) {
+                trunkHeight = 5 + Math.floor(r1 * 3);
+                crownVariant = r2 < 0.70 ? 7 : 1;
+                colorVariant = r3 < 0.75 ? 5 : 2;
+                woodBlock = BlockId.DARK_WOOD;
+                foreground[lx][sY - 1] = BlockId.DARK_WOOD;
+                if (trunkHeight >= 5) {
+                    branchSpots.push({ y: sY - 2, side: r2 < 0.5 ? 'L' : 'R' });
+                    if (trunkHeight >= 6 && r3 < 0.6) {
+                        branchSpots.push({ y: sY - 4, side: branchSpots[0].side === 'L' ? 'R' : 'L' });
+                    }
+                }
+            }
+            else {
+                trunkHeight = r1 < 0.45 ? 4 : r1 < 0.85 ? 5 : 6;
+                crownVariant = Math.floor(r2 * 5);
+                colorVariant = [0, 1, 3][Math.floor(r3 * 3)];
+                foreground[lx][sY - 1] = BlockId.TREE_ROOT;
+                if (trunkHeight >= 5) {
+                    branchSpots.push({ y: sY - 2, side: r2 < 0.5 ? 'L' : 'R' });
+                    branchSpots.push({ y: sY - 3, side: r2 < 0.5 ? 'R' : 'L' });
+                }
+                else {
+                    branchSpots.push({ y: sY - 2, side: r3 < 0.5 ? 'L' : 'R' });
+                }
+            }
+            const treeTopY = sY - trunkHeight;
+            for (let ty = sY - 1; ty >= treeTopY; ty--) {
+                if (ty === sY - 1 && (isFrozenPeaks || !isDarkForest))
+                    continue;
+                foreground[lx][ty] = woodBlock;
+            }
+            trees.push({
+                x: wx,
+                surfaceY: sY,
+                treeTopY,
+                trunkHeight,
+                crownVariant,
+                colorVariant,
+                branchSpots,
+                isDarkWood: isDarkForest,
+            });
+        }
+        return {
+            chunkIndex,
+            width: cw,
+            height,
+            foreground,
+            background,
+            trees,
+        };
+    }
     static generate(width = GAME_CONSTANTS.WORLD_WIDTH, height = GAME_CONSTANTS.WORLD_HEIGHT) {
         const foreground = [];
         const background = [];

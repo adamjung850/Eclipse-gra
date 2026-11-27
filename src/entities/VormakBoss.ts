@@ -309,8 +309,8 @@ export class VormakBoss {
       this.handleProjectilePlayerHit(proj);
     });
 
-    // Spikes & spores collide with solid ground blocks
-    scene.physics.add.collider(this.enemyProjectiles, this.worldManager.foregroundLayer, (projObj) => {
+    // Spikes & spores collide with solid ground blocks across all chunks
+    this.worldManager.registerCollider(this.enemyProjectiles, (projObj: any) => {
       const proj = projObj as VormakProjectile;
       if (proj.projType === 'shockwave' || proj.projType === 'stalagmite') return; // Shockwaves & stalagmites skim ground
       this.debrisEmitter.explode(4, proj.x, proj.y);
@@ -503,11 +503,8 @@ export class VormakBoss {
    */
   private findSurfaceTileY(worldX: number): number {
     const T = GAME_CONSTANTS.TILE_SIZE;
-    const tileX = Phaser.Math.Clamp(Math.floor(worldX / T), 4, GAME_CONSTANTS.WORLD_WIDTH - 5);
-    if (this.worldManager.surfaceYCache && this.worldManager.surfaceYCache[tileX]) {
-      return this.worldManager.surfaceYCache[tileX];
-    }
-    return Math.floor(this.player.y / T) + 1;
+    const tileX = Math.floor(worldX / T);
+    return this.worldManager.getSurfaceY(tileX);
   }
 
   /**
@@ -660,7 +657,6 @@ export class VormakBoss {
     }
 
     const T = GAME_CONSTANTS.TILE_SIZE;
-    targetX = Phaser.Math.Clamp(targetX, 5 * T, (GAME_CONSTANTS.WORLD_WIDTH - 6) * T);
     const surfaceTileY = this.findSurfaceTileY(targetX);
     const surfaceY = surfaceTileY * T;
 
@@ -833,10 +829,6 @@ export class VormakBoss {
     this.head.x += this.headVx * dt;
     this.head.y += this.headVy * dt;
 
-    // Clamp head X within world boundaries
-    const T = GAME_CONSTANTS.TILE_SIZE;
-    this.head.x = Phaser.Math.Clamp(this.head.x, 3 * T, (GAME_CONSTANTS.WORLD_WIDTH - 4) * T);
-
     this.currentAngle = Math.atan2(this.headVy, this.headVx);
     this.head.rotation = this.currentAngle;
 
@@ -919,11 +911,7 @@ export class VormakBoss {
     const T = GAME_CONSTANTS.TILE_SIZE;
 
     for (let i = 0; i < count; i++) {
-      const spikeX = Phaser.Math.Clamp(
-        this.quakeOriginX + dir * (i + 1) * 54,
-        4 * T,
-        (GAME_CONSTANTS.WORLD_WIDTH - 5) * T
-      );
+      const spikeX = this.quakeOriginX + dir * (i + 1) * 54;
       const surfaceY = this.findSurfaceTileY(spikeX) * T;
       const telegraphDelay = 80 + i * 200; // Sequential ripple: 80ms, 280ms, 480ms, 680ms...
       const eruptDelay = telegraphDelay + 600; // Clear 600ms reaction window!

@@ -106,6 +106,7 @@ export var CraftingStation;
 })(CraftingStation || (CraftingStation = {}));
 export const GAME_CONSTANTS = {
     TILE_SIZE: 24,
+    CHUNK_WIDTH: 32,
     WORLD_WIDTH: 500,
     WORLD_HEIGHT: 240,
     SURFACE_HEIGHT: 55,
